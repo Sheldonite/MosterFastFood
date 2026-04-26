@@ -8,6 +8,8 @@ Windows:
 Double-click start.bat
 ```
 
+If Node.js is missing and `winget` is available, `start.bat` will ask whether to install Node.js LTS. Choose `Y` only if you want Windows to download and install Node.js from the standard package source.
+
 macOS/Linux:
 
 ```sh

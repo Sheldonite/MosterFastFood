@@ -9,6 +9,26 @@ if %errorlevel%==0 (
   exit /b
 )
 
+where winget >nul 2>nul
+if %errorlevel%==0 (
+  echo Node.js was not found.
+  echo This game runs best with Node.js/npm installed.
+  echo.
+  set /p INSTALL_NODE="Install Node.js LTS with winget now? This downloads software from Microsoft/OpenJS. [Y/N]: "
+  if /I "%INSTALL_NODE%"=="Y" (
+    winget install -e --id OpenJS.NodeJS.LTS
+    echo.
+    echo Install finished. If npm is still not found, close this window and run start.bat again.
+    where node >nul 2>nul
+    if %errorlevel%==0 (
+      start "" "http://localhost:4173"
+      npm start
+      pause
+      exit /b
+    )
+  )
+)
+
 where py >nul 2>nul
 if %errorlevel%==0 (
   start "" "http://localhost:4173"
