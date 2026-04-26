@@ -10,6 +10,7 @@ const ui = {
   roomText: document.querySelector("#roomText"),
   buildPanel: document.querySelector("#buildPanel"),
   armory: document.querySelector("#armory"),
+  bossSelector: document.querySelector("#bossSelector"),
   floatText: document.querySelector("#floatText"),
   potionButton: document.querySelector("#potionButton"),
   resetButton: document.querySelector("#resetButton"),
@@ -47,9 +48,23 @@ const stands = [
 ];
 
 const saveKey = "boss-fight-save-v1";
+const playerSprite = new Image();
+let cleanedPlayerSprite = null;
+playerSprite.src = "./assets/player-spritesheet.png";
+playerSprite.addEventListener("load", () => {
+  cleanedPlayerSprite = createTransparentSprite(playerSprite);
+});
+const curlyFriesSprite = new Image();
+let cleanedCurlyFriesSprite = null;
+curlyFriesSprite.src = "./assets/curly-fries-spritesheet.png";
+curlyFriesSprite.addEventListener("load", () => {
+  cleanedCurlyFriesSprite = createTransparentSprite(curlyFriesSprite);
+});
+
 let player = createPlayer();
-let boss = createBoss();
+let boss = createBoss("burger");
 let hazards = [];
+let playerProjectiles = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
 let selectedBoss = false;
@@ -68,26 +83,53 @@ function createPlayer() {
     maxHp: 115,
     potions: 3,
     attackCooldown: 0,
+    gateCooldown: 0,
     room: "starter",
     dead: false,
     won: false,
+    facing: "down",
+    animationTime: 0,
+    moving: false,
+    greaseCooldown: 0,
+    slide: null,
     gear: { weapon: "ironBlade", armor: "duelistCoat" },
     stats: { damage: 26, range: 54, speed: 250, armor: 2 },
   };
 }
 
-function createBoss() {
+function createBoss(kind = "burger") {
+  const bosses = {
+    burger: {
+      kind: "burger",
+      name: "Big Burger",
+      radius: 58,
+      maxHp: 600,
+      color: "#a76e3e",
+      enrageColor: "#b94835",
+      attackTimer: 1.8,
+      swingTimer: 1.2,
+    },
+    fries: {
+      kind: "fries",
+      name: "Curly Fries",
+      radius: 48,
+      maxHp: 720,
+      color: "#d9aa4f",
+      enrageColor: "#f0c95d",
+      attackTimer: 1.2,
+      swingTimer: 1.1,
+    },
+  };
+  const template = bosses[kind];
   return {
-    name: "Big Burger",
+    ...template,
     x: 1180,
     y: 450,
-    radius: 58,
-    hp: 600,
-    maxHp: 600,
+    hp: template.maxHp,
     phase: 1,
-    attackTimer: 1.8,
-    swingTimer: 1.2,
     enraged: false,
+    animation: "idle",
+    animationTime: 0,
   };
 }
 
@@ -131,6 +173,7 @@ function resizeCanvas() {
 
 function resetFight(keepPosition = false) {
   const gearState = { ...player.gear };
+  const bossKind = boss.kind;
   player = createPlayer();
   player.gear = gearState;
   applyGear();
@@ -138,8 +181,9 @@ function resetFight(keepPosition = false) {
     player.x = 705;
     player.y = 455;
   }
-  boss = createBoss();
+  boss = createBoss(bossKind);
   hazards = [];
+  playerProjectiles = [];
   particles = [];
   selectedBoss = false;
   fightStartedAt = 0;
@@ -147,11 +191,30 @@ function resetFight(keepPosition = false) {
   showFloat("Fight reset");
 }
 
+function selectBoss(kind) {
+  const gearState = { ...player.gear };
+  player = createPlayer();
+  player.gear = gearState;
+  applyGear();
+  player.room = "arena";
+  player.x = world.arena.x + 130;
+  player.y = world.arena.y + world.arena.h / 2;
+  player.gateCooldown = 1.2;
+  boss = createBoss(kind);
+  hazards = [];
+  playerProjectiles = [];
+  particles = [];
+  selectedBoss = false;
+  fightStartedAt = 0;
+  ui.status.textContent = `${boss.name} selected for testing.`;
+  showFloat(boss.name);
+}
+
 function startFight() {
   if (fightStartedAt) return;
   fightStartedAt = performance.now();
   log("Boss awakened.");
-  ui.status.textContent = "Boss awakened. Click Big Burger to attack.";
+  ui.status.textContent = `Boss awakened. Click ${boss.name} to attack.`;
 }
 
 function log(text) {
@@ -184,7 +247,7 @@ function setDestination(x, y) {
   if (Math.hypot(boss.x - x, boss.y - y) < boss.radius + 12 && player.room === "arena") {
     selectedBoss = true;
     startFight();
-    ui.status.textContent = "Attacking Big Burger.";
+    ui.status.textContent = `Attacking ${boss.name}.`;
     return;
   }
   selectedBoss = false;
@@ -211,6 +274,12 @@ function equipFromStand(stand) {
 }
 
 function movePlayer(dt) {
+  player.moving = false;
+  player.greaseCooldown = Math.max(0, player.greaseCooldown - dt);
+  if (player.slide) {
+    moveSlidingPlayer(dt);
+    return;
+  }
   if (!player.destination) return;
   const dx = player.destination.x - player.x;
   const dy = player.destination.y - player.y;
@@ -219,43 +288,107 @@ function movePlayer(dt) {
     player.destination = null;
     return;
   }
+  player.facing = getFacing(dx, dy);
+  player.moving = true;
+  player.animationTime += dt;
   const step = Math.min(dist, player.stats.speed * dt);
   player.x += (dx / dist) * step;
   player.y += (dy / dist) * step;
 }
 
-function updateRoom() {
+function moveSlidingPlayer(dt) {
+  player.moving = true;
+  player.animationTime += dt * 1.8;
+  player.slide.timer -= dt;
+  player.x += player.slide.vx * dt;
+  player.y += player.slide.vy * dt;
+  player.slide.vx *= Math.pow(0.82, dt * 6);
+  player.slide.vy *= Math.pow(0.82, dt * 6);
+
+  const bounds = currentBounds();
+  const clampedX = clamp(player.x, bounds.x + player.radius, bounds.x + bounds.w - player.radius);
+  const clampedY = clamp(player.y, bounds.y + player.radius, bounds.y + bounds.h - player.radius);
+  if (clampedX !== player.x || clampedY !== player.y) {
+    player.slide = null;
+    player.x = clampedX;
+    player.y = clampedY;
+    return;
+  }
+  player.x = clampedX;
+  player.y = clampedY;
+
+  if (Math.hypot(player.slide.vx, player.slide.vy) > 20) {
+    player.facing = getFacing(player.slide.vx, player.slide.vy);
+  }
+  if (player.slide.timer <= 0) {
+    player.slide = null;
+  }
+}
+
+function startGreaseSlide(puddle) {
+  if (player.greaseCooldown > 0 || player.room !== "arena" || player.dead || player.won) return;
+  let dx = 0;
+  let dy = 0;
+  if (player.destination) {
+    dx = player.destination.x - player.x;
+    dy = player.destination.y - player.y;
+  }
+  if (Math.hypot(dx, dy) < 0.1) {
+    dx = player.x - puddle.x;
+    dy = player.y - puddle.y;
+  }
+  if (Math.hypot(dx, dy) < 0.1) dx = 1;
+  const angle = Math.atan2(dy, dx);
+  const speed = player.stats.speed * 2.15;
+  player.slide = {
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    timer: 0.68,
+  };
+  player.destination = null;
+  player.greaseCooldown = 0.85;
+  showFloat("Grease boost");
+}
+
+function getFacing(dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? "right" : "left";
+  return dy > 0 ? "down" : "up";
+}
+
+function updateRoom(dt) {
+  player.gateCooldown = Math.max(0, player.gateCooldown - dt);
   if (player.room === "starter" && pointInRect(player.x, player.y, world.gate)) {
     player.room = "arena";
-    player.x = world.arena.x + 95;
+    player.x = world.arena.x + 130;
     player.y = world.arena.y + world.arena.h / 2;
     player.destination = null;
+    player.slide = null;
+    player.gateCooldown = 1.2;
     startFight();
   }
-  if (player.room === "arena" && player.x < world.arena.x + 24) {
-    player.room = "starter";
-    player.x = world.starter.x + world.starter.w - 80;
-    player.y = world.starter.y + world.starter.h / 2;
+  if (player.room === "arena" && player.x < world.arena.x + player.radius) {
+    player.x = world.arena.x + player.radius;
     player.destination = null;
-    selectedBoss = false;
-    ui.status.textContent = "Back in the starter room.";
+    player.slide = null;
   }
 }
 
 function updateCombat(dt) {
   if (player.room !== "arena" || player.dead || player.won) return;
   startFight();
+  boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
   boss.attackTimer -= dt;
 
-  if (boss.hp <= boss.maxHp * 0.55 && boss.phase === 1) {
+  const phaseThreshold = boss.kind === "fries" ? 0.6 : 0.55;
+  if (boss.hp <= boss.maxHp * phaseThreshold && boss.phase === 1) {
     boss.phase = 2;
-    log("Phase 2: furnace vents opened.");
+    log(boss.kind === "fries" ? "Phase 2: grease storm." : "Phase 2: furnace vents opened.");
   }
   if (boss.hp <= boss.maxHp * 0.25 && !boss.enraged) {
     boss.enraged = true;
-    log("Big Burger is enraged.");
+    log(`${boss.name} is enraged.`);
   }
 
   if (selectedBoss) autoAttack();
@@ -265,7 +398,11 @@ function updateCombat(dt) {
   }
   if (boss.attackTimer <= 0) {
     spawnBossPattern();
-    boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
+    if (boss.kind === "fries") {
+      boss.attackTimer = boss.enraged ? 0.95 : boss.phase === 2 ? 1.25 : 1.55;
+    } else {
+      boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
+    }
   }
 }
 
@@ -282,29 +419,49 @@ function autoAttack() {
   }
   if (player.attackCooldown > 0) return;
   const weapon = gear.weapon[player.gear.weapon];
-  const variance = 0.78 + Math.random() * 0.44;
-  const hit = Math.round(player.stats.damage * variance);
-  boss.hp = Math.max(0, boss.hp - hit);
+  const angle = Math.atan2(boss.y - player.y, boss.x - player.x);
+  playerProjectiles.push({
+    x: player.x + Math.cos(angle) * 24,
+    y: player.y + Math.sin(angle) * 24,
+    vx: Math.cos(angle) * projectileSpeedForWeapon(weapon.tag),
+    vy: Math.sin(angle) * projectileSpeedForWeapon(weapon.tag),
+    r: weapon.tag === "Magic" ? 8 : 6,
+    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
+    color: weapon.color,
+    ttl: 1.35,
+    tag: weapon.tag,
+  });
   player.attackCooldown = weapon.speed;
-  particles.push({ x: boss.x, y: boss.y - 40, text: `-${hit}`, color: "#ffe08a", ttl: 0.8 });
-  if (boss.hp <= 0) winFight();
+}
+
+function projectileSpeedForWeapon(tag) {
+  if (tag === "Ranged") return 620;
+  if (tag === "Magic") return 480;
+  return 760;
 }
 
 function spawnBossPattern() {
+  if (boss.kind === "fries") {
+    spawnCurlyFriesPattern();
+    return;
+  }
   spawnFloorSlam();
   const pattern = boss.phase === 1 ? Math.random() : Math.random() * 1.2;
   if (pattern < 0.72) {
     const count = boss.enraged ? 14 : boss.phase === 2 ? 11 : 8;
+    const volleyOffset = Math.random() * Math.PI * 2;
     for (let i = 0; i < count; i += 1) {
-      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.18;
+      const lane = (Math.PI * 2 * i) / count;
+      const angle = volleyOffset + lane + (Math.random() - 0.5) * 0.55;
+      const speed = (boss.enraged ? 300 : 255) + Math.random() * 85;
       hazards.push({
         type: "bolt",
-        x: boss.x,
-        y: boss.y,
-        vx: Math.cos(angle) * (boss.enraged ? 330 : 285),
-        vy: Math.sin(angle) * (boss.enraged ? 330 : 285),
+        x: boss.x + (Math.random() - 0.5) * 28,
+        y: boss.y + (Math.random() - 0.5) * 28,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
         r: 12,
-        ttl: 3,
+        ttl: 2.75 + Math.random() * 0.55,
         damage: 14,
       });
     }
@@ -325,6 +482,75 @@ function spawnBossPattern() {
   }
 }
 
+function spawnCurlyFriesPattern() {
+  if (Math.random() < (boss.enraged ? 0.75 : boss.phase === 2 ? 0.55 : 0.35)) {
+    spawnGreasePuddles(boss.enraged ? 2 : 1);
+  }
+  if (Math.random() < 0.68) {
+    spawnFryMachineGun();
+  } else {
+    spawnCurlySpiral();
+  }
+}
+
+function spawnGreasePuddles(count) {
+  for (let i = 0; i < count; i += 1) {
+    const nearPlayer = i === 0;
+    hazards.push({
+      type: "grease",
+      x: nearPlayer ? player.x + (Math.random() - 0.5) * 140 : world.arena.x + 130 + Math.random() * (world.arena.w - 260),
+      y: nearPlayer ? player.y + (Math.random() - 0.5) * 140 : world.arena.y + 120 + Math.random() * (world.arena.h - 240),
+      r: 46,
+      ttl: boss.enraged ? 7.5 : 6.2,
+    });
+  }
+  log("Grease puddles splashed down.");
+}
+
+function spawnFryMachineGun() {
+  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  hazards.push({
+    type: "machineGun",
+    x: boss.x,
+    y: boss.y,
+    angle,
+    sweepSpeed: (Math.random() > 0.5 ? 1 : -1) * (boss.enraged ? 0.72 : 0.48),
+    warn: 0.65,
+    ttl: boss.enraged ? 2.8 : 2.35,
+    fireTimer: 0,
+    damageTimer: 0,
+    damage: 13,
+  });
+  setBossAnimation("machineGun");
+  log("French fry machine gun charging.");
+}
+
+function spawnCurlySpiral() {
+  const count = boss.enraged ? 18 : boss.phase === 2 ? 14 : 10;
+  const twist = Math.random() > 0.5 ? 1 : -1;
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+    hazards.push({
+      type: "fry",
+      x: boss.x,
+      y: boss.y,
+      vx: Math.cos(angle) * 185,
+      vy: Math.sin(angle) * 185,
+      turn: twist * 1.25,
+      r: 10,
+      ttl: 4.2,
+      damage: 12,
+    });
+  }
+  setBossAnimation("spiral");
+  log("Curly spiral fired.");
+}
+
+function setBossAnimation(animation) {
+  boss.animation = animation;
+  boss.animationTime = 0;
+}
+
 function spawnFloorSlam() {
   hazards.push({
     type: "slam",
@@ -340,11 +566,34 @@ function spawnFloorSlam() {
 function updateHazards(dt) {
   hazards = hazards.filter((hazard) => {
     hazard.ttl -= dt;
-    if (hazard.type === "bolt") {
+    if (hazard.type === "grease") {
+      if (distance(player, hazard) < player.radius + hazard.r * 0.72) startGreaseSlide(hazard);
+    } else if (hazard.type === "machineGun") {
+      hazard.warn -= dt;
+      if (hazard.warn <= 0) {
+        hazard.angle += hazard.sweepSpeed * dt;
+        hazard.fireTimer -= dt;
+        hazard.damageTimer -= dt;
+        while (hazard.fireTimer <= 0) {
+          spawnFryShot(hazard);
+          hazard.fireTimer += boss.enraged ? 0.035 : 0.048;
+        }
+        if (isPlayerInMachineGun(hazard) && hazard.damageTimer <= 0) {
+          damagePlayer(boss.enraged ? 18 : 14, "French fry machine gun");
+          hazard.damageTimer = 0.12;
+        }
+      }
+    } else if (hazard.type === "bolt" || hazard.type === "fry") {
+      if (hazard.turn) {
+        const speed = Math.hypot(hazard.vx, hazard.vy);
+        const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
+        hazard.vx = Math.cos(angle) * speed;
+        hazard.vy = Math.sin(angle) * speed;
+      }
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, "Arc bolt");
+        damagePlayer(hazard.damage, hazard.type === "fry" ? "French fry" : "Arc bolt");
         hazard.ttl = 0;
       }
     } else {
@@ -355,6 +604,31 @@ function updateHazards(dt) {
       }
     }
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
+  });
+}
+
+function isPlayerInMachineGun(emitter) {
+  const dx = player.x - emitter.x;
+  const dy = player.y - emitter.y;
+  const forward = Math.cos(emitter.angle) * dx + Math.sin(emitter.angle) * dy;
+  if (forward < 0 || forward > 820) return false;
+  const side = Math.abs(-Math.sin(emitter.angle) * dx + Math.cos(emitter.angle) * dy);
+  return side < player.radius + (boss.enraged ? 34 : 26);
+}
+
+function spawnFryShot(emitter) {
+  const spread = (Math.random() - 0.5) * 0.16;
+  const angle = emitter.angle + spread;
+  const speed = (boss.enraged ? 850 : 760) + Math.random() * 90;
+  hazards.push({
+    type: "fry",
+    x: emitter.x + Math.cos(angle) * (boss.radius + 10),
+    y: emitter.y + Math.sin(angle) * (boss.radius + 10),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    r: 8,
+    ttl: 1.25,
+    damage: emitter.damage,
   });
 }
 
@@ -379,20 +653,33 @@ function drinkPotion() {
 }
 
 function winFight() {
-  player.won = true;
   selectedBoss = false;
   hazards = [];
+  playerProjectiles = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   log(`Victory in ${seconds}s.`);
+  if (boss.kind === "burger") {
+    boss = createBoss("fries");
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Big Burger defeated. Curly Fries enters next.";
+    showFloat("Next boss: Curly Fries");
+    return;
+  }
+  player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat("Boss defeated");
+  showFloat("Curly Fries defeated");
 }
 
 function update(dt) {
   movePlayer(dt);
-  updateRoom();
+  updateRoom(dt);
   updateCombat(dt);
   updateHazards(dt);
+  updatePlayerProjectiles(dt);
   particles = particles.filter((particle) => {
     particle.ttl -= dt;
     particle.y -= 28 * dt;
@@ -404,6 +691,21 @@ function update(dt) {
   camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
 }
 
+function updatePlayerProjectiles(dt) {
+  playerProjectiles = playerProjectiles.filter((projectile) => {
+    projectile.ttl -= dt;
+    projectile.x += projectile.vx * dt;
+    projectile.y += projectile.vy * dt;
+    if (boss.hp > 0 && distance(projectile, boss) < boss.radius + projectile.r) {
+      boss.hp = Math.max(0, boss.hp - projectile.damage);
+      particles.push({ x: boss.x, y: boss.y - 40, text: `-${projectile.damage}`, color: "#ffe08a", ttl: 0.8 });
+      if (boss.hp <= 0) winFight();
+      return false;
+    }
+    return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
+  });
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
   ctx.save();
@@ -412,6 +714,7 @@ function draw() {
   drawStands();
   drawBoss();
   drawHazards();
+  drawPlayerProjectiles();
   drawPlayer();
   drawParticles();
   ctx.restore();
@@ -466,12 +769,11 @@ function drawStands() {
 function drawBoss() {
   if (boss.hp <= 0) return;
   if (selectedBoss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
-  ctx.fillStyle = boss.enraged ? "#b94835" : "#a76e3e";
-  ctx.beginPath();
-  ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#312923";
-  ctx.fillRect(boss.x - 42, boss.y - 20, 84, 60);
+  if (boss.kind === "fries") {
+    drawCurlyFriesBoss();
+  } else {
+    drawBurgerBoss();
+  }
   ctx.fillStyle = "#f2d087";
   ctx.fillRect(boss.x - 58, boss.y - boss.radius - 24, 116 * (boss.hp / boss.maxHp), 9);
   ctx.fillStyle = "#fff2c6";
@@ -481,12 +783,103 @@ function drawBoss() {
   ctx.textAlign = "left";
 }
 
+function drawBurgerBoss() {
+  ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#312923";
+  ctx.fillRect(boss.x - 42, boss.y - 20, 84, 60);
+}
+
+function drawCurlyFriesBoss() {
+  if (curlyFriesSprite.complete && curlyFriesSprite.naturalWidth > 0) {
+    drawCurlyFriesSprite();
+    return;
+  }
+  ctx.strokeStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.lineWidth = 12;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 5; i += 1) {
+    const offset = (i - 2) * 13;
+    ctx.beginPath();
+    for (let t = 0; t < Math.PI * 1.7; t += 0.18) {
+      const r = 12 + t * 12;
+      const x = boss.x + offset + Math.cos(t + i * 0.7) * r;
+      const y = boss.y + Math.sin(t + i * 0.7) * r * 0.62;
+      if (t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.lineCap = "butt";
+  ctx.fillStyle = "#6b4226";
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y + 8, 18, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCurlyFriesSprite() {
+  const sprite = cleanedCurlyFriesSprite || curlyFriesSprite;
+  const frameWidth = sprite.width / 4;
+  const frameHeight = sprite.height / 3;
+  const rows = { idle: 0, machineGun: 1, spiral: 2 };
+  const animationDuration = boss.animation === "idle" ? 999 : boss.animation === "machineGun" ? 1.15 : 1.0;
+  if (boss.animation !== "idle" && boss.animationTime > animationDuration) boss.animation = "idle";
+  const row = rows[boss.animation] ?? 0;
+  const frame = Math.floor(boss.animationTime * 8) % 4;
+  const crop = {
+    x: frameWidth * 0.08,
+    y: frameHeight * 0.08,
+    w: frameWidth * 0.84,
+    h: frameHeight * 0.82,
+  };
+  const drawWidth = 156;
+  const drawHeight = 128;
+  ctx.drawImage(
+    sprite,
+    frame * frameWidth + crop.x,
+    row * frameHeight + crop.y,
+    crop.w,
+    crop.h,
+    boss.x - drawWidth / 2,
+    boss.y - drawHeight * 0.58,
+    drawWidth,
+    drawHeight,
+  );
+}
+
 function drawHazards() {
   hazards.forEach((hazard) => {
-    if (hazard.type === "bolt") {
-      ctx.fillStyle = "#8ad8ff";
+    if (hazard.type === "grease") {
+      ctx.fillStyle = "rgba(219, 174, 72, 0.24)";
+      ctx.strokeStyle = "rgba(255, 226, 118, 0.65)";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "machineGun") {
+      const active = hazard.warn <= 0;
+      const length = 760;
+      ctx.strokeStyle = active ? "rgba(255, 203, 85, 0.52)" : "rgba(255, 245, 176, 0.42)";
+      ctx.lineWidth = active ? 14 : 8;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.x + Math.cos(hazard.angle) * length, hazard.y + Math.sin(hazard.angle) * length);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "bolt" || hazard.type === "fry") {
+      ctx.fillStyle = hazard.type === "fry" ? "#f1c15d" : "#8ad8ff";
+      ctx.beginPath();
+      if (hazard.type === "fry") {
+        ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
+      } else {
+        ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      }
       ctx.fill();
       return;
     }
@@ -501,8 +894,97 @@ function drawHazards() {
   });
 }
 
+function drawPlayerProjectiles() {
+  playerProjectiles.forEach((projectile) => {
+    const angle = Math.atan2(projectile.vy, projectile.vx);
+    ctx.save();
+    ctx.translate(projectile.x, projectile.y);
+    ctx.rotate(angle);
+    if (projectile.tag === "Magic") {
+      ctx.fillStyle = projectile.color;
+      ctx.shadowColor = projectile.color;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (projectile.tag === "Ranged") {
+      ctx.strokeStyle = projectile.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(12, 0);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = projectile.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 13, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+
 function drawPlayer() {
   drawRing(player.x, player.y, player.radius + 7, player.dead ? "#c7443b" : "#92d4ff");
+  if (playerSprite.complete && playerSprite.naturalWidth > 0) {
+    drawPlayerSprite();
+  } else {
+    drawFallbackPlayer();
+  }
+  if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
+}
+
+function drawPlayerSprite() {
+  const sprite = cleanedPlayerSprite || playerSprite;
+  const rows = { down: 0, left: 1, right: 2, up: 3 };
+  const frameWidth = sprite.width / 4;
+  const frameHeight = sprite.height / 4;
+  const frame = player.moving ? Math.floor(player.animationTime * 8) % 4 : 1;
+  const row = rows[player.facing] ?? 0;
+  const crop = {
+    x: frameWidth * 0.22,
+    y: frameHeight * 0.12,
+    w: frameWidth * 0.56,
+    h: frameHeight * 0.78,
+  };
+  const drawWidth = 58;
+  const drawHeight = 74;
+  ctx.drawImage(
+    sprite,
+    frame * frameWidth + crop.x,
+    row * frameHeight + crop.y,
+    crop.w,
+    crop.h,
+    player.x - drawWidth / 2,
+    player.y - drawHeight * 0.66,
+    drawWidth,
+    drawHeight,
+  );
+}
+
+function createTransparentSprite(image) {
+  const buffer = document.createElement("canvas");
+  buffer.width = image.naturalWidth;
+  buffer.height = image.naturalHeight;
+  const bufferCtx = buffer.getContext("2d");
+  bufferCtx.drawImage(image, 0, 0);
+  const pixels = bufferCtx.getImageData(0, 0, buffer.width, buffer.height);
+  const data = pixels.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const red = data[i];
+    const green = data[i + 1];
+    const blue = data[i + 2];
+    const isLightBackground = red > 218 && green > 208 && blue > 190;
+    const isGridLine = Math.abs(red - green) < 18 && Math.abs(green - blue) < 18 && red > 180;
+    if (isLightBackground || isGridLine) data[i + 3] = 0;
+  }
+
+  bufferCtx.putImageData(pixels, 0, 0);
+  return buffer;
+}
+
+function drawFallbackPlayer() {
   const armor = gear.armor[player.gear.armor];
   const weapon = gear.weapon[player.gear.weapon];
   ctx.fillStyle = "#d8a36f";
@@ -517,7 +999,6 @@ function drawPlayer() {
   ctx.moveTo(player.x + 12, player.y + 4);
   ctx.lineTo(player.x + 34, player.y - 8);
   ctx.stroke();
-  if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
 }
 
 function drawParticles() {
@@ -559,6 +1040,9 @@ function renderUi() {
     const selected = player.gear[item.slot] && gear[item.slot][player.gear[item.slot]].name === item.name;
     return `<button class="choice ${selected ? "selected" : ""}" data-slot="${item.slot}" data-name="${item.name}"><span>${item.name}</span><small>${item.tag}</small></button>`;
   }).join("");
+  ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.boss === boss.kind);
+  });
 }
 
 function showFloat(text) {
@@ -587,6 +1071,13 @@ ui.armory.addEventListener("click", (event) => {
   const entry = Object.entries(gear[slot]).find(([, item]) => item.name === button.dataset.name);
   if (!entry) return;
   equipFromStand({ type: slot, id: entry[0] });
+});
+
+ui.bossSelector.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-boss]");
+  if (!button) return;
+  event.preventDefault();
+  selectBoss(button.dataset.boss);
 });
 
 ui.potionButton.addEventListener("click", drinkPotion);
