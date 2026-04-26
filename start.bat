@@ -2,6 +2,12 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
+echo.
+echo Boss Fight launcher
+echo -------------------
+echo Project folder: %CD%
+echo.
+
 call :check_node
 if "%NODE_READY%"=="1" goto start_node
 
@@ -58,32 +64,40 @@ if errorlevel 1 (
   exit /b 1
 )
 
+if exist "%ProgramFiles%\nodejs\node.exe" set "PATH=%ProgramFiles%\nodejs;%PATH%"
 echo.
 echo Node.js install completed.
-echo If Windows has not refreshed PATH yet, close this window and run start.bat again.
+echo If npm is still not found, close this window and run start.bat again.
 exit /b 0
 
 :start_node
-echo Starting local server with Node.js...
-start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && node server.js"
-timeout /t 2 /nobreak >nul
-start "" "http://localhost:4173"
+echo Found Node.js:
+node --version
+echo.
+echo Starting local server at http://localhost:4173
+echo Keep this window open while playing.
+echo Press Ctrl+C in this window to stop the server.
+echo.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 1; Start-Process 'http://localhost:4173'" >nul 2>nul
+node server.js
+echo.
+echo Server stopped.
 goto end
 
 :start_python
 where py >nul 2>nul
 if not errorlevel 1 (
-  start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && py -m http.server 4173"
-  timeout /t 2 /nobreak >nul
-  start "" "http://localhost:4173"
+  echo Starting Python server at http://localhost:4173
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 1; Start-Process 'http://localhost:4173'" >nul 2>nul
+  py -m http.server 4173
   goto end
 )
 
 where python >nul 2>nul
 if not errorlevel 1 (
-  start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && python -m http.server 4173"
-  timeout /t 2 /nobreak >nul
-  start "" "http://localhost:4173"
+  echo Starting Python server at http://localhost:4173
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 1; Start-Process 'http://localhost:4173'" >nul 2>nul
+  python -m http.server 4173
   goto end
 )
 

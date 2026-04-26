@@ -130,6 +130,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1,
       swingTimer: 1,
     },
+    sauce: {
+      kind: "sauce",
+      name: "Special Sauce",
+      radius: 66,
+      maxHp: 650,
+      color: "#df6f3f",
+      enrageColor: "#f0c95d",
+      attackTimer: 1.15,
+      swingTimer: 1.15,
+    },
   };
   const template = bosses[kind];
   return {
@@ -141,6 +151,9 @@ function createBoss(kind = "burger") {
     enraged: false,
     animation: "idle",
     animationTime: 0,
+    mode: "red",
+    modeTimer: 3,
+    shieldTimer: 0,
   };
 }
 
@@ -167,6 +180,8 @@ function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
     shieldTimer: 0,
     moveTimer: 0,
     destination: null,
+    state: "moving",
+    stateTimer: 0,
   };
 }
 
@@ -432,6 +447,10 @@ function updateCombat(dt) {
     updateTrioCombat(dt);
     return;
   }
+  if (boss.kind === "sauce") {
+    updateSpecialSauce(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -462,6 +481,34 @@ function updateCombat(dt) {
   }
 }
 
+function updateSpecialSauce(dt) {
+  boss.animationTime += dt;
+  boss.modeTimer -= dt;
+  boss.shieldTimer = Math.max(0, boss.shieldTimer - dt);
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  if (boss.hp <= boss.maxHp * 0.3 && !boss.enraged) {
+    boss.enraged = true;
+    log("Special Sauce is fully mixed.");
+  }
+  if (boss.modeTimer <= 0) {
+    cycleSauceMode();
+  }
+  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
+  if (boss.attackTimer <= 0) {
+    spawnSpecialSaucePattern();
+    boss.attackTimer = boss.enraged ? 0.95 : 1.25;
+  }
+}
+
+function cycleSauceMode() {
+  const modes = ["red", "yellow", "white"];
+  const index = modes.indexOf(boss.mode);
+  boss.mode = modes[(index + 1) % modes.length];
+  boss.modeTimer = boss.enraged ? 2.2 : 3;
+  log(`Special Sauce shifts to ${boss.mode} mode.`);
+}
+
 function updateTrioCombat(dt) {
   player.attackCooldown -= dt;
   if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
@@ -470,19 +517,46 @@ function updateTrioCombat(dt) {
     if (target.hp <= 0) return;
     target.attackTimer -= dt;
     target.shieldTimer = Math.max(0, target.shieldTimer - dt);
+    if (target.kind === "mustard") {
+      updateMustardAttackState(target, dt);
+      return;
+    }
     if (target.attackTimer > 0) return;
     if (target.kind === "ketchup") spawnKetchupAttack(target);
-    if (target.kind === "mustard") spawnMustardAttack(target);
     if (target.kind === "mayo") spawnMayoHeal(target);
     const deadCount = condimentBosses.filter((item) => item.hp <= 0).length;
     target.attackTimer = Math.max(0.55, target.baseAttackTimer - deadCount * 0.18);
   });
 }
 
+function updateMustardAttackState(target, dt) {
+  target.stateTimer = Math.max(0, target.stateTimer - dt);
+  if (target.state === "winding" && target.stateTimer <= 0) {
+    spawnMustardAttack(target);
+    target.state = "recovering";
+    target.destination = null;
+    target.stateTimer = 0.4;
+    return;
+  }
+  if (target.state === "recovering" && target.stateTimer <= 0) {
+    target.state = "moving";
+    const deadCount = condimentBosses.filter((item) => item.hp <= 0).length;
+    target.attackTimer = Math.max(0.7, target.baseAttackTimer - deadCount * 0.18);
+    return;
+  }
+  if (target.state === "moving" && target.attackTimer <= 0) {
+    target.destination = null;
+    target.state = "winding";
+    target.stateTimer = 0.5;
+    log("Mustard is aiming.");
+  }
+}
+
 function moveCondimentBosses(dt) {
   const mayo = condimentBosses.find((target) => target.kind === "mayo" && target.hp > 0);
   condimentBosses.forEach((target) => {
     if (target.hp <= 0) return;
+    if (target.kind === "mustard" && target.state !== "moving") return;
     target.moveTimer -= dt;
     if (target.kind === "mayo") updateMayoMovement(target);
     if (target.kind === "mustard") updateMustardMovement(target, mayo);
@@ -624,6 +698,80 @@ function spawnBossPattern() {
   }
 }
 
+function spawnSpecialSaucePattern() {
+  if (boss.mode === "red") {
+    const count = boss.enraged ? 3 : 2;
+    for (let i = 0; i < count; i += 1) spawnSauceMortar();
+    log("Special Sauce launches splatter mortars.");
+    return;
+  }
+  if (boss.mode === "yellow") {
+    spawnSauceRicochet();
+    log("Special Sauce fires ricochet seeds.");
+    return;
+  }
+  boss.shieldTimer = 1.8;
+  spawnSauceSpiral();
+  log("Special Sauce shields and spirals.");
+}
+
+function spawnSauceMortar() {
+  const point = randomArenaPointNearPlayer(210);
+  hazards.push({
+    type: "ketchupMortar",
+    x: boss.x,
+    y: boss.y,
+    startX: boss.x,
+    startY: boss.y,
+    targetX: point.x,
+    targetY: point.y,
+    age: 0,
+    flightTime: 0.8,
+    r: 38,
+    ttl: 0.8,
+    damage: boss.enraged ? 8 : 6,
+  });
+}
+
+function spawnSauceRicochet() {
+  const count = boss.enraged ? 6 : 5;
+  const base = Math.atan2(player.y - boss.y, player.x - boss.x);
+  for (let i = 0; i < count; i += 1) {
+    const angle = base + (i - (count - 1) / 2) * 0.22;
+    hazards.push({
+      type: "mustardSeed",
+      x: boss.x,
+      y: boss.y,
+      vx: Math.cos(angle) * 390,
+      vy: Math.sin(angle) * 390,
+      r: 8,
+      ttl: boss.enraged ? 3.5 : 2.8,
+      damage: 11,
+      bounces: boss.enraged ? 2 : 1,
+    });
+  }
+}
+
+function spawnSauceSpiral() {
+  const colors = ["#cf3b2f", "#e3bf34", "#f3ead2"];
+  const count = boss.enraged ? 15 : 10;
+  const offset = Math.random() * Math.PI * 2;
+  for (let i = 0; i < count; i += 1) {
+    const angle = offset + (Math.PI * 2 * i) / count;
+    hazards.push({
+      type: "sauceBlob",
+      x: boss.x,
+      y: boss.y,
+      vx: Math.cos(angle) * 235,
+      vy: Math.sin(angle) * 235,
+      r: 10,
+      ttl: 2.4,
+      damage: 10,
+      color: colors[i % colors.length],
+    });
+  }
+}
+
 function spawnCurlyFriesPattern() {
   if (Math.random() < (boss.enraged ? 0.75 : boss.phase === 2 ? 0.55 : 0.35)) {
     spawnGreasePuddles(boss.enraged ? 2 : 1);
@@ -725,6 +873,8 @@ function spawnKetchupAttack(source) {
 
 function spawnMustardAttack(source) {
   const count = condimentBosses.filter((item) => item.hp <= 0).length > 0 ? 5 : 3;
+  const mayoDead = condimentBosses.some((item) => item.kind === "mayo" && item.hp <= 0);
+  const bounces = mayoDead ? (condimentBosses.filter((item) => item.hp > 0).length === 1 ? 2 : 1) : 0;
   const base = Math.atan2(player.y - source.y, player.x - source.x);
   for (let i = 0; i < count; i += 1) {
     const angle = base + (i - (count - 1) / 2) * 0.18;
@@ -732,14 +882,15 @@ function spawnMustardAttack(source) {
       type: "mustardSeed",
       x: source.x,
       y: source.y,
-      vx: Math.cos(angle) * 430,
-      vy: Math.sin(angle) * 430,
+      vx: Math.cos(angle) * 320,
+      vy: Math.sin(angle) * 320,
       r: 8,
-      ttl: 2.1,
+      ttl: bounces > 0 ? 3.2 : 2.1,
       damage: 10,
+      bounces,
     });
   }
-  log("Mustard seeds fired.");
+  log(bounces > 0 ? "Bouncing mustard seeds fired." : "Mustard seeds fired.");
 }
 
 function spawnMayoHeal(source) {
@@ -784,10 +935,11 @@ function spawnFloorSlam() {
 
 function updateHazards(dt) {
   hazards = hazards.filter((hazard) => {
-    hazard.ttl -= dt;
     if (hazard.type === "grease") {
+      hazard.ttl -= dt;
       if (distance(player, hazard) < player.radius + hazard.r * 0.72) startGreaseSlide(hazard);
     } else if (hazard.type === "machineGun") {
+      hazard.ttl -= dt;
       hazard.warn -= dt;
       if (hazard.warn <= 0) {
         hazard.angle += hazard.sweepSpeed * dt;
@@ -816,6 +968,7 @@ function updateHazards(dt) {
         hazard.damageTimer = 0;
       }
     } else if (hazard.type === "ketchupPuddle") {
+      hazard.ttl -= dt;
       hazard.warn -= dt;
       if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
         hazard.damageTimer -= dt;
@@ -824,7 +977,8 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob") {
+      hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
         const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
@@ -833,12 +987,16 @@ function updateHazards(dt) {
       }
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
+      if (hazard.type === "mustardSeed" && hazard.bounces > 0) {
+        bounceProjectileInArena(hazard);
+      }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : "Arc bolt";
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : "Arc bolt";
         damagePlayer(hazard.damage, source);
         hazard.ttl = 0;
       }
     } else {
+      hazard.ttl -= dt;
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit && distance(player, hazard) < player.radius + hazard.r) {
         hazard.hit = true;
@@ -847,6 +1005,28 @@ function updateHazards(dt) {
     }
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
   });
+}
+
+function bounceProjectileInArena(hazard) {
+  const left = world.arena.x + hazard.r;
+  const right = world.arena.x + world.arena.w - hazard.r;
+  const top = world.arena.y + hazard.r;
+  const bottom = world.arena.y + world.arena.h - hazard.r;
+  let bounced = false;
+  if (hazard.x <= left || hazard.x >= right) {
+    hazard.x = clamp(hazard.x, left, right);
+    hazard.vx *= -1;
+    bounced = true;
+  }
+  if (hazard.y <= top || hazard.y >= bottom) {
+    hazard.y = clamp(hazard.y, top, bottom);
+    hazard.vy *= -1;
+    bounced = true;
+  }
+  if (bounced) {
+    hazard.bounces -= 1;
+    particles.push({ x: hazard.x, y: hazard.y - 8, text: "bounce", color: "#e3bf34", ttl: 0.45 });
+  }
 }
 
 function isPlayerInMachineGun(emitter) {
@@ -953,18 +1133,38 @@ function updatePlayerProjectiles(dt) {
     projectile.y += projectile.vy * dt;
     const hitBoss = livingBosses().find((target) => distance(projectile, target) < target.radius + projectile.r);
     if (hitBoss) {
-      const damage = hitBoss.shieldTimer > 0 ? Math.ceil(projectile.damage * 0.55) : projectile.damage;
+      const damage = hitBoss.shieldTimer > 0 ? Math.ceil(projectile.damage * 0.5) : projectile.damage;
       hitBoss.hp = Math.max(0, hitBoss.hp - damage);
       particles.push({ x: hitBoss.x, y: hitBoss.y - 40, text: `-${damage}`, color: "#ffe08a", ttl: 0.8 });
       if (hitBoss.hp <= 0) {
         particles.push({ x: hitBoss.x, y: hitBoss.y - 62, text: `${hitBoss.name} down`, color: "#ffd27a", ttl: 1.2 });
         if (hitBoss === selectedBoss) selectedBoss = null;
-        if (livingBosses().length === 0) winFight();
+        if (hitBoss.kind === "ketchup") clearKetchupHazards();
+        if (livingBosses().length === 0) {
+          if (boss.kind === "trio") spawnSpecialSauce();
+          else winFight();
+        }
       }
       return false;
     }
     return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
   });
+}
+
+function clearKetchupHazards() {
+  hazards = hazards.filter((hazard) => hazard.type !== "ketchupMortar" && hazard.type !== "ketchupPuddle");
+}
+
+function spawnSpecialSauce() {
+  selectedBoss = null;
+  hazards = [];
+  playerProjectiles = [];
+  condimentBosses = [];
+  boss = createBoss("sauce");
+  fightStartedAt = performance.now();
+  player.hp = Math.min(player.maxHp, player.hp + 25);
+  ui.status.textContent = "The trio combines into Special Sauce.";
+  showFloat("Special Sauce appears");
 }
 
 function draw() {
@@ -1036,6 +1236,8 @@ function drawBoss() {
   if (selectedBoss === boss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
   if (boss.kind === "fries") {
     drawCurlyFriesBoss();
+  } else if (boss.kind === "sauce") {
+    drawSpecialSauceBoss();
   } else {
     drawBurgerBoss();
   }
@@ -1051,6 +1253,7 @@ function drawBoss() {
 function drawCondimentBoss(target) {
   if (target.hp <= 0) return;
   if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
+  if (target.kind === "mustard" && target.state === "winding") drawRing(target.x, target.y, target.radius + 18, "#fff08a");
   ctx.fillStyle = target.color;
   ctx.beginPath();
   ctx.roundRect(target.x - target.radius * 0.7, target.y - target.radius, target.radius * 1.4, target.radius * 2, 12);
@@ -1059,6 +1262,10 @@ function drawCondimentBoss(target) {
   ctx.font = "bold 13px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(target.name, target.x, target.y - target.radius - 28);
+  if (target.kind === "mustard" && target.state === "winding") {
+    ctx.fillStyle = "#fff08a";
+    ctx.fillText("Aiming", target.x, target.y + target.radius + 22);
+  }
   ctx.fillStyle = "#141414";
   ctx.fillRect(target.x - 38, target.y - target.radius - 18, 76, 7);
   ctx.fillStyle = target.shieldTimer > 0 ? "#f6f0df" : "#f2d087";
@@ -1074,6 +1281,27 @@ function drawBurgerBoss() {
   ctx.fill();
   ctx.fillStyle = "#312923";
   ctx.fillRect(boss.x - 42, boss.y - 20, 84, 60);
+}
+
+function drawSpecialSauceBoss() {
+  const colors = ["#cf3b2f", "#e3bf34", "#f3ead2"];
+  for (let i = 0; i < 3; i += 1) {
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.arc(
+      boss.x + Math.cos(boss.animationTime * 2 + i * 2.09) * 18,
+      boss.y + Math.sin(boss.animationTime * 2 + i * 2.09) * 14,
+      boss.radius - i * 9,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(40, 24, 18, 0.72)";
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y + 8, 28, 0, Math.PI * 2);
+  ctx.fill();
+  if (boss.shieldTimer > 0) drawRing(boss.x, boss.y, boss.radius + 16, "#f6f0df");
 }
 
 function drawCurlyFriesBoss() {
@@ -1183,8 +1411,8 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed") {
-      ctx.fillStyle = hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : "#8ad8ff";
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
