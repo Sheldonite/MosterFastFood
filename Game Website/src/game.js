@@ -165,6 +165,8 @@ function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
     attackTimer,
     baseAttackTimer: attackTimer,
     shieldTimer: 0,
+    moveTimer: 0,
+    destination: null,
   };
 }
 
@@ -463,6 +465,7 @@ function updateCombat(dt) {
 function updateTrioCombat(dt) {
   player.attackCooldown -= dt;
   if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
+  moveCondimentBosses(dt);
   condimentBosses.forEach((target) => {
     if (target.hp <= 0) return;
     target.attackTimer -= dt;
@@ -474,6 +477,74 @@ function updateTrioCombat(dt) {
     const deadCount = condimentBosses.filter((item) => item.hp <= 0).length;
     target.attackTimer = Math.max(0.55, target.baseAttackTimer - deadCount * 0.18);
   });
+}
+
+function moveCondimentBosses(dt) {
+  const mayo = condimentBosses.find((target) => target.kind === "mayo" && target.hp > 0);
+  condimentBosses.forEach((target) => {
+    if (target.hp <= 0) return;
+    target.moveTimer -= dt;
+    if (target.kind === "mayo") updateMayoMovement(target);
+    if (target.kind === "mustard") updateMustardMovement(target, mayo);
+    if (target.kind === "ketchup") updateKetchupMovement(target);
+    if (target.destination) moveCondimentToward(target, target.destination, condimentSpeed(target), dt);
+  });
+}
+
+function updateMayoMovement(target) {
+  if (target.moveTimer > 0 && target.destination) return;
+  const angle = Math.atan2(target.y - player.y, target.x - player.x) + (Math.random() - 0.5) * 0.8;
+  target.destination = clampArenaPoint(target.x + Math.cos(angle) * 230, target.y + Math.sin(angle) * 230, target.radius);
+  target.moveTimer = 0.8;
+}
+
+function updateMustardMovement(target, mayo) {
+  if (target.moveTimer > 0 && target.destination) return;
+  const defendTarget = mayo || player;
+  const toPlayer = Math.atan2(player.y - defendTarget.y, player.x - defendTarget.x);
+  target.destination = clampArenaPoint(
+    defendTarget.x + Math.cos(toPlayer) * 92,
+    defendTarget.y + Math.sin(toPlayer) * 92,
+    target.radius,
+  );
+  target.moveTimer = 0.55;
+}
+
+function updateKetchupMovement(target) {
+  if (target.moveTimer > 0 && target.destination) return;
+  if (distance(target, player) < 220) {
+    const angle = Math.atan2(target.y - player.y, target.x - player.x);
+    target.destination = clampArenaPoint(target.x + Math.cos(angle) * 150, target.y + Math.sin(angle) * 150, target.radius);
+  } else {
+    target.destination = clampArenaPoint(target.x + (Math.random() - 0.5) * 150, target.y + (Math.random() - 0.5) * 150, target.radius);
+  }
+  target.moveTimer = 1.1;
+}
+
+function moveCondimentToward(target, destination, speed, dt) {
+  const dx = destination.x - target.x;
+  const dy = destination.y - target.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 4) {
+    target.destination = null;
+    return;
+  }
+  const step = Math.min(dist, speed * dt);
+  target.x += (dx / dist) * step;
+  target.y += (dy / dist) * step;
+}
+
+function condimentSpeed(target) {
+  if (target.kind === "mayo") return 175;
+  if (target.kind === "mustard") return 150;
+  return 100;
+}
+
+function clampArenaPoint(x, y, radius) {
+  return {
+    x: clamp(x, world.arena.x + radius + 24, world.arena.x + world.arena.w - radius - 24),
+    y: clamp(y, world.arena.y + radius + 24, world.arena.y + world.arena.h - radius - 24),
+  };
 }
 
 function autoAttack(target = boss) {
@@ -634,18 +705,22 @@ function spawnCurlySpiral() {
 }
 
 function spawnKetchupAttack(source) {
-  const point = randomArenaPointNearPlayer(90);
+  const point = randomArenaPointNearPlayer(140);
   hazards.push({
-    type: "ketchupPuddle",
-    x: point.x,
-    y: point.y,
+    type: "ketchupMortar",
+    x: source.x,
+    y: source.y,
+    startX: source.x,
+    startY: source.y,
+    targetX: point.x,
+    targetY: point.y,
+    age: 0,
+    flightTime: 0.95,
     r: 42,
-    warn: 0.7,
-    ttl: 5.5,
-    damageTimer: 0,
+    ttl: 0.95,
     damage: 7,
   });
-  log("Ketchup splatter incoming.");
+  log("Ketchup mortar launched.");
 }
 
 function spawnMustardAttack(source) {
@@ -726,6 +801,19 @@ function updateHazards(dt) {
           damagePlayer(boss.enraged ? 18 : 14, "French fry machine gun");
           hazard.damageTimer = 0.12;
         }
+      }
+    } else if (hazard.type === "ketchupMortar") {
+      hazard.age += dt;
+      const progress = clamp(hazard.age / hazard.flightTime, 0, 1);
+      hazard.x = hazard.startX + (hazard.targetX - hazard.startX) * progress;
+      hazard.y = hazard.startY + (hazard.targetY - hazard.startY) * progress;
+      if (progress >= 1) {
+        hazard.type = "ketchupPuddle";
+        hazard.x = hazard.targetX;
+        hazard.y = hazard.targetY;
+        hazard.ttl = 5.2;
+        hazard.warn = 0;
+        hazard.damageTimer = 0;
       }
     } else if (hazard.type === "ketchupPuddle") {
       hazard.warn -= dt;
@@ -1066,6 +1154,22 @@ function drawHazards() {
       ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      return;
+    }
+    if (hazard.type === "ketchupMortar") {
+      const progress = clamp(hazard.age / hazard.flightTime, 0, 1);
+      const arc = Math.sin(progress * Math.PI) * 72;
+      ctx.fillStyle = "rgba(210, 55, 45, 0.12)";
+      ctx.strokeStyle = "#ff9b8d";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(hazard.targetX, hazard.targetY, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#cf3b2f";
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y - arc, 12 + progress * 5, 0, Math.PI * 2);
+      ctx.fill();
       return;
     }
     if (hazard.type === "machineGun") {

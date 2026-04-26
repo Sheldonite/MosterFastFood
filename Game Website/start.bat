@@ -65,22 +65,25 @@ exit /b 0
 
 :start_node
 echo Starting local server with Node.js...
+start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && node server.js"
+timeout /t 2 /nobreak >nul
 start "" "http://localhost:4173"
-npm start
 goto end
 
 :start_python
 where py >nul 2>nul
 if not errorlevel 1 (
+  start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && py -m http.server 4173"
+  timeout /t 2 /nobreak >nul
   start "" "http://localhost:4173"
-  py -m http.server 4173
   goto end
 )
 
 where python >nul 2>nul
 if not errorlevel 1 (
+  start "Boss Fight Server" cmd /k "cd /d ""%~dp0"" && python -m http.server 4173"
+  timeout /t 2 /nobreak >nul
   start "" "http://localhost:4173"
-  python -m http.server 4173
   goto end
 )
 
