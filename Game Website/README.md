@@ -1,5 +1,28 @@
 # Boss Fight
 
+## Starting Locally
+
+Windows:
+
+```text
+Double-click start.bat
+```
+
+macOS/Linux:
+
+```sh
+chmod +x start.sh
+./start.sh
+```
+
+Then open:
+
+```text
+http://localhost:4173
+```
+
+The launchers try Node.js first, then Python. If neither is installed, Windows opens `index.html` directly as a fallback.
+
 ## Character Sprite
 
 Place the player spritesheet at:
