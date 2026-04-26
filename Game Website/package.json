@@ -1,0 +1,9 @@
+{
+  "name": "ashfall-grove",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A baseline click-to-move boss fighting browser game prototype.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
