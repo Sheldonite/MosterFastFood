@@ -63,11 +63,12 @@ curlyFriesSprite.addEventListener("load", () => {
 
 let player = createPlayer();
 let boss = createBoss("burger");
+let condimentBosses = [];
 let hazards = [];
 let playerProjectiles = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
-let selectedBoss = false;
+let selectedBoss = null;
 let floatTimer = 0;
 let fightStartedAt = 0;
 let lastTime = performance.now();
@@ -119,6 +120,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1.2,
       swingTimer: 1.1,
     },
+    trio: {
+      kind: "trio",
+      name: "Condiment Trio",
+      radius: 1,
+      maxHp: 840,
+      color: "#f2d087",
+      enrageColor: "#f2d087",
+      attackTimer: 1,
+      swingTimer: 1,
+    },
   };
   const template = bosses[kind];
   return {
@@ -130,6 +141,30 @@ function createBoss(kind = "burger") {
     enraged: false,
     animation: "idle",
     animationTime: 0,
+  };
+}
+
+function createCondimentBosses() {
+  return [
+    createCondiment("ketchup", "Ketchup", 1045, 330, "#cf3b2f", 260, 1.55),
+    createCondiment("mustard", "Mustard", 1305, 450, "#e3bf34", 230, 1.1),
+    createCondiment("mayo", "Mayo", 1055, 610, "#f3ead2", 220, 3.7),
+  ];
+}
+
+function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
+  return {
+    kind,
+    name,
+    x,
+    y,
+    radius: 34,
+    hp: maxHp,
+    maxHp,
+    color,
+    attackTimer,
+    baseAttackTimer: attackTimer,
+    shieldTimer: 0,
   };
 }
 
@@ -182,10 +217,11 @@ function resetFight(keepPosition = false) {
     player.y = 455;
   }
   boss = createBoss(bossKind);
+  condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
   particles = [];
-  selectedBoss = false;
+  selectedBoss = null;
   fightStartedAt = 0;
   logLines = ["Fight reset. Cross the gate when ready."];
   showFloat("Fight reset");
@@ -201,10 +237,11 @@ function selectBoss(kind) {
   player.y = world.arena.y + world.arena.h / 2;
   player.gateCooldown = 1.2;
   boss = createBoss(kind);
+  condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
   particles = [];
-  selectedBoss = false;
+  selectedBoss = null;
   fightStartedAt = 0;
   ui.status.textContent = `${boss.name} selected for testing.`;
   showFloat(boss.name);
@@ -244,15 +281,28 @@ function setDestination(x, y) {
     equipFromStand(stand);
     return;
   }
-  if (Math.hypot(boss.x - x, boss.y - y) < boss.radius + 12 && player.room === "arena") {
-    selectedBoss = true;
+  const clickedBoss = findClickedBoss(x, y);
+  if (clickedBoss && player.room === "arena") {
+    selectedBoss = clickedBoss;
     startFight();
-    ui.status.textContent = `Attacking ${boss.name}.`;
+    ui.status.textContent = `Attacking ${clickedBoss.name}.`;
     return;
   }
-  selectedBoss = false;
+  selectedBoss = null;
   player.destination = constrainToRoom(x, y);
   ui.status.textContent = player.room === "starter" ? "Moving." : "Repositioning.";
+}
+
+function findClickedBoss(x, y) {
+  return activeBosses().find((target) => target.hp > 0 && Math.hypot(target.x - x, target.y - y) < target.radius + 14);
+}
+
+function activeBosses() {
+  return boss.kind === "trio" ? condimentBosses : [boss];
+}
+
+function livingBosses() {
+  return activeBosses().filter((target) => target.hp > 0);
 }
 
 function constrainToRoom(x, y) {
@@ -376,6 +426,10 @@ function updateRoom(dt) {
 function updateCombat(dt) {
   if (player.room !== "arena" || player.dead || player.won) return;
   startFight();
+  if (boss.kind === "trio") {
+    updateTrioCombat(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -391,7 +445,7 @@ function updateCombat(dt) {
     log(`${boss.name} is enraged.`);
   }
 
-  if (selectedBoss) autoAttack();
+  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.swingTimer <= 0 && distance(player, boss) < boss.radius + 46) {
     damagePlayer(boss.enraged ? 18 : 13, "Crushing swing");
     boss.swingTimer = boss.enraged ? 0.9 : 1.25;
@@ -406,20 +460,36 @@ function updateCombat(dt) {
   }
 }
 
-function autoAttack() {
-  const range = player.radius + boss.radius + player.stats.range;
-  if (distance(player, boss) > range) {
-    const angle = Math.atan2(boss.y - player.y, boss.x - player.x);
+function updateTrioCombat(dt) {
+  player.attackCooldown -= dt;
+  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
+  condimentBosses.forEach((target) => {
+    if (target.hp <= 0) return;
+    target.attackTimer -= dt;
+    target.shieldTimer = Math.max(0, target.shieldTimer - dt);
+    if (target.attackTimer > 0) return;
+    if (target.kind === "ketchup") spawnKetchupAttack(target);
+    if (target.kind === "mustard") spawnMustardAttack(target);
+    if (target.kind === "mayo") spawnMayoHeal(target);
+    const deadCount = condimentBosses.filter((item) => item.hp <= 0).length;
+    target.attackTimer = Math.max(0.55, target.baseAttackTimer - deadCount * 0.18);
+  });
+}
+
+function autoAttack(target = boss) {
+  const range = player.radius + target.radius + player.stats.range;
+  if (distance(player, target) > range) {
+    const angle = Math.atan2(target.y - player.y, target.x - player.x);
     player.destination = {
-      x: boss.x - Math.cos(angle) * (boss.radius + player.stats.range * 0.7),
-      y: boss.y - Math.sin(angle) * (boss.radius + player.stats.range * 0.7),
+      x: target.x - Math.cos(angle) * (target.radius + player.stats.range * 0.7),
+      y: target.y - Math.sin(angle) * (target.radius + player.stats.range * 0.7),
     };
     player.destination = constrainToRoom(player.destination.x, player.destination.y);
     return;
   }
   if (player.attackCooldown > 0) return;
   const weapon = gear.weapon[player.gear.weapon];
-  const angle = Math.atan2(boss.y - player.y, boss.x - player.x);
+  const angle = Math.atan2(target.y - player.y, target.x - player.x);
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
@@ -430,6 +500,7 @@ function autoAttack() {
     color: weapon.color,
     ttl: 1.35,
     tag: weapon.tag,
+    target,
   });
   player.attackCooldown = weapon.speed;
 }
@@ -495,16 +566,32 @@ function spawnCurlyFriesPattern() {
 
 function spawnGreasePuddles(count) {
   for (let i = 0; i < count; i += 1) {
-    const nearPlayer = i === 0;
+    const point = randomArenaPointAwayFromPlayer(170);
     hazards.push({
       type: "grease",
-      x: nearPlayer ? player.x + (Math.random() - 0.5) * 140 : world.arena.x + 130 + Math.random() * (world.arena.w - 260),
-      y: nearPlayer ? player.y + (Math.random() - 0.5) * 140 : world.arena.y + 120 + Math.random() * (world.arena.h - 240),
+      x: point.x,
+      y: point.y,
       r: 46,
       ttl: boss.enraged ? 7.5 : 6.2,
     });
   }
   log("Grease puddles splashed down.");
+}
+
+function randomArenaPointAwayFromPlayer(minDistance) {
+  let point = null;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    point = {
+      x: world.arena.x + 130 + Math.random() * (world.arena.w - 260),
+      y: world.arena.y + 120 + Math.random() * (world.arena.h - 240),
+    };
+    if (distance(point, player) >= minDistance) return point;
+  }
+  const angle = Math.random() * Math.PI * 2;
+  return {
+    x: clamp(player.x + Math.cos(angle) * minDistance, world.arena.x + 130, world.arena.x + world.arena.w - 130),
+    y: clamp(player.y + Math.sin(angle) * minDistance, world.arena.y + 120, world.arena.y + world.arena.h - 120),
+  };
 }
 
 function spawnFryMachineGun() {
@@ -546,6 +633,63 @@ function spawnCurlySpiral() {
   log("Curly spiral fired.");
 }
 
+function spawnKetchupAttack(source) {
+  const point = randomArenaPointNearPlayer(90);
+  hazards.push({
+    type: "ketchupPuddle",
+    x: point.x,
+    y: point.y,
+    r: 42,
+    warn: 0.7,
+    ttl: 5.5,
+    damageTimer: 0,
+    damage: 7,
+  });
+  log("Ketchup splatter incoming.");
+}
+
+function spawnMustardAttack(source) {
+  const count = condimentBosses.filter((item) => item.hp <= 0).length > 0 ? 5 : 3;
+  const base = Math.atan2(player.y - source.y, player.x - source.x);
+  for (let i = 0; i < count; i += 1) {
+    const angle = base + (i - (count - 1) / 2) * 0.18;
+    hazards.push({
+      type: "mustardSeed",
+      x: source.x,
+      y: source.y,
+      vx: Math.cos(angle) * 430,
+      vy: Math.sin(angle) * 430,
+      r: 8,
+      ttl: 2.1,
+      damage: 10,
+    });
+  }
+  log("Mustard seeds fired.");
+}
+
+function spawnMayoHeal(source) {
+  const wounded = livingBosses()
+    .filter((target) => target !== source && target.hp < target.maxHp)
+    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+  if (!wounded) {
+    source.shieldTimer = 1.8;
+    log("Mayo shields itself.");
+    return;
+  }
+  const heal = condimentBosses.filter((item) => item.hp <= 0).length > 0 ? 42 : 30;
+  wounded.hp = Math.min(wounded.maxHp, wounded.hp + heal);
+  wounded.shieldTimer = 2.2;
+  particles.push({ x: wounded.x, y: wounded.y - 38, text: `+${heal}`, color: "#f7efd9", ttl: 0.9 });
+  log(`Mayo healed ${wounded.name}.`);
+}
+
+function randomArenaPointNearPlayer(spread) {
+  return {
+    x: clamp(player.x + (Math.random() - 0.5) * spread * 2, world.arena.x + 110, world.arena.x + world.arena.w - 110),
+    y: clamp(player.y + (Math.random() - 0.5) * spread * 2, world.arena.y + 95, world.arena.y + world.arena.h - 95),
+  };
+}
+
 function setBossAnimation(animation) {
   boss.animation = animation;
   boss.animationTime = 0;
@@ -583,7 +727,16 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.12;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry") {
+    } else if (hazard.type === "ketchupPuddle") {
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Ketchup puddle");
+          hazard.damageTimer = 0.35;
+        }
+      }
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed") {
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
         const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
@@ -593,7 +746,8 @@ function updateHazards(dt) {
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, hazard.type === "fry" ? "French fry" : "Arc bolt");
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : "Arc bolt";
+        damagePlayer(hazard.damage, source);
         hazard.ttl = 0;
       }
     } else {
@@ -638,7 +792,7 @@ function damagePlayer(amount, source) {
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
     player.dead = true;
-    selectedBoss = false;
+    selectedBoss = null;
     log(`${source} defeated you.`);
     ui.status.textContent = "Defeated. Reset the fight or tweak your gear.";
   }
@@ -653,13 +807,14 @@ function drinkPotion() {
 }
 
 function winFight() {
-  selectedBoss = false;
+  selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   log(`Victory in ${seconds}s.`);
   if (boss.kind === "burger") {
     boss = createBoss("fries");
+    condimentBosses = [];
     fightStartedAt = 0;
     player.hp = player.maxHp;
     player.potions = 3;
@@ -669,9 +824,21 @@ function winFight() {
     showFloat("Next boss: Curly Fries");
     return;
   }
+  if (boss.kind === "fries") {
+    boss = createBoss("trio");
+    condimentBosses = createCondimentBosses();
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Curly Fries defeated. Condiment Trio enters next.";
+    showFloat("Next boss: Condiment Trio");
+    return;
+  }
   player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat("Curly Fries defeated");
+  showFloat("Condiment Trio defeated");
 }
 
 function update(dt) {
@@ -696,10 +863,16 @@ function updatePlayerProjectiles(dt) {
     projectile.ttl -= dt;
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
-    if (boss.hp > 0 && distance(projectile, boss) < boss.radius + projectile.r) {
-      boss.hp = Math.max(0, boss.hp - projectile.damage);
-      particles.push({ x: boss.x, y: boss.y - 40, text: `-${projectile.damage}`, color: "#ffe08a", ttl: 0.8 });
-      if (boss.hp <= 0) winFight();
+    const hitBoss = livingBosses().find((target) => distance(projectile, target) < target.radius + projectile.r);
+    if (hitBoss) {
+      const damage = hitBoss.shieldTimer > 0 ? Math.ceil(projectile.damage * 0.55) : projectile.damage;
+      hitBoss.hp = Math.max(0, hitBoss.hp - damage);
+      particles.push({ x: hitBoss.x, y: hitBoss.y - 40, text: `-${damage}`, color: "#ffe08a", ttl: 0.8 });
+      if (hitBoss.hp <= 0) {
+        particles.push({ x: hitBoss.x, y: hitBoss.y - 62, text: `${hitBoss.name} down`, color: "#ffd27a", ttl: 1.2 });
+        if (hitBoss === selectedBoss) selectedBoss = null;
+        if (livingBosses().length === 0) winFight();
+      }
       return false;
     }
     return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
@@ -767,8 +940,12 @@ function drawStands() {
 }
 
 function drawBoss() {
+  if (boss.kind === "trio") {
+    condimentBosses.forEach(drawCondimentBoss);
+    return;
+  }
   if (boss.hp <= 0) return;
-  if (selectedBoss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
+  if (selectedBoss === boss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
   if (boss.kind === "fries") {
     drawCurlyFriesBoss();
   } else {
@@ -780,6 +957,25 @@ function drawBoss() {
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(boss.name, boss.x, boss.y - boss.radius - 38);
+  ctx.textAlign = "left";
+}
+
+function drawCondimentBoss(target) {
+  if (target.hp <= 0) return;
+  if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
+  ctx.fillStyle = target.color;
+  ctx.beginPath();
+  ctx.roundRect(target.x - target.radius * 0.7, target.y - target.radius, target.radius * 1.4, target.radius * 2, 12);
+  ctx.fill();
+  ctx.fillStyle = target.kind === "mayo" ? "#443b31" : "#fff2c6";
+  ctx.font = "bold 13px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(target.name, target.x, target.y - target.radius - 28);
+  ctx.fillStyle = "#141414";
+  ctx.fillRect(target.x - 38, target.y - target.radius - 18, 76, 7);
+  ctx.fillStyle = target.shieldTimer > 0 ? "#f6f0df" : "#f2d087";
+  ctx.fillRect(target.x - 38, target.y - target.radius - 18, 76 * (target.hp / target.maxHp), 7);
+  if (target.shieldTimer > 0) drawRing(target.x, target.y, target.radius + 16, "#f6f0df");
   ctx.textAlign = "left";
 }
 
@@ -861,6 +1057,17 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
+    if (hazard.type === "ketchupPuddle") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(210, 55, 45, 0.14)" : "rgba(210, 55, 45, 0.34)";
+      ctx.strokeStyle = warning ? "#ff9b8d" : "#cf3b2f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
     if (hazard.type === "machineGun") {
       const active = hazard.warn <= 0;
       const length = 760;
@@ -872,8 +1079,8 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry") {
-      ctx.fillStyle = hazard.type === "fry" ? "#f1c15d" : "#8ad8ff";
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed") {
+      ctx.fillStyle = hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : "#8ad8ff";
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
@@ -1023,8 +1230,9 @@ function renderUi() {
   ui.roomText.textContent = player.room === "starter" ? "Starter Room" : player.won ? "Victory" : "Boss Arena";
   ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
-  ui.bossHpText.textContent = `${Math.ceil(boss.hp)}/${boss.maxHp}`;
-  ui.bossHpBar.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+  const bossHp = bossHealthSummary();
+  ui.bossHpText.textContent = `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
+  ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
   ui.potionButton.textContent = `Potion (${player.potions})`;
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
@@ -1043,6 +1251,14 @@ function renderUi() {
   ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.boss === boss.kind);
   });
+}
+
+function bossHealthSummary() {
+  if (boss.kind !== "trio") return { hp: boss.hp, maxHp: boss.maxHp };
+  return {
+    hp: condimentBosses.reduce((total, target) => total + Math.max(0, target.hp), 0),
+    maxHp: condimentBosses.reduce((total, target) => total + target.maxHp, 0),
+  };
 }
 
 function showFloat(text) {
