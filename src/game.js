@@ -1879,10 +1879,12 @@ function renderUi() {
     <div><span>Armor</span><strong>${player.stats.armor}</strong></div>
     <div><span>Speed</span><strong>${player.stats.speed}</strong></div>
   `;
-  ui.armory.innerHTML = [...Object.values(gear.weapon), ...Object.values(gear.armor)].map((item) => {
-    const selected = player.gear[item.slot] && gear[item.slot][player.gear[item.slot]].name === item.name;
-    return `<button class="choice ${selected ? "selected" : ""}" data-slot="${item.slot}" data-name="${item.name}"><span>${item.name}</span><small>${item.tag}</small></button>`;
-  }).join("");
+  if (ui.armory) {
+    ui.armory.innerHTML = [...Object.values(gear.weapon), ...Object.values(gear.armor)].map((item) => {
+      const selected = player.gear[item.slot] && gear[item.slot][player.gear[item.slot]].name === item.name;
+      return `<button class="choice ${selected ? "selected" : ""}" data-slot="${item.slot}" data-name="${item.name}"><span>${item.name}</span><small>${item.tag}</small></button>`;
+    }).join("");
+  }
   ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.boss === boss.kind);
   });
@@ -1915,14 +1917,16 @@ canvas.addEventListener("click", (event) => {
   setDestination(event.clientX - rect.left + camera.x, event.clientY - rect.top + camera.y);
 });
 
-ui.armory.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-slot]");
-  if (!button) return;
-  const slot = button.dataset.slot;
-  const entry = Object.entries(gear[slot]).find(([, item]) => item.name === button.dataset.name);
-  if (!entry) return;
-  equipFromStand({ type: slot, id: entry[0] });
-});
+if (ui.armory) {
+  ui.armory.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-slot]");
+    if (!button) return;
+    const slot = button.dataset.slot;
+    const entry = Object.entries(gear[slot]).find(([, item]) => item.name === button.dataset.name);
+    if (!entry) return;
+    equipFromStand({ type: slot, id: entry[0] });
+  });
+}
 
 ui.bossSelector.addEventListener("click", (event) => {
   const button = event.target.closest("[data-boss]");
