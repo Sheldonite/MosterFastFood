@@ -1480,11 +1480,12 @@ function drawPlayerSprite() {
   const frameHeight = sprite.height / 4;
   const frame = player.moving ? Math.floor(player.animationTime * 8) % 4 : 1;
   const row = rows[player.facing] ?? 0;
+  const topCrop = player.facing === "up" ? 0.04 : 0.1;
   const crop = {
-    x: frameWidth * 0.22,
-    y: frameHeight * 0.12,
+    x: frameWidth * 0.2,
+    y: frameHeight * topCrop,
     w: frameWidth * 0.56,
-    h: frameHeight * 0.78,
+    h: frameHeight * (0.86 - topCrop),
   };
   const drawWidth = 58;
   const drawHeight = 74;
