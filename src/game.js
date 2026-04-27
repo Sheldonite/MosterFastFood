@@ -27,19 +27,19 @@ const world = {
 
 const gear = {
   weapon: {
-    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 72, range: 54, speed: 1.05, color: "#d8d1c4" },
-    emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 54, range: 230, speed: 0.78, color: "#e0a14e" },
-    pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 92, range: 170, speed: 1.55, color: "#8ec7ff" },
+    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 36, range: 54, speed: 1.05, color: "#d8d1c4" },
+    emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 27, range: 230, speed: 0.78, color: "#e0a14e" },
+    pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
   },
   armor: {
     duelistCoat: { slot: "armor", name: "Light Armor", tag: "Fast", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
     bulwarkPlate: { slot: "armor", name: "Heavy Armor", tag: "Tank", armor: 8, maxHp: 160, speed: 195, color: "#8d8f92" },
-    channelerRobe: { slot: "armor", name: "Mage Armor", tag: "Glass", armor: 0, maxHp: 95, speed: 270, color: "#6f75b8" },
+    channelerRobe: { slot: "armor", name: "Mage Armor", tag: "Glass", armor: 0, maxHp: 75, speed: 270, damageMultiplier: 1.5, color: "#6f75b8" },
   },
 };
 
 const combatTuning = {
-  incomingDamageMultiplier: 1.65,
+  incomingDamageMultiplier: 1.8975,
 };
 
 const stands = [
@@ -130,7 +130,7 @@ function createBoss(kind = "burger") {
       kind: "fries",
       name: "Curly Fries",
       radius: 48,
-      maxHp: 720,
+      maxHp: 1440,
       color: "#d9aa4f",
       enrageColor: "#f0c95d",
       attackTimer: 1.2,
@@ -229,7 +229,7 @@ function applyGear() {
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
   player.stats = {
-    damage: weapon.damage,
+    damage: Math.round(weapon.damage * (armor.damageMultiplier || 1)),
     range: weapon.range,
     speed: armor.speed,
     armor: armor.armor,
