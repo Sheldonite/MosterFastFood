@@ -154,6 +154,8 @@ function createBoss(kind = "burger") {
     mode: "red",
     modeTimer: 3,
     shieldTimer: 0,
+    state: "moving",
+    stateTimer: 0,
   };
 }
 
@@ -487,6 +489,7 @@ function updateSpecialSauce(dt) {
   boss.shieldTimer = Math.max(0, boss.shieldTimer - dt);
   player.attackCooldown -= dt;
   boss.attackTimer -= dt;
+  updateSpecialSauceState(dt);
   if (boss.hp <= boss.maxHp * 0.3 && !boss.enraged) {
     boss.enraged = true;
     log("Special Sauce is fully mixed.");
@@ -497,7 +500,21 @@ function updateSpecialSauce(dt) {
   if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.attackTimer <= 0) {
     spawnSpecialSaucePattern();
-    boss.attackTimer = boss.enraged ? 0.95 : 1.25;
+  }
+}
+
+function updateSpecialSauceState(dt) {
+  boss.stateTimer = Math.max(0, boss.stateTimer - dt);
+  if (boss.state === "winding" && boss.stateTimer <= 0) {
+    spawnSauceRicochet();
+    boss.state = "recovering";
+    boss.stateTimer = 0.35;
+    boss.attackTimer = boss.enraged ? 1.05 : 1.35;
+    log("Special Sauce fires ricochet seeds.");
+    return;
+  }
+  if (boss.state === "recovering" && boss.stateTimer <= 0) {
+    boss.state = "moving";
   }
 }
 
@@ -709,16 +726,22 @@ function spawnSpecialSaucePattern() {
   if (boss.mode === "red") {
     const count = boss.enraged ? 3 : 2;
     for (let i = 0; i < count; i += 1) spawnSauceMortar();
+    boss.attackTimer = boss.enraged ? 0.95 : 1.25;
     log("Special Sauce launches splatter mortars.");
     return;
   }
   if (boss.mode === "yellow") {
-    spawnSauceRicochet();
-    log("Special Sauce fires ricochet seeds.");
+    if (boss.state === "moving") {
+      boss.state = "winding";
+      boss.stateTimer = 0.55;
+      boss.attackTimer = 999;
+      log("Special Sauce is aiming.");
+    }
     return;
   }
   boss.shieldTimer = 1.8;
   spawnSauceSpiral();
+  boss.attackTimer = boss.enraged ? 0.95 : 1.25;
   log("Special Sauce shields and spirals.");
 }
 
@@ -1324,6 +1347,14 @@ function drawSpecialSauceBoss() {
   ctx.arc(boss.x, boss.y + 8, 28, 0, Math.PI * 2);
   ctx.fill();
   if (boss.shieldTimer > 0) drawRing(boss.x, boss.y, boss.radius + 16, "#f6f0df");
+  if (boss.state === "winding") {
+    drawRing(boss.x, boss.y, boss.radius + 24, "#fff08a");
+    ctx.fillStyle = "#fff08a";
+    ctx.font = "bold 14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Aiming", boss.x, boss.y + boss.radius + 24);
+    ctx.textAlign = "left";
+  }
 }
 
 function drawCurlyFriesBoss() {
