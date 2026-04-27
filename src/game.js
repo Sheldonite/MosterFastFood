@@ -140,6 +140,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1.15,
       swingTimer: 1.15,
     },
+    cola: {
+      kind: "cola",
+      name: "Big Cola",
+      radius: 62,
+      maxHp: 700,
+      color: "#3d2419",
+      enrageColor: "#6f2f22",
+      attackTimer: 1.2,
+      swingTimer: 1.2,
+    },
   };
   const template = bosses[kind];
   return {
@@ -153,6 +163,7 @@ function createBoss(kind = "burger") {
     animationTime: 0,
     mode: "red",
     modeTimer: 3,
+    pressureTimer: 7,
     shieldTimer: 0,
     state: "moving",
     stateTimer: 0,
@@ -453,6 +464,10 @@ function updateCombat(dt) {
     updateSpecialSauce(dt);
     return;
   }
+  if (boss.kind === "cola") {
+    updateBigCola(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -480,6 +495,30 @@ function updateCombat(dt) {
     } else {
       boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
     }
+  }
+}
+
+function updateBigCola(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  boss.pressureTimer -= dt;
+  if (boss.hp <= boss.maxHp * 0.6 && boss.phase === 1) {
+    boss.phase = 2;
+    log("Big Cola starts fizzing harder.");
+  }
+  if (boss.hp <= boss.maxHp * 0.25 && !boss.enraged) {
+    boss.enraged = true;
+    log("Big Cola is over-carbonated.");
+  }
+  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
+  if (boss.pressureTimer <= 0) {
+    spawnFizzBurst();
+    boss.pressureTimer = boss.enraged ? 5.2 : boss.phase === 2 ? 6.4 : 8;
+  }
+  if (boss.attackTimer <= 0) {
+    spawnBigColaPattern();
+    boss.attackTimer = boss.enraged ? 1.0 : boss.phase === 2 ? 1.25 : 1.55;
   }
 }
 
@@ -745,6 +784,78 @@ function spawnSpecialSaucePattern() {
   log("Special Sauce shields and spirals.");
 }
 
+function spawnBigColaPattern() {
+  const roll = Math.random();
+  if (roll < 0.38) {
+    spawnColaBubbles(boss.enraged ? 7 : boss.phase === 2 ? 6 : 5);
+    log("Big Cola releases bubbles.");
+  } else if (roll < 0.7) {
+    spawnStrawSnipe();
+    log("Big Cola lines up a straw snipe.");
+  } else {
+    spawnSodaSpill();
+    log("Big Cola spills soda.");
+  }
+}
+
+function spawnColaBubbles(count) {
+  for (let i = 0; i < count; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 55 + Math.random() * 55;
+    hazards.push({
+      type: "colaBubble",
+      x: boss.x + Math.cos(angle) * (boss.radius + 20),
+      y: boss.y + Math.sin(angle) * (boss.radius + 20),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 15 + Math.random() * 8,
+      ttl: 4,
+      damage: boss.enraged ? 12 : 9,
+    });
+  }
+}
+
+function spawnStrawSnipe() {
+  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  hazards.push({
+    type: "strawSnipe",
+    x: boss.x,
+    y: boss.y,
+    angle,
+    warn: boss.enraged ? 0.45 : 0.65,
+    ttl: boss.enraged ? 0.8 : 1,
+    damage: boss.enraged ? 28 : 22,
+    hit: false,
+  });
+}
+
+function spawnFizzBurst() {
+  hazards.push({
+    type: "fizzBurst",
+    x: boss.x,
+    y: boss.y,
+    r: boss.enraged ? 225 : boss.phase === 2 ? 205 : 185,
+    warn: 1,
+    ttl: 1.25,
+    damage: boss.enraged ? 24 : 18,
+    hit: false,
+  });
+  log("Big Cola pressure is about to burst.");
+}
+
+function spawnSodaSpill() {
+  const point = randomArenaPointNearPlayer(180);
+  hazards.push({
+    type: "sodaPuddle",
+    x: point.x,
+    y: point.y,
+    r: 45,
+    ttl: boss.enraged ? 6 : 5,
+    damageTimer: 0,
+    damage: 4,
+  });
+}
+
 function spawnSauceMortar() {
   const point = randomArenaPointNearPlayer(210);
   hazards.push({
@@ -986,6 +1097,46 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.12;
         }
       }
+    } else if (hazard.type === "colaBubble") {
+      hazard.ttl -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      hazard.vx += (Math.random() - 0.5) * 22 * dt;
+      hazard.vy += (Math.random() - 0.5) * 22 * dt;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        popColaBubble(hazard);
+        hazard.ttl = 0;
+      } else if (hazard.ttl <= 0) {
+        popColaBubble(hazard);
+      }
+    } else if (hazard.type === "strawSnipe") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, 780, player.radius + 11)) {
+          damagePlayer(hazard.damage, "Straw snipe");
+        }
+      }
+    } else if (hazard.type === "fizzBurst") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (distance(player, hazard) < hazard.r) {
+          damagePlayer(hazard.damage, "Fizz burst");
+          knockPlayerFrom(hazard.x, hazard.y, boss.enraged ? 360 : 285);
+        }
+      }
+    } else if (hazard.type === "sodaPuddle") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Soda spill");
+          hazard.damageTimer = 0.5;
+        }
+      }
     } else if (hazard.type === "ketchupMortar") {
       hazard.age += dt;
       const progress = clamp(hazard.age / hazard.flightTime, 0, 1);
@@ -1037,6 +1188,32 @@ function updateHazards(dt) {
     }
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
   });
+}
+
+function popColaBubble(hazard) {
+  particles.push({ x: hazard.x, y: hazard.y - 16, text: "pop", color: "#b9f4ff", ttl: 0.55 });
+  if (distance(player, hazard) < player.radius + hazard.r + 22 && !player.dead) {
+    damagePlayer(hazard.damage, "Bubble pop");
+  }
+}
+
+function isPlayerInLine(x, y, angle, length, width) {
+  const dx = player.x - x;
+  const dy = player.y - y;
+  const forward = Math.cos(angle) * dx + Math.sin(angle) * dy;
+  if (forward < 0 || forward > length) return false;
+  const side = Math.abs(-Math.sin(angle) * dx + Math.cos(angle) * dy);
+  return side < width;
+}
+
+function knockPlayerFrom(x, y, speed) {
+  const angle = Math.atan2(player.y - y, player.x - x);
+  player.slide = {
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    timer: 0.42,
+  };
+  player.destination = null;
 }
 
 function bounceProjectileInArena(hazard) {
@@ -1283,6 +1460,8 @@ function drawBoss() {
     drawCurlyFriesBoss();
   } else if (boss.kind === "sauce") {
     drawSpecialSauceBoss();
+  } else if (boss.kind === "cola") {
+    drawBigColaBoss();
   } else {
     drawBurgerBoss();
   }
@@ -1357,6 +1536,35 @@ function drawSpecialSauceBoss() {
   }
 }
 
+function drawBigColaBoss() {
+  ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.beginPath();
+  ctx.roundRect(boss.x - 46, boss.y - 62, 92, 124, 16);
+  ctx.fill();
+  ctx.fillStyle = "#f4f1e6";
+  ctx.fillRect(boss.x - 48, boss.y - 66, 96, 16);
+  ctx.fillStyle = "#d64235";
+  ctx.fillRect(boss.x - 35, boss.y - 44, 70, 30);
+  ctx.fillStyle = "#f7f3e8";
+  ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("COLA", boss.x, boss.y - 24);
+  ctx.strokeStyle = "#f7f3e8";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(boss.x + 24, boss.y - 68);
+  ctx.lineTo(boss.x + 54, boss.y - 108);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(185, 244, 255, 0.72)";
+  for (let i = 0; i < 5; i += 1) {
+    const angle = boss.animationTime * 1.4 + i * 1.25;
+    ctx.beginPath();
+    ctx.arc(boss.x + Math.cos(angle) * 58, boss.y - 55 + Math.sin(angle * 1.7) * 18, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.textAlign = "left";
+}
+
 function drawCurlyFriesBoss() {
   if (curlyFriesSprite.complete && curlyFriesSprite.naturalWidth > 0) {
     drawCurlyFriesSprite();
@@ -1422,6 +1630,47 @@ function drawHazards() {
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "colaBubble") {
+      ctx.fillStyle = "rgba(185, 244, 255, 0.32)";
+      ctx.strokeStyle = "#b9f4ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "strawSnipe") {
+      const active = hazard.warn <= 0;
+      ctx.strokeStyle = active ? "rgba(120, 55, 34, 0.85)" : "rgba(255, 245, 176, 0.45)";
+      ctx.lineWidth = active ? 9 : 4;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.x + Math.cos(hazard.angle) * 780, hazard.y + Math.sin(hazard.angle) * 780);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "fizzBurst") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(185, 244, 255, 0.08)" : "rgba(185, 244, 255, 0.24)";
+      ctx.strokeStyle = warning ? "#b9f4ff" : "#ffffff";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "sodaPuddle") {
+      ctx.fillStyle = "rgba(86, 45, 24, 0.34)";
+      ctx.strokeStyle = "rgba(185, 244, 255, 0.42)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.6, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       return;
