@@ -27,7 +27,7 @@ const world = {
 
 const gear = {
   weapon: {
-    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 36, range: 54, speed: 1.05, color: "#d8d1c4" },
+    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 46, range: 54, speed: 1.05, moveSpeedBonus: 30, color: "#d8d1c4" },
     emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 27, range: 230, speed: 0.78, color: "#e0a14e" },
     pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
   },
@@ -231,7 +231,7 @@ function applyGear() {
   player.stats = {
     damage: Math.round(weapon.damage * (armor.damageMultiplier || 1)),
     range: weapon.range,
-    speed: armor.speed,
+    speed: armor.speed + (weapon.moveSpeedBonus || 0),
     armor: armor.armor,
   };
   const hpPercent = player.hp / player.maxHp || 1;
@@ -528,7 +528,7 @@ function updateCombat(dt) {
   if (boss.attackTimer <= 0) {
     spawnBossPattern();
     if (boss.kind === "fries") {
-      boss.attackTimer = boss.enraged ? 0.95 : boss.phase === 2 ? 1.25 : 1.55;
+      boss.attackTimer = boss.enraged ? 1.2 : boss.phase === 2 ? 1.25 : 1.55;
     } else {
       boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
     }
@@ -1003,10 +1003,13 @@ function spawnCherryBombs() {
       x,
       y,
       warn: 1.25,
-      ttl: 1.7,
+      ttl: 2.1,
       r: 26,
-      damage: 18,
+      damage: 20,
       hit: false,
+      burstShots: 3,
+      burstTimer: 0,
+      burstDelay: 0.16,
     });
   }
   log("Cherry bombs armed.");
@@ -1077,8 +1080,8 @@ function spawnSauceSpiral() {
 }
 
 function spawnCurlyFriesPattern() {
-  if (Math.random() < (boss.enraged ? 0.75 : boss.phase === 2 ? 0.55 : 0.35)) {
-    spawnGreasePuddles(boss.enraged ? 2 : 1);
+  if (Math.random() < (boss.enraged ? 0.55 : boss.phase === 2 ? 0.55 : 0.35)) {
+    spawnGreasePuddles(1);
   }
   if (Math.random() < 0.68) {
     spawnFryMachineGun();
@@ -1095,10 +1098,10 @@ function spawnGreasePuddles(count) {
       x: point.x,
       y: point.y,
       r: 46,
-      ttl: boss.enraged ? 7.5 : 6.2,
+      ttl: boss.enraged ? 6.6 : 6.2,
       explodeTimer: 1 + i * 0.15,
       exploded: false,
-      burstCount: boss.enraged ? 18 : boss.phase === 2 ? 14 : 10,
+      burstCount: boss.enraged ? 14 : boss.phase === 2 ? 14 : 10,
     });
   }
   log("Grease circles are about to burst.");
@@ -1127,9 +1130,9 @@ function spawnFryMachineGun() {
     x: boss.x,
     y: boss.y,
     angle,
-    sweepSpeed: (Math.random() > 0.5 ? 1 : -1) * (boss.enraged ? 0.72 : 0.48),
+    sweepSpeed: (Math.random() > 0.5 ? 1 : -1) * (boss.enraged ? 0.55 : 0.48),
     warn: 0.65,
-    ttl: boss.enraged ? 2.8 : 2.35,
+    ttl: boss.enraged ? 2.45 : 2.35,
     fireTimer: 0,
     damageTimer: 0,
     damage: 13,
@@ -1139,7 +1142,7 @@ function spawnFryMachineGun() {
 }
 
 function spawnCurlySpiral() {
-  const count = boss.enraged ? 18 : boss.phase === 2 ? 14 : 10;
+  const count = boss.enraged ? 15 : boss.phase === 2 ? 14 : 10;
   const twist = Math.random() > 0.5 ? 1 : -1;
   for (let i = 0; i < count; i += 1) {
     const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
@@ -1262,11 +1265,11 @@ function updateHazards(dt) {
         hazard.damageTimer -= dt;
         while (hazard.fireTimer <= 0) {
           spawnFryShot(hazard, spawnedHazards);
-          hazard.fireTimer += boss.enraged ? 0.035 : 0.048;
+          hazard.fireTimer += boss.enraged ? 0.045 : 0.048;
         }
         if (isPlayerInMachineGun(hazard) && hazard.damageTimer <= 0) {
-          damagePlayer(boss.enraged ? 18 : 14, "French fry machine gun");
-          hazard.damageTimer = 0.12;
+          damagePlayer(boss.enraged ? 16 : 14, "French fry machine gun");
+          hazard.damageTimer = boss.enraged ? 0.14 : 0.12;
         }
       }
     } else if (hazard.type === "colaBubble") {
@@ -1344,9 +1347,19 @@ function updateHazards(dt) {
     } else if (hazard.type === "cherryBomb") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
-      if (hazard.warn <= 0 && !hazard.hit) {
-        hazard.hit = true;
-        if (isPlayerInCherryCross(hazard)) damagePlayer(hazard.damage, "Cherry bomb");
+      if (hazard.warn <= 0) {
+        if (!hazard.hit) {
+          hazard.hit = true;
+          hazard.burstTimer = 0;
+          particles.push({ x: hazard.x, y: hazard.y - 18, text: "burst", color: "#ff5d73", ttl: 0.6 });
+        }
+        hazard.burstTimer -= dt;
+        while (hazard.burstShots > 0 && hazard.burstTimer <= 0) {
+          spawnCherryBurst(hazard, spawnedHazards);
+          hazard.burstShots -= 1;
+          hazard.burstTimer += hazard.burstDelay;
+        }
+        if (hazard.burstShots <= 0 && hazard.burstTimer <= 0) hazard.ttl = 0;
       }
     } else if (hazard.type === "ketchupMortar") {
       hazard.age += dt;
@@ -1371,7 +1384,7 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot") {
       hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
@@ -1385,8 +1398,8 @@ function updateHazards(dt) {
         bounceProjectileInArena(hazard);
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : "Arc bolt";
-        damagePlayer(hazard.damage, source);
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : "Arc bolt";
+        damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         hazard.ttl = 0;
       }
@@ -1506,7 +1519,7 @@ function spawnGreaseExplosion(source, targetList = hazards) {
   const offset = Math.random() * Math.PI * 2;
   for (let i = 0; i < count; i += 1) {
     const angle = offset + (Math.PI * 2 * i) / count;
-    const speed = (boss.enraged ? 360 : 305) + Math.random() * 70;
+    const speed = (boss.enraged ? 320 : 305) + Math.random() * 70;
     targetList.push({
       type: "fry",
       x: source.x + Math.cos(angle) * (source.r * 0.45),
@@ -1514,16 +1527,36 @@ function spawnGreaseExplosion(source, targetList = hazards) {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       r: 8,
-      ttl: boss.enraged ? 2 : 1.7,
-      damage: boss.enraged ? 18 : 14,
+      ttl: boss.enraged ? 1.75 : 1.7,
+      damage: boss.enraged ? 15 : 14,
       color: "#ffd15f",
     });
   }
   particles.push({ x: source.x, y: source.y - 20, text: "burst", color: "#ffd15f", ttl: 0.65 });
 }
 
-function damagePlayer(amount, source) {
-  const hit = Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
+function spawnCherryBurst(source, targetList = hazards) {
+  const directions = 8;
+  const offset = (source.burstShots % 2) * 0.06;
+  for (let i = 0; i < directions; i += 1) {
+    const angle = offset + (Math.PI * 2 * i) / directions;
+    targetList.push({
+      type: "cherryShot",
+      x: source.x + Math.cos(angle) * (source.r + 8),
+      y: source.y + Math.sin(angle) * (source.r + 8),
+      vx: Math.cos(angle) * 355,
+      vy: Math.sin(angle) * 355,
+      r: 7,
+      ttl: 2.1,
+      damage: 20,
+      fixedDamage: true,
+      color: "#ff3f5f",
+    });
+  }
+}
+
+function damagePlayer(amount, source, options = {}) {
+  const hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
   player.hp = Math.max(0, player.hp - hit);
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
@@ -1537,7 +1570,7 @@ function damagePlayer(amount, source) {
 function drinkPotion() {
   if (player.potions <= 0 || player.hp >= player.maxHp || player.dead || player.won) return;
   player.potions -= 1;
-  player.hp = Math.min(player.maxHp, player.hp + 55);
+  player.hp = Math.min(player.maxHp, player.hp + Math.ceil(player.maxHp * 0.6));
   showFloat("Potion used");
   log("Potion restored health.");
 }
@@ -2054,9 +2087,15 @@ function drawHazards() {
       ctx.fill();
       ctx.stroke();
       if (active) {
-        ctx.fillStyle = "rgba(192, 24, 47, 0.28)";
-        ctx.fillRect(hazard.x - 14, hazard.y - 360, 28, 720);
-        ctx.fillRect(hazard.x - 360, hazard.y - 14, 720, 28);
+        ctx.strokeStyle = "rgba(255, 214, 220, 0.75)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i += 1) {
+          const angle = (Math.PI * 2 * i) / 8;
+          ctx.beginPath();
+          ctx.moveTo(hazard.x + Math.cos(angle) * 12, hazard.y + Math.sin(angle) * 12);
+          ctx.lineTo(hazard.x + Math.cos(angle) * 44, hazard.y + Math.sin(angle) * 44);
+          ctx.stroke();
+        }
       }
       return;
     }
@@ -2098,8 +2137,8 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut") {
-      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : "#8ad8ff");
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
