@@ -62,7 +62,7 @@ curlyFriesSprite.addEventListener("load", () => {
 });
 
 let player = createPlayer();
-let boss = createBoss("burger");
+let boss = createBoss("cola");
 let condimentBosses = [];
 let hazards = [];
 let playerProjectiles = [];
@@ -88,6 +88,9 @@ function createPlayer() {
     room: "starter",
     dead: false,
     won: false,
+    freezeTimer: 0,
+    chillStacks: 0,
+    chillTimer: 0,
     facing: "down",
     animationTime: 0,
     moving: false,
@@ -150,6 +153,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1.2,
       swingTimer: 1.2,
     },
+    shake: {
+      kind: "shake",
+      name: "Peanut Buster Shake",
+      radius: 72,
+      maxHp: 560,
+      color: "#f1e2c9",
+      enrageColor: "#d18b43",
+      attackTimer: 1.2,
+      swingTimer: 1.2,
+    },
   };
   const template = bosses[kind];
   return {
@@ -158,6 +171,7 @@ function createBoss(kind = "burger") {
     y: 450,
     hp: template.maxHp,
     phase: 1,
+    totalPhases: kind === "shake" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -355,6 +369,14 @@ function equipFromStand(stand) {
 
 function movePlayer(dt) {
   player.moving = false;
+  player.freezeTimer = Math.max(0, player.freezeTimer - dt);
+  player.chillTimer = Math.max(0, player.chillTimer - dt);
+  if (player.chillTimer <= 0) player.chillStacks = 0;
+  if (player.freezeTimer > 0) {
+    player.destination = null;
+    player.slide = null;
+    return;
+  }
   player.greaseCooldown = Math.max(0, player.greaseCooldown - dt);
   if (player.slide) {
     moveSlidingPlayer(dt);
@@ -468,6 +490,10 @@ function updateCombat(dt) {
     updateBigCola(dt);
     return;
   }
+  if (boss.kind === "shake") {
+    updatePeanutBusterShake(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -495,6 +521,22 @@ function updateCombat(dt) {
     } else {
       boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
     }
+  }
+}
+
+function updatePeanutBusterShake(dt) {
+  boss.animationTime += dt;
+  boss.shieldTimer = Math.max(0, boss.shieldTimer - dt);
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  if (boss.phase === 3 && boss.hp <= boss.maxHp * 0.28 && !boss.enraged) {
+    boss.enraged = true;
+    log("Peanut Buster Shake enters final shake barrage.");
+  }
+  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
+  if (boss.attackTimer <= 0) {
+    spawnShakePattern();
+    boss.attackTimer = boss.enraged ? 0.75 : boss.phase === 3 ? 0.95 : boss.phase === 2 ? 1.12 : 1.3;
   }
 }
 
@@ -856,6 +898,116 @@ function spawnSodaSpill() {
   });
 }
 
+function spawnShakePattern() {
+  const roll = Math.random();
+  if (boss.phase === 1) {
+    if (roll < 0.42) spawnPeanutFan(false);
+    else if (roll < 0.74) spawnChocolateLines(roll < 0.58 ? "vertical" : "horizontal");
+    else spawnScoopDrop(player.x, player.y, 0);
+    return;
+  }
+  if (boss.phase === 2) {
+    if (roll < 0.36) spawnPeanutFan(true);
+    else if (roll < 0.62) spawnScoopDrop(player.x, player.y, 0);
+    else if (roll < 0.82) spawnWhippedShield();
+    else spawnChocolateLines(Math.random() > 0.5 ? "vertical" : "horizontal");
+    return;
+  }
+  if (roll < 0.28) spawnCherryBombs();
+  else if (roll < 0.52) spawnTripleScoopCombo();
+  else if (roll < 0.76) spawnPeanutFan(true);
+  else spawnChocolateLines(Math.random() > 0.5 ? "vertical" : "horizontal");
+}
+
+function spawnPeanutFan(canBounce) {
+  const count = boss.phase === 3 ? 9 : 7;
+  const base = Math.atan2(player.y - boss.y, player.x - boss.x);
+  for (let i = 0; i < count; i += 1) {
+    const angle = base + (i - (count - 1) / 2) * 0.16;
+    hazards.push({
+      type: "peanut",
+      x: boss.x,
+      y: boss.y,
+      vx: Math.cos(angle) * (boss.phase === 3 ? 390 : 340),
+      vy: Math.sin(angle) * (boss.phase === 3 ? 390 : 340),
+      r: 8,
+      ttl: canBounce ? 3.2 : 2.35,
+      damage: 12,
+      bounces: canBounce ? 1 : 0,
+    });
+  }
+  log(canBounce ? "Ricochet peanuts fired." : "Peanut spread fired.");
+}
+
+function spawnChocolateLines(orientation) {
+  const lines = boss.phase === 3 ? 4 : 3;
+  for (let i = 0; i < lines; i += 1) {
+    const position = orientation === "vertical"
+      ? world.arena.x + 130 + Math.random() * (world.arena.w - 260)
+      : world.arena.y + 115 + Math.random() * (world.arena.h - 230);
+    hazards.push({
+      type: "chocolateLine",
+      orientation,
+      position,
+      x: orientation === "vertical" ? position : world.arena.x + world.arena.w / 2,
+      y: orientation === "vertical" ? world.arena.y + world.arena.h / 2 : position,
+      warn: 0.75,
+      ttl: 3.3,
+      width: 24,
+      damageTimer: 0,
+      damage: 7,
+    });
+  }
+  log("Chocolate drizzle lines forming.");
+}
+
+function spawnScoopDrop(x, y, delay) {
+  hazards.push({
+    type: "scoopDrop",
+    x: clamp(x + (Math.random() - 0.5) * 90, world.arena.x + 90, world.arena.x + world.arena.w - 90),
+    y: clamp(y + (Math.random() - 0.5) * 90, world.arena.y + 80, world.arena.y + world.arena.h - 80),
+    delay,
+    warn: 0.85 + delay,
+    ttl: 1.1 + delay,
+    r: 46,
+    damage: boss.phase >= 2 ? 19 : 16,
+    hit: false,
+  });
+  log("Ice cream scoop incoming.");
+}
+
+function spawnWhippedShield() {
+  boss.shieldTimer = 2.1;
+  spawnChocolateLines(Math.random() > 0.5 ? "vertical" : "horizontal");
+  log("Whipped cream shield raised.");
+}
+
+function spawnCherryBombs() {
+  for (let i = 0; i < 4; i += 1) {
+    const edge = Math.floor(Math.random() * 4);
+    const x = edge === 0 ? world.arena.x + 75 : edge === 1 ? world.arena.x + world.arena.w - 75 : world.arena.x + 130 + Math.random() * (world.arena.w - 260);
+    const y = edge === 2 ? world.arena.y + 75 : edge === 3 ? world.arena.y + world.arena.h - 75 : world.arena.y + 100 + Math.random() * (world.arena.h - 200);
+    hazards.push({
+      type: "cherryBomb",
+      x,
+      y,
+      warn: 1.25,
+      ttl: 1.7,
+      r: 26,
+      damage: 18,
+      hit: false,
+    });
+  }
+  log("Cherry bombs armed.");
+}
+
+function spawnTripleScoopCombo() {
+  spawnScoopDrop(player.x, player.y, 0);
+  spawnScoopDrop(player.x, player.y, 0.38);
+  spawnScoopDrop(player.x, player.y, 0.76);
+  log("Triple scoop combo.");
+}
+
 function spawnSauceMortar() {
   const point = randomArenaPointNearPlayer(210);
   hazards.push({
@@ -1137,6 +1289,45 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.5;
         }
       }
+    } else if (hazard.type === "chocolateLine") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && isPlayerInChocolateLine(hazard)) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Chocolate drizzle");
+          hazard.damageTimer = 0.35;
+        }
+      }
+    } else if (hazard.type === "scoopDrop") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (distance(player, hazard) < player.radius + hazard.r) {
+          damagePlayer(hazard.damage, "Ice cream scoop");
+          addChillStack();
+        }
+        hazard.type = "frozenPuddle";
+        hazard.ttl = 4.8;
+        hazard.damageTimer = 0;
+      }
+    } else if (hazard.type === "frozenPuddle") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          addChillStack();
+          hazard.damageTimer = 0.85;
+        }
+      }
+    } else if (hazard.type === "cherryBomb") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (isPlayerInCherryCross(hazard)) damagePlayer(hazard.damage, "Cherry bomb");
+      }
     } else if (hazard.type === "ketchupMortar") {
       hazard.age += dt;
       const progress = clamp(hazard.age / hazard.flightTime, 0, 1);
@@ -1160,7 +1351,7 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut") {
       hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
@@ -1170,12 +1361,13 @@ function updateHazards(dt) {
       }
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
-      if (hazard.type === "mustardSeed" && hazard.bounces > 0) {
+      if ((hazard.type === "mustardSeed" || hazard.type === "peanut") && hazard.bounces > 0) {
         bounceProjectileInArena(hazard);
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : "Arc bolt";
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : "Arc bolt";
         damagePlayer(hazard.damage, source);
+        if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         hazard.ttl = 0;
       }
     } else {
@@ -1194,6 +1386,31 @@ function popColaBubble(hazard) {
   particles.push({ x: hazard.x, y: hazard.y - 16, text: "pop", color: "#b9f4ff", ttl: 0.55 });
   if (distance(player, hazard) < player.radius + hazard.r + 22 && !player.dead) {
     damagePlayer(hazard.damage, "Bubble pop");
+  }
+}
+
+function isPlayerInChocolateLine(hazard) {
+  if (hazard.orientation === "vertical") return Math.abs(player.x - hazard.position) < hazard.width + player.radius;
+  return Math.abs(player.y - hazard.position) < hazard.width + player.radius;
+}
+
+function isPlayerInCherryCross(hazard) {
+  const inVertical = Math.abs(player.x - hazard.x) < 18 && Math.abs(player.y - hazard.y) < 360;
+  const inHorizontal = Math.abs(player.y - hazard.y) < 18 && Math.abs(player.x - hazard.x) < 360;
+  return distance(player, hazard) < hazard.r + player.radius || inVertical || inHorizontal;
+}
+
+function addChillStack() {
+  if (player.freezeTimer > 0) return;
+  player.chillStacks = Math.min(3, player.chillStacks + 1);
+  player.chillTimer = 4;
+  if (player.chillStacks >= 3) {
+    player.freezeTimer = 0.7;
+    player.chillStacks = 0;
+    player.chillTimer = 0;
+    showFloat("Brain freeze");
+  } else {
+    showFloat(`Chill ${player.chillStacks}/3`);
   }
 }
 
@@ -1288,7 +1505,37 @@ function winFight() {
   hazards = [];
   playerProjectiles = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
+  if (boss.kind === "shake" && boss.phase < boss.totalPhases) {
+    boss.phase += 1;
+    boss.maxHp = boss.phase === 2 ? 650 : 750;
+    boss.hp = boss.maxHp;
+    boss.enraged = false;
+    boss.attackTimer = 1.2;
+    boss.shieldTimer = 0;
+    boss.state = "moving";
+    boss.stateTimer = 0;
+    player.hp = Math.min(player.maxHp, player.hp + 30);
+    player.destination = null;
+    player.slide = null;
+    const phaseName = boss.phase === 2 ? "Brain Freeze" : "The Buster Cup";
+    ui.status.textContent = `${phaseName}: Peanut Buster Shake refills.`;
+    showFloat(phaseName);
+    log(`${phaseName} begins.`);
+    return;
+  }
   log(`Victory in ${seconds}s.`);
+  if (boss.kind === "cola") {
+    boss = createBoss("burger");
+    condimentBosses = [];
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Big Cola defeated. Big Burger enters next.";
+    showFloat("Next boss: Big Burger");
+    return;
+  }
   if (boss.kind === "burger") {
     boss = createBoss("fries");
     condimentBosses = [];
@@ -1313,9 +1560,21 @@ function winFight() {
     showFloat("Next boss: Condiment Trio");
     return;
   }
+  if (boss.kind === "sauce") {
+    boss = createBoss("shake");
+    condimentBosses = [];
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Special Sauce defeated. Peanut Buster Shake enters next.";
+    showFloat("Next boss: Peanut Buster Shake");
+    return;
+  }
   player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat("Condiment Trio defeated");
+  showFloat(boss.kind === "shake" ? "Peanut Buster Shake defeated" : "Boss defeated");
 }
 
 function update(dt) {
@@ -1462,6 +1721,8 @@ function drawBoss() {
     drawSpecialSauceBoss();
   } else if (boss.kind === "cola") {
     drawBigColaBoss();
+  } else if (boss.kind === "shake") {
+    drawPeanutBusterShakeBoss();
   } else {
     drawBurgerBoss();
   }
@@ -1470,7 +1731,8 @@ function drawBoss() {
   ctx.fillStyle = "#fff2c6";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(boss.name, boss.x, boss.y - boss.radius - 38);
+  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : "";
+  ctx.fillText(`${boss.name}${phaseText}`, boss.x, boss.y - boss.radius - 38);
   ctx.textAlign = "left";
 }
 
@@ -1563,6 +1825,35 @@ function drawBigColaBoss() {
     ctx.fill();
   }
   ctx.textAlign = "left";
+}
+
+function drawPeanutBusterShakeBoss() {
+  ctx.fillStyle = "#b65a34";
+  ctx.beginPath();
+  ctx.roundRect(boss.x - 52, boss.y - 36, 104, 96, 18);
+  ctx.fill();
+  ctx.fillStyle = boss.shieldTimer > 0 ? "#fff6df" : "#f1e2c9";
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y - 32, boss.radius * 0.86, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = "#7b3f23";
+  for (let i = 0; i < 6; i += 1) {
+    const angle = boss.animationTime * 1.2 + i * 1.05;
+    ctx.beginPath();
+    ctx.arc(boss.x + Math.cos(angle) * 42, boss.y - 28 + Math.sin(angle) * 24, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#c0182f";
+  ctx.beginPath();
+  ctx.arc(boss.x + 18, boss.y - 92, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#6d2f1b";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(boss.x - 38, boss.y - 62);
+  ctx.bezierCurveTo(boss.x - 10, boss.y - 42, boss.x + 16, boss.y - 76, boss.x + 48, boss.y - 54);
+  ctx.stroke();
+  if (boss.shieldTimer > 0) drawRing(boss.x, boss.y - 10, boss.radius + 12, "#fff6df");
 }
 
 function drawCurlyFriesBoss() {
@@ -1675,6 +1966,50 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
+    if (hazard.type === "chocolateLine") {
+      const active = hazard.warn <= 0;
+      ctx.fillStyle = active ? "rgba(94, 45, 25, 0.46)" : "rgba(94, 45, 25, 0.16)";
+      if (hazard.orientation === "vertical") {
+        ctx.fillRect(hazard.position - hazard.width / 2, world.arena.y + 40, hazard.width, world.arena.h - 80);
+      } else {
+        ctx.fillRect(world.arena.x + 40, hazard.position - hazard.width / 2, world.arena.w - 80, hazard.width);
+      }
+      return;
+    }
+    if (hazard.type === "scoopDrop" || hazard.type === "frozenPuddle") {
+      const active = hazard.type === "frozenPuddle";
+      ctx.fillStyle = active ? "rgba(170, 225, 255, 0.28)" : "rgba(170, 225, 255, 0.11)";
+      ctx.strokeStyle = active ? "#aae1ff" : "#e8f8ff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (hazard.type === "scoopDrop") {
+        const progress = clamp(1 - hazard.warn / Math.max(0.1, 0.85 + hazard.delay), 0, 1);
+        ctx.fillStyle = "#f1e2c9";
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y - 90 + progress * 90, 18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    if (hazard.type === "cherryBomb") {
+      const active = hazard.warn <= 0;
+      ctx.fillStyle = active ? "rgba(192, 24, 47, 0.32)" : "rgba(192, 24, 47, 0.12)";
+      ctx.strokeStyle = "#ff5d73";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (active) {
+        ctx.fillStyle = "rgba(192, 24, 47, 0.28)";
+        ctx.fillRect(hazard.x - 14, hazard.y - 360, 28, 720);
+        ctx.fillRect(hazard.x - 360, hazard.y - 14, 720, 28);
+      }
+      return;
+    }
     if (hazard.type === "ketchupPuddle") {
       const warning = hazard.warn > 0;
       ctx.fillStyle = warning ? "rgba(210, 55, 45, 0.14)" : "rgba(210, 55, 45, 0.34)";
@@ -1713,11 +2048,13 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob") {
-      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : "#8ad8ff");
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
+      } else if (hazard.type === "peanut") {
+        ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.35, hazard.r * 0.82, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
       } else {
         ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       }
@@ -1866,7 +2203,9 @@ function renderUi() {
   ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
   const bossHp = bossHealthSummary();
-  ui.bossHpText.textContent = `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
+  ui.bossHpText.textContent = boss.kind === "shake"
+    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
+    : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
   ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
   ui.potionButton.textContent = `Potion (${player.potions})`;
   const weapon = gear.weapon[player.gear.weapon];
