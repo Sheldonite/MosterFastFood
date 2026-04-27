@@ -68,11 +68,18 @@ let hazards = [];
 let playerProjectiles = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
+const movementKeys = { up: false, down: false, left: false, right: false };
+const keyDirections = {
+  w: "up",
+  a: "left",
+  s: "down",
+  d: "right",
+};
 let selectedBoss = null;
 let floatTimer = 0;
 let fightStartedAt = 0;
 let lastTime = performance.now();
-let logLines = ["Choose gear, cross the gate, click the boss."];
+let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
 
 function createPlayer() {
   return {
@@ -94,6 +101,8 @@ function createPlayer() {
     facing: "down",
     animationTime: 0,
     moving: false,
+    lastMoveX: 0,
+    lastMoveY: 1,
     greaseCooldown: 0,
     slide: null,
     gear: { weapon: "ironBlade", armor: "duelistCoat" },
@@ -267,7 +276,7 @@ function resetFight(keepPosition = false) {
   particles = [];
   selectedBoss = null;
   fightStartedAt = 0;
-  logLines = ["Fight reset. Cross the gate when ready."];
+  logLines = ["Fight reset. Use WASD to cross the gate when ready."];
   showFloat("Fight reset");
 }
 
@@ -287,7 +296,7 @@ function selectBoss(kind) {
   particles = [];
   selectedBoss = null;
   fightStartedAt = 0;
-  ui.status.textContent = `${boss.name} selected for testing.`;
+  ui.status.textContent = `${boss.name} selected for testing. WASD to dodge, click to shoot.`;
   showFloat(boss.name);
 }
 
@@ -295,7 +304,7 @@ function startFight() {
   if (fightStartedAt) return;
   fightStartedAt = performance.now();
   log("Boss awakened.");
-  ui.status.textContent = `Boss awakened. Click ${boss.name} to attack.`;
+  ui.status.textContent = "Boss awakened. Use WASD to dodge and click to shoot.";
 }
 
 function log(text) {
@@ -314,27 +323,27 @@ function pointInRect(x, y, rect) {
   return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
 }
 
+function isTypingTarget(element) {
+  return ["INPUT", "TEXTAREA", "SELECT"].includes(element?.tagName) || element?.isContentEditable;
+}
+
 function currentBounds() {
   return player.room === "arena" ? world.arena : world.starter;
 }
 
-function setDestination(x, y) {
+function handleCanvasClick(x, y) {
   if (player.dead || player.won) return;
   const stand = stands.find((item) => Math.hypot(item.x - x, item.y - y) < 48);
   if (stand && player.room === "starter") {
     equipFromStand(stand);
     return;
   }
-  const clickedBoss = findClickedBoss(x, y);
-  if (clickedBoss && player.room === "arena") {
-    selectedBoss = clickedBoss;
-    startFight();
-    ui.status.textContent = `Attacking ${clickedBoss.name}.`;
+  if (player.room !== "arena") {
+    ui.status.textContent = "Use WASD to move through the gate.";
     return;
   }
   selectedBoss = null;
-  player.destination = constrainToRoom(x, y);
-  ui.status.textContent = player.room === "starter" ? "Moving." : "Repositioning.";
+  shootAt(x, y);
 }
 
 function findClickedBoss(x, y) {
@@ -382,20 +391,20 @@ function movePlayer(dt) {
     moveSlidingPlayer(dt);
     return;
   }
-  if (!player.destination) return;
-  const dx = player.destination.x - player.x;
-  const dy = player.destination.y - player.y;
+  const dx = (movementKeys.right ? 1 : 0) - (movementKeys.left ? 1 : 0);
+  const dy = (movementKeys.down ? 1 : 0) - (movementKeys.up ? 1 : 0);
   const dist = Math.hypot(dx, dy);
-  if (dist < 4) {
-    player.destination = null;
-    return;
-  }
+  if (dist < 0.1) return;
   player.facing = getFacing(dx, dy);
   player.moving = true;
   player.animationTime += dt;
-  const step = Math.min(dist, player.stats.speed * dt);
-  player.x += (dx / dist) * step;
-  player.y += (dy / dist) * step;
+  player.lastMoveX = dx / dist;
+  player.lastMoveY = dy / dist;
+  player.x += player.lastMoveX * player.stats.speed * dt;
+  player.y += player.lastMoveY * player.stats.speed * dt;
+  const point = constrainToRoom(player.x, player.y);
+  player.x = point.x;
+  player.y = point.y;
 }
 
 function moveSlidingPlayer(dt) {
@@ -421,6 +430,9 @@ function moveSlidingPlayer(dt) {
 
   if (Math.hypot(player.slide.vx, player.slide.vy) > 20) {
     player.facing = getFacing(player.slide.vx, player.slide.vy);
+    const slideSpeed = Math.hypot(player.slide.vx, player.slide.vy);
+    player.lastMoveX = player.slide.vx / slideSpeed;
+    player.lastMoveY = player.slide.vy / slideSpeed;
   }
   if (player.slide.timer <= 0) {
     player.slide = null;
@@ -429,12 +441,8 @@ function moveSlidingPlayer(dt) {
 
 function startGreaseSlide(puddle) {
   if (player.greaseCooldown > 0 || player.room !== "arena" || player.dead || player.won) return;
-  let dx = 0;
-  let dy = 0;
-  if (player.destination) {
-    dx = player.destination.x - player.x;
-    dy = player.destination.y - player.y;
-  }
+  let dx = player.lastMoveX;
+  let dy = player.lastMoveY;
   if (Math.hypot(dx, dy) < 0.1) {
     dx = player.x - puddle.x;
     dy = player.y - puddle.y;
@@ -509,7 +517,6 @@ function updateCombat(dt) {
     log(`${boss.name} is enraged.`);
   }
 
-  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.swingTimer <= 0 && distance(player, boss) < boss.radius + 46) {
     damagePlayer(boss.enraged ? 18 : 13, "Crushing swing");
     boss.swingTimer = boss.enraged ? 0.9 : 1.25;
@@ -533,7 +540,6 @@ function updatePeanutBusterShake(dt) {
     boss.enraged = true;
     log("Peanut Buster Shake enters final shake barrage.");
   }
-  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.attackTimer <= 0) {
     spawnShakePattern();
     boss.attackTimer = boss.enraged ? 0.75 : boss.phase === 3 ? 0.95 : boss.phase === 2 ? 1.12 : 1.3;
@@ -553,7 +559,6 @@ function updateBigCola(dt) {
     boss.enraged = true;
     log("Big Cola is over-carbonated.");
   }
-  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.pressureTimer <= 0) {
     spawnFizzBurst();
     boss.pressureTimer = boss.enraged ? 5.2 : boss.phase === 2 ? 6.4 : 8;
@@ -578,7 +583,6 @@ function updateSpecialSauce(dt) {
   if (boss.modeTimer <= 0) {
     cycleSauceMode();
   }
-  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   if (boss.attackTimer <= 0) {
     spawnSpecialSaucePattern();
   }
@@ -609,7 +613,6 @@ function cycleSauceMode() {
 
 function updateTrioCombat(dt) {
   player.attackCooldown -= dt;
-  if (selectedBoss?.hp > 0) autoAttack(selectedBoss);
   moveCondimentBosses(dt);
   condimentBosses.forEach((target) => {
     if (target.hp <= 0) return;
@@ -725,40 +728,44 @@ function clampArenaPoint(x, y, radius) {
   };
 }
 
-function autoAttack(target = boss) {
-  const range = player.radius + target.radius + player.stats.range;
-  if (distance(player, target) > range) {
-    const angle = Math.atan2(target.y - player.y, target.x - player.x);
-    const desiredDistance = target.radius + player.stats.range + player.radius - 4;
-    player.destination = {
-      x: target.x - Math.cos(angle) * desiredDistance,
-      y: target.y - Math.sin(angle) * desiredDistance,
-    };
-    player.destination = constrainToRoom(player.destination.x, player.destination.y);
-    return;
-  }
+function shootAt(x, y) {
+  if (player.attackCooldown > 0) return;
+  const dx = x - player.x;
+  const dy = y - player.y;
+  if (Math.hypot(dx, dy) < 6) return;
+  startFight();
+  player.facing = getFacing(dx, dy);
+  firePlayerProjectile(Math.atan2(dy, dx));
+}
+
+function firePlayerProjectile(angle) {
   if (player.attackCooldown > 0) return;
   const weapon = gear.weapon[player.gear.weapon];
-  const angle = Math.atan2(target.y - player.y, target.x - player.x);
+  const speed = projectileSpeedForWeapon(weapon.tag);
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
-    vx: Math.cos(angle) * projectileSpeedForWeapon(weapon.tag),
-    vy: Math.sin(angle) * projectileSpeedForWeapon(weapon.tag),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
     r: weapon.tag === "Magic" ? 8 : 6,
     damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
     color: weapon.color,
-    ttl: 1.35,
+    ttl: projectileTravelTime(weapon, speed),
     tag: weapon.tag,
-    target,
   });
   player.attackCooldown = weapon.speed;
+  ui.status.textContent = `Firing ${weapon.name}.`;
 }
 
 function projectileSpeedForWeapon(tag) {
   if (tag === "Ranged") return 620;
   if (tag === "Magic") return 480;
   return 760;
+}
+
+function projectileTravelTime(weapon, speed) {
+  const rangeBonus = weapon.tag === "Melee" ? 150 : 210;
+  return (player.stats.range + rangeBonus) / speed;
 }
 
 function spawnBossPattern() {
@@ -2253,7 +2260,7 @@ function gameLoop(now) {
 
 canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
-  setDestination(event.clientX - rect.left + camera.x, event.clientY - rect.top + camera.y);
+  handleCanvasClick(event.clientX - rect.left + camera.x, event.clientY - rect.top + camera.y);
 });
 
 if (ui.armory) {
@@ -2277,10 +2284,28 @@ ui.bossSelector.addEventListener("click", (event) => {
 ui.potionButton.addEventListener("click", drinkPotion);
 ui.resetButton.addEventListener("click", () => resetFight(false));
 window.addEventListener("keydown", (event) => {
-  if (event.key.toLowerCase() !== "q") return;
-  if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(document.activeElement?.tagName)) return;
+  if (isTypingTarget(document.activeElement)) return;
+  const key = event.key.toLowerCase();
+  const direction = keyDirections[key];
+  if (direction) {
+    event.preventDefault();
+    movementKeys[direction] = true;
+    return;
+  }
+  if (key !== "q") return;
   event.preventDefault();
   drinkPotion();
+});
+window.addEventListener("keyup", (event) => {
+  const direction = keyDirections[event.key.toLowerCase()];
+  if (!direction) return;
+  event.preventDefault();
+  movementKeys[direction] = false;
+});
+window.addEventListener("blur", () => {
+  Object.keys(movementKeys).forEach((direction) => {
+    movementKeys[direction] = false;
+  });
 });
 window.addEventListener("resize", resizeCanvas);
 
