@@ -567,21 +567,27 @@ function moveCondimentBosses(dt) {
 
 function updateMayoMovement(target) {
   if (target.moveTimer > 0 && target.destination) return;
-  const angle = Math.atan2(target.y - player.y, target.x - player.x) + (Math.random() - 0.5) * 0.8;
-  target.destination = clampArenaPoint(target.x + Math.cos(angle) * 230, target.y + Math.sin(angle) * 230, target.radius);
-  target.moveTimer = 0.8;
+  const awayAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const erraticTurn = (Math.random() - 0.5) * 2.4;
+  const badPanicTurn = Math.random() < 0.22 ? Math.PI * (Math.random() > 0.5 ? 0.55 : -0.55) : 0;
+  const angle = awayAngle + erraticTurn + badPanicTurn;
+  const distanceRoll = 130 + Math.random() * 160;
+  target.destination = clampArenaPoint(target.x + Math.cos(angle) * distanceRoll, target.y + Math.sin(angle) * distanceRoll, target.radius);
+  target.moveTimer = 0.28 + Math.random() * 0.34;
 }
 
 function updateMustardMovement(target, mayo) {
   if (target.moveTimer > 0 && target.destination) return;
   const defendTarget = mayo || player;
   const toPlayer = Math.atan2(player.y - defendTarget.y, player.x - defendTarget.x);
+  const guardDistance = mayo ? 74 : 105;
+  const sideStep = mayo ? (Math.random() - 0.5) * 36 : 0;
   target.destination = clampArenaPoint(
-    defendTarget.x + Math.cos(toPlayer) * 92,
-    defendTarget.y + Math.sin(toPlayer) * 92,
+    defendTarget.x + Math.cos(toPlayer) * guardDistance + Math.cos(toPlayer + Math.PI / 2) * sideStep,
+    defendTarget.y + Math.sin(toPlayer) * guardDistance + Math.sin(toPlayer + Math.PI / 2) * sideStep,
     target.radius,
   );
-  target.moveTimer = 0.55;
+  target.moveTimer = mayo ? 0.25 : 0.55;
 }
 
 function updateKetchupMovement(target) {
@@ -625,9 +631,10 @@ function autoAttack(target = boss) {
   const range = player.radius + target.radius + player.stats.range;
   if (distance(player, target) > range) {
     const angle = Math.atan2(target.y - player.y, target.x - player.x);
+    const desiredDistance = target.radius + player.stats.range + player.radius - 4;
     player.destination = {
-      x: target.x - Math.cos(angle) * (target.radius + player.stats.range * 0.7),
-      y: target.y - Math.sin(angle) * (target.radius + player.stats.range * 0.7),
+      x: target.x - Math.cos(angle) * desiredDistance,
+      y: target.y - Math.sin(angle) * desiredDistance,
     };
     player.destination = constrainToRoom(player.destination.x, player.destination.y);
     return;
@@ -854,6 +861,7 @@ function spawnCurlySpiral() {
 
 function spawnKetchupAttack(source) {
   const point = randomArenaPointNearPlayer(140);
+  const mayoDead = isCondimentDead("mayo");
   hazards.push({
     type: "ketchupMortar",
     x: source.x,
@@ -867,6 +875,7 @@ function spawnKetchupAttack(source) {
     r: 42,
     ttl: 0.95,
     damage: 7,
+    permanentAfterLanding: mayoDead,
   });
   log("Ketchup mortar launched.");
 }
@@ -963,7 +972,7 @@ function updateHazards(dt) {
         hazard.type = "ketchupPuddle";
         hazard.x = hazard.targetX;
         hazard.y = hazard.targetY;
-        hazard.ttl = 5.2;
+        hazard.ttl = hazard.permanentAfterLanding ? Number.POSITIVE_INFINITY : 5.2;
         hazard.warn = 0;
         hazard.damageTimer = 0;
       }
@@ -1140,6 +1149,7 @@ function updatePlayerProjectiles(dt) {
         particles.push({ x: hitBoss.x, y: hitBoss.y - 62, text: `${hitBoss.name} down`, color: "#ffd27a", ttl: 1.2 });
         if (hitBoss === selectedBoss) selectedBoss = null;
         if (hitBoss.kind === "ketchup") clearKetchupHazards();
+        if (hitBoss.kind === "mayo") makeKetchupPuddlesPermanent();
         if (livingBosses().length === 0) {
           if (boss.kind === "trio") spawnSpecialSauce();
           else winFight();
@@ -1153,6 +1163,18 @@ function updatePlayerProjectiles(dt) {
 
 function clearKetchupHazards() {
   hazards = hazards.filter((hazard) => hazard.type !== "ketchupMortar" && hazard.type !== "ketchupPuddle");
+}
+
+function makeKetchupPuddlesPermanent() {
+  hazards.forEach((hazard) => {
+    if (hazard.type === "ketchupPuddle") hazard.ttl = Number.POSITIVE_INFINITY;
+    if (hazard.type === "ketchupMortar") hazard.permanentAfterLanding = true;
+  });
+  log("Mayo is down. Ketchup puddles now linger.");
+}
+
+function isCondimentDead(kind) {
+  return condimentBosses.some((target) => target.kind === kind && target.hp <= 0);
 }
 
 function spawnSpecialSauce() {
