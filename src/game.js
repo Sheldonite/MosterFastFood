@@ -27,15 +27,19 @@ const world = {
 
 const gear = {
   weapon: {
-    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 26, range: 54, speed: 1.05, color: "#d8d1c4" },
-    emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 18, range: 230, speed: 0.78, color: "#e0a14e" },
-    pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 34, range: 170, speed: 1.55, color: "#8ec7ff" },
+    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 72, range: 54, speed: 1.05, color: "#d8d1c4" },
+    emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 54, range: 230, speed: 0.78, color: "#e0a14e" },
+    pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 92, range: 170, speed: 1.55, color: "#8ec7ff" },
   },
   armor: {
     duelistCoat: { slot: "armor", name: "Light Armor", tag: "Fast", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
     bulwarkPlate: { slot: "armor", name: "Heavy Armor", tag: "Tank", armor: 8, maxHp: 160, speed: 195, color: "#8d8f92" },
     channelerRobe: { slot: "armor", name: "Mage Armor", tag: "Glass", armor: 0, maxHp: 95, speed: 270, color: "#6f75b8" },
   },
+};
+
+const combatTuning = {
+  incomingDamageMultiplier: 1.65,
 };
 
 const stands = [
@@ -1092,9 +1096,12 @@ function spawnGreasePuddles(count) {
       y: point.y,
       r: 46,
       ttl: boss.enraged ? 7.5 : 6.2,
+      explodeTimer: 1 + i * 0.15,
+      exploded: false,
+      burstCount: boss.enraged ? 18 : boss.phase === 2 ? 14 : 10,
     });
   }
-  log("Grease puddles splashed down.");
+  log("Grease circles are about to burst.");
 }
 
 function randomArenaPointAwayFromPlayer(minDistance) {
@@ -1236,9 +1243,15 @@ function spawnFloorSlam() {
 }
 
 function updateHazards(dt) {
+  const spawnedHazards = [];
   hazards = hazards.filter((hazard) => {
     if (hazard.type === "grease") {
       hazard.ttl -= dt;
+      hazard.explodeTimer = Math.max(0, (hazard.explodeTimer ?? 0) - dt);
+      if (!hazard.exploded && hazard.explodeTimer <= 0) {
+        hazard.exploded = true;
+        spawnGreaseExplosion(hazard, spawnedHazards);
+      }
       if (distance(player, hazard) < player.radius + hazard.r * 0.72) startGreaseSlide(hazard);
     } else if (hazard.type === "machineGun") {
       hazard.ttl -= dt;
@@ -1248,7 +1261,7 @@ function updateHazards(dt) {
         hazard.fireTimer -= dt;
         hazard.damageTimer -= dt;
         while (hazard.fireTimer <= 0) {
-          spawnFryShot(hazard);
+          spawnFryShot(hazard, spawnedHazards);
           hazard.fireTimer += boss.enraged ? 0.035 : 0.048;
         }
         if (isPlayerInMachineGun(hazard) && hazard.damageTimer <= 0) {
@@ -1387,6 +1400,7 @@ function updateHazards(dt) {
     }
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
   });
+  hazards.push(...spawnedHazards);
 }
 
 function popColaBubble(hazard) {
@@ -1471,11 +1485,11 @@ function isPlayerInMachineGun(emitter) {
   return side < player.radius + (boss.enraged ? 34 : 26);
 }
 
-function spawnFryShot(emitter) {
+function spawnFryShot(emitter, targetList = hazards) {
   const spread = (Math.random() - 0.5) * 0.16;
   const angle = emitter.angle + spread;
   const speed = (boss.enraged ? 850 : 760) + Math.random() * 90;
-  hazards.push({
+  targetList.push({
     type: "fry",
     x: emitter.x + Math.cos(angle) * (boss.radius + 10),
     y: emitter.y + Math.sin(angle) * (boss.radius + 10),
@@ -1487,8 +1501,29 @@ function spawnFryShot(emitter) {
   });
 }
 
+function spawnGreaseExplosion(source, targetList = hazards) {
+  const count = source.burstCount || 12;
+  const offset = Math.random() * Math.PI * 2;
+  for (let i = 0; i < count; i += 1) {
+    const angle = offset + (Math.PI * 2 * i) / count;
+    const speed = (boss.enraged ? 360 : 305) + Math.random() * 70;
+    targetList.push({
+      type: "fry",
+      x: source.x + Math.cos(angle) * (source.r * 0.45),
+      y: source.y + Math.sin(angle) * (source.r * 0.45),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 8,
+      ttl: boss.enraged ? 2 : 1.7,
+      damage: boss.enraged ? 18 : 14,
+      color: "#ffd15f",
+    });
+  }
+  particles.push({ x: source.x, y: source.y - 20, text: "burst", color: "#ffd15f", ttl: 0.65 });
+}
+
 function damagePlayer(amount, source) {
-  const hit = Math.max(1, amount - player.stats.armor);
+  const hit = Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
   player.hp = Math.max(0, player.hp - hit);
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
@@ -1930,6 +1965,14 @@ function drawHazards() {
       ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.62, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      if (!hazard.exploded) {
+        const pulse = 1 - clamp(hazard.explodeTimer ?? 0, 0, 1);
+        ctx.strokeStyle = "rgba(255, 241, 150, 0.9)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y, hazard.r * (0.52 + pulse * 0.52), 0, Math.PI * 2);
+        ctx.stroke();
+      }
       return;
     }
     if (hazard.type === "colaBubble") {
