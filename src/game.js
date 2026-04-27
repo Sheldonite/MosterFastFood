@@ -920,10 +920,10 @@ function spawnShakePattern() {
 }
 
 function spawnPeanutFan(canBounce) {
-  const count = boss.phase === 3 ? 9 : 7;
+  const count = boss.phase === 3 ? 7 : 5;
   const base = Math.atan2(player.y - boss.y, player.x - boss.x);
   for (let i = 0; i < count; i += 1) {
-    const angle = base + (i - (count - 1) / 2) * 0.16;
+    const angle = base + (i - (count - 1) / 2) * 0.12;
     hazards.push({
       type: "peanut",
       x: boss.x,
@@ -951,8 +951,8 @@ function spawnChocolateLines(orientation) {
       position,
       x: orientation === "vertical" ? position : world.arena.x + world.arena.w / 2,
       y: orientation === "vertical" ? world.arena.y + world.arena.h / 2 : position,
-      warn: 0.75,
-      ttl: 3.3,
+      warn: 1.15,
+      ttl: 3.7,
       width: 24,
       damageTimer: 0,
       damage: 7,
@@ -1968,7 +1968,7 @@ function drawHazards() {
     }
     if (hazard.type === "chocolateLine") {
       const active = hazard.warn <= 0;
-      ctx.fillStyle = active ? "rgba(94, 45, 25, 0.46)" : "rgba(94, 45, 25, 0.16)";
+      ctx.fillStyle = active ? "rgba(94, 45, 25, 0.46)" : "rgba(255, 248, 232, 0.38)";
       if (hazard.orientation === "vertical") {
         ctx.fillRect(hazard.position - hazard.width / 2, world.arena.y + 40, hazard.width, world.arena.h - 80);
       } else {
