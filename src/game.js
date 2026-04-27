@@ -160,7 +160,7 @@ function createBoss(kind = "burger") {
       kind: "cola",
       name: "Big Cola",
       radius: 62,
-      maxHp: 700,
+      maxHp: 1400,
       color: "#3d2419",
       enrageColor: "#6f2f22",
       attackTimer: 1.2,
@@ -863,7 +863,7 @@ function spawnColaBubbles(count) {
       vy: Math.sin(angle) * speed,
       r: 15 + Math.random() * 8,
       ttl: 4,
-      damage: boss.enraged ? 12 : 9,
+      damage: boss.enraged ? 36 : 27,
     });
   }
 }
@@ -877,7 +877,7 @@ function spawnStrawSnipe() {
     angle,
     warn: boss.enraged ? 0.45 : 0.65,
     ttl: boss.enraged ? 0.8 : 1,
-    damage: boss.enraged ? 28 : 22,
+    damage: boss.enraged ? 84 : 66,
     hit: false,
   });
 }
@@ -890,7 +890,7 @@ function spawnFizzBurst() {
     r: boss.enraged ? 225 : boss.phase === 2 ? 205 : 185,
     warn: 1,
     ttl: 1.25,
-    damage: boss.enraged ? 24 : 18,
+    damage: boss.enraged ? 72 : 54,
     hit: false,
   });
   log("Big Cola pressure is about to burst.");
@@ -905,7 +905,7 @@ function spawnSodaSpill() {
     r: 45,
     ttl: boss.enraged ? 6 : 5,
     damageTimer: 0,
-    damage: 4,
+    damage: 12,
   });
 }
 
@@ -956,20 +956,32 @@ function spawnChocolateLines(orientation) {
     const position = orientation === "vertical"
       ? world.arena.x + 130 + Math.random() * (world.arena.w - 260)
       : world.arena.y + 115 + Math.random() * (world.arena.h - 230);
+    const direction = Math.random() > 0.5 ? 1 : -1;
+    const speed = boss.phase === 3 ? 470 : 410;
+    const length = 118;
+    const width = 34;
     hazards.push({
-      type: "chocolateLine",
+      type: "chocolateBar",
       orientation,
       position,
-      x: orientation === "vertical" ? position : world.arena.x + world.arena.w / 2,
-      y: orientation === "vertical" ? world.arena.y + world.arena.h / 2 : position,
+      x: orientation === "vertical"
+        ? position
+        : direction > 0 ? world.arena.x - length : world.arena.x + world.arena.w + length,
+      y: orientation === "vertical"
+        ? direction > 0 ? world.arena.y - length : world.arena.y + world.arena.h + length
+        : position,
+      vx: orientation === "vertical" ? 0 : direction * speed,
+      vy: orientation === "vertical" ? direction * speed : 0,
       warn: 1.15,
       ttl: 3.7,
-      width: 24,
-      damageTimer: 0,
-      damage: 7,
+      width,
+      length,
+      damage: 30,
+      fixedDamage: true,
+      hit: false,
     });
   }
-  log("Chocolate drizzle lines forming.");
+  log("Chocolate bars incoming.");
 }
 
 function spawnScoopDrop(x, y, delay) {
@@ -1312,14 +1324,15 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.5;
         }
       }
-    } else if (hazard.type === "chocolateLine") {
+    } else if (hazard.type === "chocolateBar") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
-      if (hazard.warn <= 0 && isPlayerInChocolateLine(hazard)) {
-        hazard.damageTimer -= dt;
-        if (hazard.damageTimer <= 0) {
-          damagePlayer(hazard.damage, "Chocolate drizzle");
-          hazard.damageTimer = 0.35;
+      if (hazard.warn <= 0) {
+        hazard.x += hazard.vx * dt;
+        hazard.y += hazard.vy * dt;
+        if (!hazard.hit && isPlayerInChocolateBar(hazard)) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, "Chocolate bar", { fixed: hazard.fixedDamage });
         }
       }
     } else if (hazard.type === "scoopDrop") {
@@ -1411,6 +1424,7 @@ function updateHazards(dt) {
         damagePlayer(hazard.damage, hazard.type === "slam" ? "Ground slam" : "Furnace vent");
       }
     }
+    if (hazard.type === "chocolateBar") return hazard.ttl > 0 && (hazard.warn > 0 || chocolateBarTouchesArena(hazard));
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
   });
   hazards.push(...spawnedHazards);
@@ -1423,9 +1437,20 @@ function popColaBubble(hazard) {
   }
 }
 
-function isPlayerInChocolateLine(hazard) {
-  if (hazard.orientation === "vertical") return Math.abs(player.x - hazard.position) < hazard.width + player.radius;
-  return Math.abs(player.y - hazard.position) < hazard.width + player.radius;
+function isPlayerInChocolateBar(hazard) {
+  const halfWidth = hazard.width / 2 + player.radius;
+  const halfLength = hazard.length / 2 + player.radius;
+  if (hazard.orientation === "vertical") {
+    return Math.abs(player.x - hazard.x) < halfWidth && Math.abs(player.y - hazard.y) < halfLength;
+  }
+  return Math.abs(player.x - hazard.x) < halfLength && Math.abs(player.y - hazard.y) < halfWidth;
+}
+
+function chocolateBarTouchesArena(hazard) {
+  if (hazard.orientation === "vertical") {
+    return hazard.y + hazard.length / 2 > world.arena.y && hazard.y - hazard.length / 2 < world.arena.y + world.arena.h;
+  }
+  return hazard.x + hazard.length / 2 > world.arena.x && hazard.x - hazard.length / 2 < world.arena.x + world.arena.w;
 }
 
 function isPlayerInCherryCross(hazard) {
@@ -2049,14 +2074,34 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "chocolateLine") {
+    if (hazard.type === "chocolateBar") {
       const active = hazard.warn <= 0;
-      ctx.fillStyle = active ? "rgba(94, 45, 25, 0.46)" : "rgba(255, 248, 232, 0.38)";
-      if (hazard.orientation === "vertical") {
-        ctx.fillRect(hazard.position - hazard.width / 2, world.arena.y + 40, hazard.width, world.arena.h - 80);
-      } else {
-        ctx.fillRect(world.arena.x + 40, hazard.position - hazard.width / 2, world.arena.w - 80, hazard.width);
+      if (!active) {
+        ctx.fillStyle = "rgba(255, 248, 232, 0.38)";
+        if (hazard.orientation === "vertical") {
+          ctx.fillRect(hazard.position - hazard.width / 2, world.arena.y + 40, hazard.width, world.arena.h - 80);
+        } else {
+          ctx.fillRect(world.arena.x + 40, hazard.position - hazard.width / 2, world.arena.w - 80, hazard.width);
+        }
+        return;
       }
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      if (hazard.orientation === "vertical") ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = "#6b351f";
+      ctx.strokeStyle = "#2d1710";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-hazard.length / 2, -hazard.width / 2, hazard.length, hazard.width, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 221, 176, 0.26)";
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.beginPath();
+        ctx.roundRect(i * 32 - 12, -hazard.width / 2 + 6, 24, hazard.width - 12, 5);
+        ctx.fill();
+      }
+      ctx.restore();
       return;
     }
     if (hazard.type === "scoopDrop" || hazard.type === "frozenPuddle") {
