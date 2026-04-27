@@ -1933,6 +1933,12 @@ ui.bossSelector.addEventListener("click", (event) => {
 
 ui.potionButton.addEventListener("click", drinkPotion);
 ui.resetButton.addEventListener("click", () => resetFight(false));
+window.addEventListener("keydown", (event) => {
+  if (event.key.toLowerCase() !== "q") return;
+  if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(document.activeElement?.tagName)) return;
+  event.preventDefault();
+  drinkPotion();
+});
 window.addEventListener("resize", resizeCanvas);
 
 loadGame();
