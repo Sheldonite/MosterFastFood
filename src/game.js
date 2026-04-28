@@ -674,7 +674,7 @@ function updateNachoPico(dt) {
   while (boss.picoTimer <= 0) {
     if (boss.phase >= 3) {
       spawnPicoStormPiece();
-      boss.picoTimer += boss.enraged ? 0.045 : 0.07;
+      boss.picoTimer += boss.enraged ? 0.12 : 0.18;
     } else {
       spawnPicoPiece();
       boss.picoTimer += 0.11 + Math.random() * 0.14;
@@ -1133,11 +1133,35 @@ function spawnPicoPiece() {
 
 function spawnPicoStormPiece() {
   const colors = ["#f7f3e8", "#cf3b2f", "#3ca45e"];
-  const base = boss.picoIndex * 2.399963 + boss.animationTime * 1.55;
-  const wobble = Math.sin(boss.picoIndex * 0.73) * 0.34;
-  const angle = base + wobble;
+  const laneCount = boss.enraged ? 7 : 6;
+  const lane = boss.picoIndex % laneCount;
+  const fromVerticalEdge = Math.floor(boss.picoIndex / laneCount) % 2 === 0;
+  const direction = Math.floor(boss.picoIndex / (laneCount * 2)) % 2 === 0 ? 1 : -1;
+  const laneWobble = Math.sin(boss.animationTime * 1.7 + boss.picoIndex) * 22;
+  const edgeInset = 12;
+  const verticalLaneY = clamp(
+    world.arena.y + 75 + lane * ((world.arena.h - 150) / Math.max(1, laneCount - 1)) + laneWobble,
+    world.arena.y + 44,
+    world.arena.y + world.arena.h - 44,
+  );
+  const horizontalLaneX = clamp(
+    world.arena.x + 85 + lane * ((world.arena.w - 170) / Math.max(1, laneCount - 1)) + laneWobble,
+    world.arena.x + 44,
+    world.arena.x + world.arena.w - 44,
+  );
+  const start = fromVerticalEdge
+    ? {
+        x: direction > 0 ? world.arena.x + edgeInset : world.arena.x + world.arena.w - edgeInset,
+        y: verticalLaneY,
+      }
+    : {
+        x: horizontalLaneX,
+        y: direction > 0 ? world.arena.y + edgeInset : world.arena.y + world.arena.h - edgeInset,
+      };
+  const base = fromVerticalEdge ? (direction > 0 ? 0 : Math.PI) : (direction > 0 ? Math.PI / 2 : -Math.PI / 2);
+  const angle = base + Math.sin(boss.picoIndex * 0.73) * 0.22;
   const swirlDirection = boss.picoIndex % 2 === 0 ? 1 : -1;
-  const speed = (boss.enraged ? 210 : 175) + (boss.picoIndex % 4) * 16;
+  const speed = (boss.enraged ? 250 : 220) + (boss.picoIndex % 4) * 18;
   const outward = {
     x: Math.cos(angle),
     y: Math.sin(angle),
@@ -1148,15 +1172,15 @@ function spawnPicoStormPiece() {
   };
   hazards.push({
     type: "pico",
-    x: boss.x + outward.x * (boss.radius + 18),
-    y: boss.y + outward.y * (boss.radius + 12),
-    vx: (outward.x * 0.72 + tangent.x * 0.44) * speed,
-    vy: (outward.y * 0.72 + tangent.y * 0.44) * speed,
+    x: start.x,
+    y: start.y,
+    vx: (outward.x * 0.92 + tangent.x * 0.18) * speed,
+    vy: (outward.y * 0.92 + tangent.y * 0.18) * speed,
     r: 8,
-    ttl: boss.enraged ? 3.1 : 2.65,
+    ttl: boss.enraged ? 4.4 : 4,
     color: colors[boss.picoIndex % colors.length],
     damage: boss.enraged ? 10 : 8,
-    turn: swirlDirection * (boss.enraged ? 1.55 : 1.25),
+    turn: swirlDirection * (boss.enraged ? 0.55 : 0.42),
     storm: true,
   });
   boss.picoIndex += 1;
