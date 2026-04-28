@@ -621,11 +621,16 @@ function updateNachoLibre(dt) {
     return;
   }
 
-  if (boss.quadrantMode === "idle") {
+  if (!boss.finalEnrageStarted && boss.quadrantMode === "idle") {
     boss.nextWallTimer -= dt;
     if (boss.nextWallTimer <= 0) startNachoQuadrants(boss.enraged ? 0.75 : 1.2, 10);
   }
   if (boss.enraged) {
+    boss.cheeseDropTimer -= dt;
+    while (boss.cheeseDropTimer <= 0) {
+      spawnNachoCheesePuddle(player.x, player.y, 7, { quadrantCheese: false });
+      boss.cheeseDropTimer += 0.375;
+    }
     boss.chipTimer -= dt;
     if (boss.chipTimer <= 0) {
       spawnNachoChips();
@@ -658,8 +663,9 @@ function updateNachoPhase() {
     boss.enraged = true;
     boss.invulnerableTimer = 2;
     boss.enrageTextTimer = 2.2;
+    boss.cheeseDropTimer = 0.1;
     boss.chipTimer = 0.8;
-    startNachoQuadrants(0.65, 10, true);
+    clearNachoQuadrants();
     log("Now I'm angry.");
     ui.status.textContent = "Now I'm angry.";
     showFloat("Now I'm angry.");
@@ -1123,7 +1129,7 @@ function spawnPicoPiece() {
   boss.picoIndex += 1;
 }
 
-function spawnNachoCheesePuddle(x, y, ttl) {
+function spawnNachoCheesePuddle(x, y, ttl, options = {}) {
   hazards.push({
     type: "nachoCheesePuddle",
     x: clamp(x, world.arena.x + 70, world.arena.x + world.arena.w - 70),
@@ -1133,7 +1139,7 @@ function spawnNachoCheesePuddle(x, y, ttl) {
     ttl,
     damage: boss.enraged ? 8 : 6,
     damageTimer: 0,
-    quadrantCheese: true,
+    quadrantCheese: options.quadrantCheese ?? true,
   });
 }
 
@@ -1143,21 +1149,34 @@ function spawnNachoChips() {
   for (let i = 0; i < count; i += 1) {
     const angle = offset + (Math.PI * 2 * i) / count;
     const speed = boss.enraged ? 265 : 235;
+    const x = boss.x + Math.cos(angle) * (boss.radius + 18);
+    const y = boss.y + Math.sin(angle) * (boss.radius + 18);
     hazards.push({
       type: "nachoChip",
-      x: boss.x + Math.cos(angle) * (boss.radius + 18),
-      y: boss.y + Math.sin(angle) * (boss.radius + 18),
+      x,
+      y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       angle,
       r: 24,
       ttl: 2.4,
       traveled: 0,
-      shatterDistance: 330,
+      shatterDistance: distanceToArenaWall(x, y, angle) * 0.5,
       damage: 15,
     });
   }
   log("Tortilla chips fly out.");
+}
+
+function distanceToArenaWall(x, y, angle) {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const distances = [];
+  if (dx > 0) distances.push((world.arena.x + world.arena.w - x) / dx);
+  if (dx < 0) distances.push((world.arena.x - x) / dx);
+  if (dy > 0) distances.push((world.arena.y + world.arena.h - y) / dy);
+  if (dy < 0) distances.push((world.arena.y - y) / dy);
+  return Math.max(120, Math.min(...distances.filter((distanceValue) => distanceValue > 0)));
 }
 
 function shatterNachoChip(chip, targetList = hazards) {
@@ -1169,8 +1188,8 @@ function shatterNachoChip(chip, targetList = hazards) {
   points.forEach((point, pointIndex) => {
     const x = chip.x + Math.cos(point.angle) * point.distance;
     const y = chip.y + Math.sin(point.angle) * point.distance;
-    for (let i = 0; i < 5; i += 1) {
-      const angle = chip.angle + (i - 2) * 0.42 + (pointIndex - 1) * 0.18;
+    for (let i = 0; i < 3; i += 1) {
+      const angle = chip.angle + (i - 1) * 0.48 + (pointIndex - 1) * 0.2;
       const speed = 220 + Math.random() * 95;
       targetList.push({
         type: "nachoCrumb",
