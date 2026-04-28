@@ -186,6 +186,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1.2,
       swingTimer: 1.2,
     },
+    pizza: {
+      kind: "pizza",
+      name: "Pizza Phantom",
+      radius: 66,
+      maxHp: 1500,
+      color: "#d84f37",
+      enrageColor: "#f0bd4b",
+      attackTimer: 1.1,
+      swingTimer: 1.2,
+    },
   };
   const template = bosses[kind];
   return {
@@ -194,7 +204,7 @@ function createBoss(kind = "burger") {
     y: 450,
     hp: template.maxHp,
     phase: 1,
-    totalPhases: kind === "shake" || kind === "nacho" ? 3 : 1,
+    totalPhases: kind === "shake" || kind === "nacho" || kind === "pizza" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -217,6 +227,14 @@ function createBoss(kind = "burger") {
     finalEnrageStarted: false,
     invulnerableTimer: 0,
     enrageTextTimer: 0,
+    cloneTimer: 2.6,
+    clones: [],
+    ovenTimer: 2.2,
+    deliveryCooldown: 8,
+    deliveryActive: false,
+    deliveryTimer: 0,
+    deliveryGoalHp: 0,
+    deliveryTextTimer: 0,
   };
 }
 
@@ -550,6 +568,10 @@ function updateCombat(dt) {
     updateNachoLibre(dt);
     return;
   }
+  if (boss.kind === "pizza") {
+    updatePizzaPhantom(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -706,6 +728,93 @@ function updateNachoQuadrant(dt) {
     boss.nextWallTimer = boss.phase === 1 ? 5.8 : boss.enraged ? 3.6 : 5.2;
     log("Nacho walls crumble.");
   }
+}
+
+function updatePizzaPhantom(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  boss.cloneTimer -= dt;
+  boss.ovenTimer -= dt;
+  boss.deliveryTextTimer = Math.max(0, boss.deliveryTextTimer - dt);
+
+  updatePizzaPhase();
+  updatePizzaDelivery(dt);
+  if (boss.phase >= 3) updatePizzaClones(dt);
+
+  if (boss.phase >= 3 && boss.cloneTimer <= 0) {
+    spawnPizzaClones();
+    boss.cloneTimer = boss.enraged ? 5.2 : 6.4;
+  }
+  if (boss.phase >= 3 && boss.ovenTimer <= 0) {
+    spawnOvenZones(boss.enraged ? 4 : 3);
+    boss.ovenTimer = boss.enraged ? 3.2 : 4.2;
+  }
+  if (boss.attackTimer <= 0) {
+    spawnPizzaPattern();
+    boss.attackTimer = boss.enraged ? 1.05 : boss.phase === 3 ? 1.25 : boss.phase === 2 ? 1.45 : 1.75;
+  }
+}
+
+function updatePizzaPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.66 && boss.phase === 1) {
+    boss.phase = 2;
+    boss.attackTimer = 0.4;
+    log("Phase 2: slice split.");
+    ui.status.textContent = "Pizza Phantom starts splitting slices.";
+  }
+  if (hpPercent <= 0.33 && boss.phase < 3) {
+    boss.phase = 3;
+    boss.attackTimer = 0.5;
+    boss.cloneTimer = 0.2;
+    boss.ovenTimer = 1.2;
+    boss.deliveryCooldown = 4.5;
+    log("Phase 3: stuffed crust possession.");
+    ui.status.textContent = "Pizza Phantom summons decoys.";
+  }
+  if (hpPercent <= 0.18 && !boss.enraged) {
+    boss.enraged = true;
+    boss.attackTimer = Math.min(boss.attackTimer, 0.45);
+    log("Pizza Phantom haunts the oven.");
+  }
+}
+
+function updatePizzaDelivery(dt) {
+  if (boss.phase < 3) return;
+  if (boss.deliveryActive) {
+    boss.deliveryTimer -= dt;
+    if (boss.hp <= boss.deliveryGoalHp) {
+      boss.deliveryActive = false;
+      boss.deliveryCooldown = boss.enraged ? 9 : 11;
+      boss.deliveryTextTimer = 0;
+      log("Delivery timer broken.");
+      showFloat("Timer broken");
+      return;
+    }
+    if (boss.deliveryTimer <= 0) {
+      boss.deliveryActive = false;
+      boss.deliveryCooldown = boss.enraged ? 8 : 10;
+      boss.deliveryTextTimer = 0;
+      spawnPizzaBoxSlam();
+      log("Pizza box slam incoming.");
+    }
+    return;
+  }
+  boss.deliveryCooldown -= dt;
+  if (boss.deliveryCooldown <= 0) startPizzaDeliveryCheck();
+}
+
+function updatePizzaClones(dt) {
+  boss.clones = boss.clones.filter((clone) => {
+    clone.ttl -= dt;
+    clone.fireTimer -= dt;
+    if (clone.fireTimer <= 0) {
+      spawnPizzaCloneBolt(clone);
+      clone.fireTimer = boss.enraged ? 1.05 : 1.35;
+    }
+    return clone.ttl > 0;
+  });
 }
 
 function updateBigCola(dt) {
@@ -969,6 +1078,199 @@ function spawnBossPattern() {
       });
     }
     log("Floor slam and furnace vents primed.");
+  }
+}
+
+function spawnPizzaPattern() {
+  const roll = Math.random();
+  if (boss.phase === 1) {
+    if (roll < 0.56) spawnPizzaDash();
+    else spawnPepperoniVolley(7, 0.5);
+    return;
+  }
+  if (boss.phase === 2) {
+    if (roll < 0.46) spawnPizzaSlices(6);
+    else if (roll < 0.72) spawnPizzaDash();
+    else spawnPizzaCrustWalls(2);
+    return;
+  }
+  if (roll < 0.3) spawnPizzaSlices(boss.enraged ? 9 : 8);
+  else if (roll < 0.52) spawnPepperoniVolley(boss.enraged ? 12 : 10, 0.85);
+  else if (roll < 0.76) spawnPizzaDash();
+  else spawnOvenZones(boss.enraged ? 5 : 4);
+}
+
+function spawnPizzaDash() {
+  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const travel = distanceToArenaWall(boss.x, boss.y, angle) - boss.radius - 34;
+  const dashDistance = clamp(travel, 180, 760);
+  const target = clampArenaPoint(
+    boss.x + Math.cos(angle) * dashDistance,
+    boss.y + Math.sin(angle) * dashDistance,
+    boss.radius,
+  );
+  hazards.push({
+    type: "pizzaDash",
+    x: boss.x,
+    y: boss.y,
+    targetX: target.x,
+    targetY: target.y,
+    angle,
+    length: Math.hypot(target.x - boss.x, target.y - boss.y),
+    width: boss.phase >= 2 ? 48 : 40,
+    warn: boss.enraged ? 0.55 : 0.72,
+    ttl: boss.enraged ? 0.95 : 1.15,
+    damage: boss.enraged ? 36 : 30,
+    hit: false,
+    dashed: false,
+  });
+  log("Delivery dash lined up.");
+}
+
+function spawnPepperoniVolley(count, spread) {
+  const base = Math.atan2(player.y - boss.y, player.x - boss.x);
+  for (let i = 0; i < count; i += 1) {
+    const angle = base + (i - (count - 1) / 2) * (spread / Math.max(1, count - 1)) + (Math.random() - 0.5) * 0.08;
+    const speed = (boss.enraged ? 285 : 245) + Math.random() * 45;
+    hazards.push({
+      type: "pepperoni",
+      x: boss.x + Math.cos(angle) * (boss.radius + 8),
+      y: boss.y + Math.sin(angle) * (boss.radius + 8),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 11,
+      ttl: 3,
+      damage: boss.enraged ? 13 : 10,
+      color: "#b93a2f",
+    });
+  }
+  log("Pepperoni volley fired.");
+}
+
+function spawnPizzaSlices(count) {
+  const offset = Math.random() * Math.PI * 2;
+  for (let i = 0; i < count; i += 1) {
+    const angle = offset + (Math.PI * 2 * i) / count;
+    const speed = boss.enraged ? 300 : 260;
+    hazards.push({
+      type: "pizzaSlice",
+      x: boss.x + Math.cos(angle) * (boss.radius + 18),
+      y: boss.y + Math.sin(angle) * (boss.radius + 18),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      angle,
+      r: 24,
+      ttl: 2.6,
+      damage: boss.enraged ? 22 : 18,
+    });
+  }
+  log("Pizza slices split outward.");
+}
+
+function spawnPizzaCrustWalls(count) {
+  for (let i = 0; i < count; i += 1) {
+    const vertical = Math.random() > 0.5;
+    const position = vertical
+      ? world.arena.x + 145 + Math.random() * (world.arena.w - 290)
+      : world.arena.y + 125 + Math.random() * (world.arena.h - 250);
+    hazards.push({
+      type: "pizzaCrustWall",
+      orientation: vertical ? "vertical" : "horizontal",
+      position,
+      x: vertical ? position : world.arena.x + world.arena.w / 2,
+      y: vertical ? world.arena.y + world.arena.h / 2 : position,
+      width: 34,
+      warn: 0.82,
+      ttl: boss.enraged ? 3.2 : 3.6,
+      damage: 12,
+      damageTimer: 0,
+    });
+  }
+  log("Stuffed crust walls forming.");
+}
+
+function spawnPizzaClones() {
+  boss.clones = [];
+  for (let i = 0; i < 3; i += 1) {
+    const point = randomPizzaArenaPoint(95);
+    boss.clones.push({
+      x: point.x,
+      y: point.y,
+      ttl: boss.enraged ? 4.3 : 5.1,
+      fireTimer: 0.55 + i * 0.28,
+      phaseOffset: i * 1.8 + Math.random(),
+    });
+  }
+  log("Pizza Phantom splits into decoys.");
+}
+
+function spawnPizzaCloneBolt(clone) {
+  const angle = Math.atan2(player.y - clone.y, player.x - clone.x);
+  hazards.push({
+    type: "cheeseBolt",
+    x: clone.x,
+    y: clone.y,
+    vx: Math.cos(angle) * (boss.enraged ? 330 : 290),
+    vy: Math.sin(angle) * (boss.enraged ? 330 : 290),
+    r: 7,
+    ttl: 2.4,
+    damage: boss.enraged ? 10 : 8,
+    color: "#f4d36b",
+  });
+}
+
+function spawnOvenZones(count) {
+  for (let i = 0; i < count; i += 1) {
+    const point = i === 0 ? randomArenaPointNearPlayer(80) : randomPizzaArenaPoint(75);
+    hazards.push({
+      type: "ovenZone",
+      x: point.x,
+      y: point.y,
+      r: boss.enraged ? 62 : 54,
+      warn: boss.enraged ? 0.82 : 1.05,
+      ttl: boss.enraged ? 1.22 : 1.45,
+      damage: boss.enraged ? 38 : 32,
+      hit: false,
+    });
+  }
+  log("Oven zones are heating up.");
+}
+
+function startPizzaDeliveryCheck() {
+  boss.deliveryActive = true;
+  boss.deliveryTimer = boss.enraged ? 4.4 : 5.2;
+  boss.deliveryGoalHp = Math.max(0, boss.hp - (boss.enraged ? 150 : 115));
+  boss.deliveryTextTimer = boss.deliveryTimer;
+  log("30 minutes or less!");
+  showFloat("30 minutes or less!");
+}
+
+function spawnPizzaBoxSlam() {
+  hazards.push({
+    type: "pizzaBoxSlam",
+    x: world.arena.x + world.arena.w / 2,
+    y: world.arena.y + world.arena.h / 2,
+    warn: 0.9,
+    ttl: 1.18,
+    damage: boss.enraged ? 82 : 68,
+    hit: false,
+  });
+}
+
+function spawnPizzaCheeseTrail(dash, targetList = hazards) {
+  const length = Math.max(1, dash.length);
+  const steps = Math.max(3, Math.floor(length / 95));
+  for (let i = 1; i <= steps; i += 1) {
+    const progress = i / (steps + 1);
+    targetList.push({
+      type: "pizzaCheeseTrail",
+      x: dash.x + Math.cos(dash.angle) * length * progress,
+      y: dash.y + Math.sin(dash.angle) * length * progress,
+      r: 34,
+      ttl: boss.enraged ? 4.4 : 3.8,
+      damage: boss.enraged ? 10 : 8,
+      damageTimer: 0,
+    });
   }
 }
 
@@ -1625,6 +1927,13 @@ function randomArenaPointNearPlayer(spread) {
   };
 }
 
+function randomPizzaArenaPoint(padding = 80) {
+  return {
+    x: world.arena.x + padding + Math.random() * (world.arena.w - padding * 2),
+    y: world.arena.y + padding + Math.random() * (world.arena.h - padding * 2),
+  };
+}
+
 function setBossAnimation(animation) {
   boss.animation = animation;
   boss.animationTime = 0;
@@ -1732,6 +2041,85 @@ function updateHazards(dt) {
       } else if (hazard.traveled >= hazard.shatterDistance) {
         shatterNachoChip(hazard, spawnedHazards);
         hazard.ttl = 0;
+      }
+    } else if (hazard.type === "pizzaDash") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.dashed) {
+        hazard.dashed = true;
+        if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+          damagePlayer(hazard.damage, "Delivery dash");
+        }
+        spawnPizzaCheeseTrail(hazard, spawnedHazards);
+        boss.x = hazard.targetX;
+        boss.y = hazard.targetY;
+        particles.push({ x: boss.x, y: boss.y - 48, text: "dash", color: "#ffd76a", ttl: 0.55 });
+      }
+    } else if (hazard.type === "pizzaCheeseTrail") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Hot cheese trail");
+          hazard.damageTimer = 0.45;
+        }
+      }
+    } else if (hazard.type === "pizzaSlice") {
+      hazard.ttl -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, "Pizza slice");
+        hazard.ttl = 0;
+      } else if (
+        hazard.x <= world.arena.x + hazard.r ||
+        hazard.x >= world.arena.x + world.arena.w - hazard.r ||
+        hazard.y <= world.arena.y + hazard.r ||
+        hazard.y >= world.arena.y + world.arena.h - hazard.r ||
+        hazard.ttl <= 0
+      ) {
+        preparePizzaSliceReturn(hazard);
+      }
+    } else if (hazard.type === "pizzaSliceReturn") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0) {
+        if (!hazard.active) {
+          hazard.active = true;
+          hazard.vx = Math.cos(hazard.angle) * (boss.enraged ? 450 : 390);
+          hazard.vy = Math.sin(hazard.angle) * (boss.enraged ? 450 : 390);
+        }
+        hazard.x += hazard.vx * dt;
+        hazard.y += hazard.vy * dt;
+        if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+          damagePlayer(hazard.damage, "Returning pizza slice");
+          hazard.ttl = 0;
+        }
+      }
+    } else if (hazard.type === "pizzaCrustWall") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && isPlayerInPizzaCrustWall(hazard)) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Stuffed crust wall");
+          knockPlayerFrom(hazard.x, hazard.y, 180);
+          hazard.damageTimer = 0.55;
+        }
+      }
+    } else if (hazard.type === "ovenZone") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.hit = true;
+        damagePlayer(hazard.damage, "Oven zone");
+      }
+    } else if (hazard.type === "pizzaBoxSlam") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        damagePlayer(hazard.damage, "Pizza box slam");
       }
     } else if (hazard.type === "colaBubble") {
       hazard.ttl -= dt;
@@ -1846,7 +2234,7 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt") {
       hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
@@ -1860,7 +2248,7 @@ function updateHazards(dt) {
         bounceProjectileInArena(hazard);
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : "Arc bolt";
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : hazard.type === "pepperoni" ? "Pepperoni" : hazard.type === "cheeseBolt" ? "Ghost cheese" : "Arc bolt";
         damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         hazard.ttl = 0;
@@ -1929,6 +2317,28 @@ function isPlayerInLine(x, y, angle, length, width) {
   if (forward < 0 || forward > length) return false;
   const side = Math.abs(-Math.sin(angle) * dx + Math.cos(angle) * dy);
   return side < width;
+}
+
+function preparePizzaSliceReturn(hazard) {
+  hazard.x = clamp(hazard.x, world.arena.x + hazard.r + 2, world.arena.x + world.arena.w - hazard.r - 2);
+  hazard.y = clamp(hazard.y, world.arena.y + hazard.r + 2, world.arena.y + world.arena.h - hazard.r - 2);
+  hazard.type = "pizzaSliceReturn";
+  hazard.angle = Math.atan2(player.y - hazard.y, player.x - hazard.x);
+  hazard.warn = boss.enraged ? 0.48 : 0.68;
+  hazard.ttl = boss.enraged ? 2.2 : 2.55;
+  hazard.vx = 0;
+  hazard.vy = 0;
+  hazard.active = false;
+  particles.push({ x: hazard.x, y: hazard.y - 16, text: "return", color: "#ffd76a", ttl: 0.45 });
+}
+
+function isPlayerInPizzaCrustWall(hazard) {
+  const halfLong = hazard.orientation === "vertical" ? world.arena.h / 2 - 42 : world.arena.w / 2 - 42;
+  const halfShort = hazard.width / 2 + player.radius;
+  const dx = Math.abs(player.x - hazard.x);
+  const dy = Math.abs(player.y - hazard.y);
+  if (hazard.orientation === "vertical") return dx < halfShort && dy < halfLong;
+  return dy < halfShort && dx < halfLong;
 }
 
 function knockPlayerFrom(x, y, speed) {
@@ -2133,9 +2543,21 @@ function winFight() {
     showFloat("Next boss: Nacho Libre");
     return;
   }
+  if (boss.kind === "nacho") {
+    boss = createBoss("pizza");
+    condimentBosses = [];
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Nacho Libre defeated. Pizza Phantom enters next.";
+    showFloat("Next boss: Pizza Phantom");
+    return;
+  }
   player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat(boss.kind === "nacho" ? "Nacho Libre defeated" : "Boss defeated");
+  showFloat(boss.kind === "pizza" ? "Pizza Phantom defeated" : "Boss defeated");
 }
 
 function update(dt) {
@@ -2290,6 +2712,8 @@ function drawBoss() {
     drawPeanutBusterShakeBoss();
   } else if (boss.kind === "nacho") {
     drawNachoLibreBoss();
+  } else if (boss.kind === "pizza") {
+    drawPizzaPhantomBoss();
   } else {
     drawBurgerBoss();
   }
@@ -2298,12 +2722,17 @@ function drawBoss() {
   ctx.fillStyle = "#fff2c6";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" ? ` Phase ${boss.phase}` : "";
+  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" || boss.kind === "pizza" ? ` Phase ${boss.phase}` : "";
   ctx.fillText(`${boss.name}${phaseText}`, boss.x, boss.y - boss.radius - 38);
   if (boss.kind === "nacho" && boss.enrageTextTimer > 0) {
     ctx.fillStyle = "#ffda6b";
     ctx.font = "bold 18px sans-serif";
     ctx.fillText("Now I'm angry.", boss.x, boss.y + boss.radius + 30);
+  }
+  if (boss.kind === "pizza" && boss.deliveryTextTimer > 0) {
+    ctx.fillStyle = "#fff4c4";
+    ctx.font = "bold 18px sans-serif";
+    ctx.fillText(`${Math.ceil(boss.deliveryTimer)}s delivery`, boss.x, boss.y + boss.radius + 30);
   }
   ctx.textAlign = "left";
 }
@@ -2463,6 +2892,65 @@ function drawNachoLibreBoss() {
   ctx.arc(boss.x, boss.y - 4, boss.radius * 0.78, Math.PI * 1.08, Math.PI * 1.92);
   ctx.stroke();
   if (boss.invulnerableTimer > 0) drawRing(boss.x, boss.y, boss.radius + 18, "#fff2c6");
+}
+
+function drawPizzaPhantomBoss() {
+  boss.clones.forEach((clone) => {
+    ctx.save();
+    ctx.globalAlpha = 0.36 + Math.sin(boss.animationTime * 5 + clone.phaseOffset) * 0.08;
+    drawPizzaShape(clone.x, clone.y, boss.radius * 0.86, "#d84f37", "#f0bd4b", true);
+    ctx.restore();
+  });
+  const bob = Math.sin(boss.animationTime * 3.5) * 5;
+  drawPizzaShape(boss.x, boss.y + bob, boss.radius, boss.enraged ? boss.enrageColor : boss.color, "#f0bd4b", false);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.beginPath();
+  ctx.arc(boss.x - 18, boss.y - 18 + bob, 10, 0, Math.PI * 2);
+  ctx.arc(boss.x + 18, boss.y - 18 + bob, 10, 0, Math.PI * 2);
+  ctx.fill();
+  if (boss.deliveryActive) drawRing(boss.x, boss.y + bob, boss.radius + 18, "#fff4c4");
+}
+
+function drawPizzaShape(x, y, radius, sauceColor, crustColor, ghost) {
+  ctx.fillStyle = crustColor;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = ghost ? "rgba(255, 234, 157, 0.82)" : "#ffd76a";
+  ctx.beginPath();
+  ctx.arc(x, y, radius - 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = sauceColor;
+  ctx.beginPath();
+  ctx.arc(x, y, radius - 20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#b93a2f";
+  for (let i = 0; i < 7; i += 1) {
+    const angle = boss.animationTime * 0.35 + i * 0.9;
+    const ring = i % 2 === 0 ? radius * 0.34 : radius * 0.52;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(angle) * ring, y + Math.sin(angle) * ring * 0.78, ghost ? 6 : 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = ghost ? "#fff4c4" : "#2d1710";
+  ctx.beginPath();
+  ctx.arc(x - radius * 0.28, y - radius * 0.15, 7, 0, Math.PI * 2);
+  ctx.arc(x + radius * 0.28, y - radius * 0.15, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = ghost ? "rgba(255, 244, 196, 0.65)" : "#2d1710";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(x, y + radius * 0.02, radius * 0.32, 0.15, Math.PI - 0.15);
+  ctx.stroke();
+  ctx.strokeStyle = ghost ? "rgba(255, 255, 255, 0.32)" : "rgba(255, 244, 196, 0.36)";
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 4; i += 1) {
+    const angle = boss.animationTime * 1.2 + i * 1.57;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(angle) * (radius * 0.35), y + Math.sin(angle) * (radius * 0.22));
+    ctx.lineTo(x + Math.cos(angle) * (radius * 0.78), y + Math.sin(angle) * (radius * 0.52));
+    ctx.stroke();
+  }
 }
 
 function drawCurlyFriesBoss() {
@@ -2642,6 +3130,109 @@ function drawHazards() {
       ctx.restore();
       return;
     }
+    if (hazard.type === "pizzaDash") {
+      const active = hazard.warn <= 0;
+      ctx.strokeStyle = active ? "rgba(255, 107, 72, 0.72)" : "rgba(255, 244, 196, 0.5)";
+      ctx.lineWidth = active ? hazard.width : 6;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.targetX, hazard.targetY);
+      ctx.stroke();
+      ctx.strokeStyle = active ? "#ffd76a" : "#fff4c4";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.targetX, hazard.targetY);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "pizzaCheeseTrail") {
+      ctx.fillStyle = "rgba(255, 204, 70, 0.34)";
+      ctx.strokeStyle = "rgba(255, 236, 140, 0.62)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.15, hazard.r * 0.65, Math.sin(hazard.x) * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "pizzaSlice" || hazard.type === "pizzaSliceReturn") {
+      if (hazard.type === "pizzaSliceReturn" && hazard.warn > 0) {
+        ctx.strokeStyle = "rgba(255, 244, 196, 0.48)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(hazard.x, hazard.y);
+        ctx.lineTo(hazard.x + Math.cos(hazard.angle) * 620, hazard.y + Math.sin(hazard.angle) * 620);
+        ctx.stroke();
+      }
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.angle);
+      ctx.fillStyle = hazard.type === "pizzaSliceReturn" && hazard.warn > 0 ? "rgba(241, 190, 79, 0.5)" : "#e9bc54";
+      ctx.strokeStyle = "#8c4626";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(28, 0);
+      ctx.lineTo(-20, -22);
+      ctx.lineTo(-16, 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#b93a2f";
+      ctx.beginPath();
+      ctx.arc(-3, -5, 5, 0, Math.PI * 2);
+      ctx.arc(7, 8, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "pizzaCrustWall") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 244, 196, 0.16)" : "rgba(186, 111, 52, 0.68)";
+      ctx.strokeStyle = warning ? "#fff4c4" : "#f0bd4b";
+      ctx.lineWidth = warning ? 3 : 4;
+      if (hazard.orientation === "vertical") {
+        ctx.fillRect(hazard.position - hazard.width / 2, world.arena.y + 42, hazard.width, world.arena.h - 84);
+        ctx.strokeRect(hazard.position - hazard.width / 2, world.arena.y + 42, hazard.width, world.arena.h - 84);
+      } else {
+        ctx.fillRect(world.arena.x + 42, hazard.position - hazard.width / 2, world.arena.w - 84, hazard.width);
+        ctx.strokeRect(world.arena.x + 42, hazard.position - hazard.width / 2, world.arena.w - 84, hazard.width);
+      }
+      return;
+    }
+    if (hazard.type === "ovenZone") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 112, 68, 0.12)" : "rgba(255, 112, 68, 0.34)";
+      ctx.strokeStyle = warning ? "#fff4c4" : "#ff7044";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = warning ? "rgba(255, 244, 196, 0.45)" : "rgba(255, 226, 105, 0.58)";
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        ctx.arc(hazard.x + Math.cos(boss.animationTime * 2.4 + i * 2.1) * 22, hazard.y + Math.sin(boss.animationTime * 2 + i * 2.1) * 18, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    if (hazard.type === "pizzaBoxSlam") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 244, 196, 0.12)" : "rgba(255, 107, 72, 0.3)";
+      ctx.strokeStyle = warning ? "#fff4c4" : "#ff7044";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(world.arena.x + 56, world.arena.y + 56, world.arena.w - 112, world.arena.h - 112, 16);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = warning ? "#fff4c4" : "#ffd76a";
+      ctx.font = "bold 30px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("30 MINUTES OR LESS", world.arena.x + world.arena.w / 2, world.arena.y + world.arena.h / 2);
+      ctx.textAlign = "left";
+      return;
+    }
     if (hazard.type === "colaBubble") {
       ctx.fillStyle = "rgba(185, 244, 255, 0.32)";
       ctx.strokeStyle = "#b9f4ff";
@@ -2791,8 +3382,8 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb") {
-      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : hazard.type === "nachoCrumb" ? "#e8bd50" : "#8ad8ff");
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : hazard.type === "nachoCrumb" ? "#e8bd50" : hazard.type === "pepperoni" ? "#b93a2f" : hazard.type === "cheeseBolt" ? "#f4d36b" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
@@ -2800,6 +3391,13 @@ function drawHazards() {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.35, hazard.r * 0.82, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
       } else if (hazard.type === "nachoCrumb") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.3, hazard.r * 0.8, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
+      } else if (hazard.type === "pepperoni") {
+        ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 222, 164, 0.45)";
+        ctx.beginPath();
+        ctx.arc(hazard.x - 3, hazard.y - 3, 3, 0, Math.PI * 2);
+        ctx.arc(hazard.x + 4, hazard.y + 2, 2, 0, Math.PI * 2);
       } else {
         ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       }
@@ -2951,7 +3549,7 @@ function renderUi() {
   const bossHp = bossHealthSummary();
   ui.bossHpText.textContent = boss.kind === "shake"
     ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
-    : boss.kind === "nacho"
+    : boss.kind === "nacho" || boss.kind === "pizza"
       ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/3`
       : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
   ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
