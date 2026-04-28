@@ -624,7 +624,7 @@ function updateNachoLibre(dt) {
   if (boss.enraged) {
     boss.cheeseDropTimer -= dt;
     while (boss.cheeseDropTimer <= 0) {
-      spawnNachoCheeseCluster(player.x, player.y, 7, { quadrantCheese: false });
+      spawnNachoCheeseMortar(randomNachoArenaPoint());
       boss.cheeseDropTimer += 0.375;
     }
     boss.chipTimer -= dt;
@@ -672,8 +672,13 @@ function updateNachoPhase() {
 function updateNachoPico(dt) {
   boss.picoTimer -= dt;
   while (boss.picoTimer <= 0) {
-    spawnPicoPiece();
-    boss.picoTimer += 0.11 + Math.random() * 0.14;
+    if (boss.phase >= 3) {
+      spawnPicoStormPiece();
+      boss.picoTimer += boss.enraged ? 0.045 : 0.07;
+    } else {
+      spawnPicoPiece();
+      boss.picoTimer += 0.11 + Math.random() * 0.14;
+    }
   }
 }
 
@@ -1126,6 +1131,37 @@ function spawnPicoPiece() {
   boss.picoIndex += 1;
 }
 
+function spawnPicoStormPiece() {
+  const colors = ["#f7f3e8", "#cf3b2f", "#3ca45e"];
+  const base = boss.picoIndex * 2.399963 + boss.animationTime * 1.55;
+  const wobble = Math.sin(boss.picoIndex * 0.73) * 0.34;
+  const angle = base + wobble;
+  const swirlDirection = boss.picoIndex % 2 === 0 ? 1 : -1;
+  const speed = (boss.enraged ? 210 : 175) + (boss.picoIndex % 4) * 16;
+  const outward = {
+    x: Math.cos(angle),
+    y: Math.sin(angle),
+  };
+  const tangent = {
+    x: Math.cos(angle + Math.PI / 2) * swirlDirection,
+    y: Math.sin(angle + Math.PI / 2) * swirlDirection,
+  };
+  hazards.push({
+    type: "pico",
+    x: boss.x + outward.x * (boss.radius + 18),
+    y: boss.y + outward.y * (boss.radius + 12),
+    vx: (outward.x * 0.72 + tangent.x * 0.44) * speed,
+    vy: (outward.y * 0.72 + tangent.y * 0.44) * speed,
+    r: 8,
+    ttl: boss.enraged ? 3.1 : 2.65,
+    color: colors[boss.picoIndex % colors.length],
+    damage: boss.enraged ? 10 : 8,
+    turn: swirlDirection * (boss.enraged ? 1.55 : 1.25),
+    storm: true,
+  });
+  boss.picoIndex += 1;
+}
+
 function spawnNachoCheesePuddle(x, y, ttl, options = {}) {
   hazards.push({
     type: "nachoCheesePuddle",
@@ -1147,6 +1183,27 @@ function spawnNachoCheeseCluster(x, y, ttl, options = {}) {
   spawnNachoCheesePuddle(x, y, ttl, options);
   spawnNachoCheesePuddle(x + Math.cos(sideAngle) * spacing, y + Math.sin(sideAngle) * spacing, ttl, options);
   spawnNachoCheesePuddle(x - Math.cos(sideAngle) * spacing, y - Math.sin(sideAngle) * spacing, ttl, options);
+}
+
+function spawnNachoCheeseMortar(point) {
+  hazards.push({
+    type: "nachoCheeseMortar",
+    x: point.x,
+    y: point.y,
+    r: 64,
+    warn: 0.7,
+    warnDuration: 0.7,
+    ttl: 1.7,
+    damage: 8,
+    damageTimer: 0,
+  });
+}
+
+function randomNachoArenaPoint() {
+  return {
+    x: world.arena.x + 80 + Math.random() * (world.arena.w - 160),
+    y: world.arena.y + 80 + Math.random() * (world.arena.h - 160),
+  };
 }
 
 function spawnNachoChips() {
@@ -1590,10 +1647,23 @@ function updateHazards(dt) {
       }
     } else if (hazard.type === "pico") {
       hazard.ttl -= dt;
+      if (hazard.turn) {
+        const speed = Math.hypot(hazard.vx, hazard.vy);
+        const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
+        hazard.vx = Math.cos(angle) * speed;
+        hazard.vy = Math.sin(angle) * speed;
+      }
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
-      hazard.vx *= Math.pow(0.84, dt * 4);
-      hazard.vy *= Math.pow(0.84, dt * 4);
+      if (hazard.storm) {
+        if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+          damagePlayer(hazard.damage, "Pico de gallo storm");
+          hazard.ttl = 0;
+        }
+      } else {
+        hazard.vx *= Math.pow(0.84, dt * 4);
+        hazard.vy *= Math.pow(0.84, dt * 4);
+      }
     } else if (hazard.type === "nachoCheesePuddle") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
@@ -1604,8 +1674,18 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.45;
         }
       }
+    } else if (hazard.type === "nachoCheeseMortar") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Cheese mortar");
+          hazard.damageTimer = 0.35;
+        }
+      }
     } else if (hazard.type === "cheeseWave") {
-      const slow = hazards.some((item) => item.type === "nachoCheesePuddle" && item.warn <= 0 && distance(item, hazard) < item.r + hazard.r * 0.7);
+      const slow = hazards.some((item) => (item.type === "nachoCheesePuddle" || item.type === "nachoCheeseMortar") && item.warn <= 0 && distance(item, hazard) < item.r + hazard.r * 0.7);
       const speed = (slow ? 46 : 78) + (boss.enraged ? 12 : 0);
       const angle = Math.atan2(player.y - hazard.y, player.x - hazard.x);
       hazard.x += Math.cos(angle) * speed * dt;
@@ -2456,8 +2536,23 @@ function drawHazards() {
       ctx.fillStyle = hazard.color;
       ctx.save();
       ctx.translate(hazard.x, hazard.y);
-      ctx.rotate(hazard.ttl * 8);
-      ctx.fillRect(-hazard.r, -hazard.r, hazard.r * 2, hazard.r * 2);
+      ctx.rotate(hazard.ttl * (hazard.storm ? 12 : 8));
+      if (hazard.storm) {
+        ctx.strokeStyle = "rgba(255, 242, 188, 0.65)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, hazard.r + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -hazard.r);
+        ctx.lineTo(hazard.r, 0);
+        ctx.lineTo(0, hazard.r);
+        ctx.lineTo(-hazard.r, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(-hazard.r, -hazard.r, hazard.r * 2, hazard.r * 2);
+      }
       ctx.restore();
       return;
     }
@@ -2470,6 +2565,24 @@ function drawHazards() {
       ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.72, Math.sin(hazard.x) * 0.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      return;
+    }
+    if (hazard.type === "nachoCheeseMortar") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 210, 73, 0.12)" : "rgba(255, 190, 35, 0.42)";
+      ctx.strokeStyle = warning ? "#ffe7a0" : "#f2a91f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.72, Math.sin(hazard.y) * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (warning) {
+        const progress = clamp(1 - hazard.warn / hazard.warnDuration, 0, 1);
+        ctx.fillStyle = "#ffd046";
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y - 95 + progress * 95, 15 + progress * 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
       return;
     }
     if (hazard.type === "cheeseWave") {
