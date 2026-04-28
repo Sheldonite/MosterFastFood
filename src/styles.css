@@ -255,7 +255,34 @@ p {
 }
 
 #potionButton {
+  position: relative;
   border-color: rgba(142, 199, 255, 0.32);
+}
+
+#potionButton::after {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 190px;
+  padding: 6px 8px;
+  border: 1px solid rgba(244, 232, 203, 0.2);
+  background: rgba(12, 12, 12, 0.94);
+  color: #fff4c4;
+  content: attr(data-tooltip);
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+#potionButton:hover::after,
+#potionButton:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (max-width: 920px) {
