@@ -1,4 +1,4 @@
-const canvas = document.querySelector("#game");
+﻿const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 
 const ui = {
@@ -176,6 +176,16 @@ function createBoss(kind = "burger") {
       attackTimer: 1.2,
       swingTimer: 1.2,
     },
+    nacho: {
+      kind: "nacho",
+      name: "Nacho Libre",
+      radius: 70,
+      maxHp: 1800,
+      color: "#d8a231",
+      enrageColor: "#ffb12f",
+      attackTimer: 1.2,
+      swingTimer: 1.2,
+    },
   };
   const template = bosses[kind];
   return {
@@ -184,7 +194,7 @@ function createBoss(kind = "burger") {
     y: 450,
     hp: template.maxHp,
     phase: 1,
-    totalPhases: kind === "shake" ? 3 : 1,
+    totalPhases: kind === "shake" || kind === "nacho" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -194,6 +204,19 @@ function createBoss(kind = "burger") {
     shieldTimer: 0,
     state: "moving",
     stateTimer: 0,
+    quadrantMode: "idle",
+    quadrantTimer: 0,
+    quadrantDuration: 10,
+    nextWallTimer: 3.2,
+    cheeseDropTimer: 0,
+    playerQuadrant: null,
+    chipTimer: 4.8,
+    picoTimer: 0.15,
+    picoIndex: 0,
+    cheeseWaveActive: false,
+    finalEnrageStarted: false,
+    invulnerableTimer: 0,
+    enrageTextTimer: 0,
   };
 }
 
@@ -335,6 +358,23 @@ function currentBounds() {
   return player.room === "arena" ? world.arena : world.starter;
 }
 
+function nachoQuadrantBounds() {
+  if (player.room !== "arena" || boss.kind !== "nacho" || boss.quadrantMode !== "active" || !boss.playerQuadrant) return null;
+  const centerX = world.arena.x + world.arena.w / 2;
+  const centerY = world.arena.y + world.arena.h / 2;
+  const wallGap = 24;
+  const left = world.arena.x;
+  const right = world.arena.x + world.arena.w;
+  const top = world.arena.y;
+  const bottom = world.arena.y + world.arena.h;
+  return {
+    x: boss.playerQuadrant.includes("left") ? left : centerX + wallGap,
+    y: boss.playerQuadrant.includes("top") ? top : centerY + wallGap,
+    w: boss.playerQuadrant.includes("left") ? centerX - wallGap - left : right - centerX - wallGap,
+    h: boss.playerQuadrant.includes("top") ? centerY - wallGap - top : bottom - centerY - wallGap,
+  };
+}
+
 function handleCanvasClick(x, y) {
   if (player.dead || player.won) return;
   const stand = stands.find((item) => Math.hypot(item.x - x, item.y - y) < 48);
@@ -363,7 +403,7 @@ function livingBosses() {
 }
 
 function constrainToRoom(x, y) {
-  const bounds = currentBounds();
+  const bounds = nachoQuadrantBounds() || currentBounds();
   return {
     x: clamp(x, bounds.x + player.radius, bounds.x + bounds.w - player.radius),
     y: clamp(y, bounds.y + player.radius, bounds.y + bounds.h - player.radius),
@@ -506,6 +546,10 @@ function updateCombat(dt) {
     updatePeanutBusterShake(dt);
     return;
   }
+  if (boss.kind === "nacho") {
+    updateNachoLibre(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -547,6 +591,112 @@ function updatePeanutBusterShake(dt) {
   if (boss.attackTimer <= 0) {
     spawnShakePattern();
     boss.attackTimer = boss.enraged ? 0.75 : boss.phase === 3 ? 0.95 : boss.phase === 2 ? 1.12 : 1.3;
+  }
+}
+
+function updateNachoLibre(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.invulnerableTimer = Math.max(0, boss.invulnerableTimer - dt);
+  boss.enrageTextTimer = Math.max(0, boss.enrageTextTimer - dt);
+  updateNachoPhase();
+  updateNachoPico(dt);
+  if (boss.phase >= 2) ensureNachoCheeseWave();
+  updateNachoQuadrant(dt);
+
+  if (boss.phase === 1) {
+    if (boss.quadrantMode === "idle") {
+      boss.nextWallTimer -= dt;
+      if (boss.nextWallTimer <= 0) startNachoQuadrants(1.35, 10);
+    }
+    return;
+  }
+
+  if (boss.phase === 2) {
+    boss.chipTimer -= dt;
+    if (boss.chipTimer <= 0) {
+      spawnNachoChips();
+      boss.chipTimer = 5;
+    }
+    return;
+  }
+
+  if (boss.quadrantMode === "idle") {
+    boss.nextWallTimer -= dt;
+    if (boss.nextWallTimer <= 0) startNachoQuadrants(boss.enraged ? 0.75 : 1.2, 10);
+  }
+  if (boss.enraged) {
+    boss.chipTimer -= dt;
+    if (boss.chipTimer <= 0) {
+      spawnNachoChips();
+      boss.chipTimer = 4.2;
+    }
+  }
+}
+
+function updateNachoPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.66 && boss.phase === 1) {
+    boss.phase = 2;
+    clearNachoQuadrants();
+    boss.chipTimer = 1.1;
+    ensureNachoCheeseWave();
+    log("Phase 2: tortilla chip shatter.");
+    ui.status.textContent = "Nacho Libre starts shattering chips.";
+  }
+  if (hpPercent <= 0.33 && boss.phase < 3) {
+    boss.phase = 3;
+    clearNachoChipHazards();
+    boss.nextWallTimer = 0.6;
+    boss.chipTimer = 999;
+    ensureNachoCheeseWave();
+    log("Phase 3: cheese maze.");
+    ui.status.textContent = "Nacho Libre drops the cheese maze.";
+  }
+  if (hpPercent <= 0.1 && !boss.finalEnrageStarted) {
+    boss.finalEnrageStarted = true;
+    boss.enraged = true;
+    boss.invulnerableTimer = 2;
+    boss.enrageTextTimer = 2.2;
+    boss.chipTimer = 0.8;
+    startNachoQuadrants(0.65, 10, true);
+    log("Now I'm angry.");
+    ui.status.textContent = "Now I'm angry.";
+    showFloat("Now I'm angry.");
+  }
+}
+
+function updateNachoPico(dt) {
+  boss.picoTimer -= dt;
+  while (boss.picoTimer <= 0) {
+    spawnPicoPiece();
+    boss.picoTimer += 0.11 + Math.random() * 0.14;
+  }
+}
+
+function updateNachoQuadrant(dt) {
+  if (boss.quadrantMode === "warning") {
+    boss.quadrantTimer -= dt;
+    if (boss.quadrantTimer <= 0) {
+      boss.quadrantMode = "active";
+      boss.quadrantTimer = boss.quadrantDuration;
+      boss.playerQuadrant = quadrantForPoint(player.x, player.y);
+      boss.cheeseDropTimer = 0.15;
+      log("Nacho walls locked the arena.");
+    }
+    return;
+  }
+  if (boss.quadrantMode !== "active") return;
+  boss.quadrantTimer -= dt;
+  boss.cheeseDropTimer -= dt;
+  while (boss.cheeseDropTimer <= 0 && boss.quadrantTimer > 0) {
+    spawnNachoCheesePuddle(player.x, player.y, boss.quadrantTimer + 0.6);
+    boss.cheeseDropTimer += boss.enraged ? 0.68 : boss.phase === 3 ? 0.82 : 0.95;
+  }
+  if (boss.quadrantTimer <= 0) {
+    clearNachoQuadrants();
+    boss.nextWallTimer = boss.phase === 1 ? 5.8 : boss.enraged ? 3.6 : 5.2;
+    log("Nacho walls crumble.");
   }
 }
 
@@ -907,6 +1057,135 @@ function spawnSodaSpill() {
     damageTimer: 0,
     damage: 12,
   });
+}
+
+function startNachoQuadrants(warn = 1.25, duration = 10, force = false) {
+  if (!force && boss.quadrantMode !== "idle") return;
+  clearNachoQuadrantPuddles();
+  boss.quadrantMode = "warning";
+  boss.quadrantTimer = warn;
+  boss.quadrantDuration = duration;
+  boss.playerQuadrant = null;
+  boss.cheeseDropTimer = warn + 0.2;
+  log("Nacho walls are forming.");
+}
+
+function clearNachoQuadrants() {
+  boss.quadrantMode = "idle";
+  boss.quadrantTimer = 0;
+  boss.playerQuadrant = null;
+  clearNachoQuadrantPuddles();
+}
+
+function clearNachoQuadrantPuddles() {
+  hazards = hazards.filter((hazard) => !hazard.quadrantCheese);
+}
+
+function clearNachoChipHazards() {
+  hazards = hazards.filter((hazard) => hazard.type !== "nachoChip" && hazard.type !== "nachoCrumb");
+}
+
+function quadrantForPoint(x, y) {
+  const centerX = world.arena.x + world.arena.w / 2;
+  const centerY = world.arena.y + world.arena.h / 2;
+  return `${x < centerX ? "left" : "right"}-${y < centerY ? "top" : "bottom"}`;
+}
+
+function ensureNachoCheeseWave() {
+  if (hazards.some((hazard) => hazard.type === "cheeseWave")) return;
+  const fromLeft = player.x > world.arena.x + world.arena.w / 2;
+  hazards.push({
+    type: "cheeseWave",
+    x: fromLeft ? world.arena.x + 80 : world.arena.x + world.arena.w - 80,
+    y: clamp(player.y, world.arena.y + 100, world.arena.y + world.arena.h - 100),
+    r: 76,
+    ttl: Number.POSITIVE_INFINITY,
+    damage: 9,
+    damageTimer: 0,
+  });
+  boss.cheeseWaveActive = true;
+}
+
+function spawnPicoPiece() {
+  const colors = ["#f7f3e8", "#cf3b2f", "#3ca45e"];
+  const angle = boss.picoIndex * 2.399963 + Math.sin(boss.animationTime * 2.2) * 0.18;
+  const speed = 90 + (boss.picoIndex % 5) * 18 + Math.random() * 28;
+  hazards.push({
+    type: "pico",
+    x: boss.x + Math.cos(angle) * (boss.radius * 0.65),
+    y: boss.y + Math.sin(angle) * (boss.radius * 0.45),
+    vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 45,
+    vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 45,
+    r: 4 + Math.random() * 2.5,
+    ttl: 1.15 + Math.random() * 0.55,
+    color: colors[boss.picoIndex % colors.length],
+  });
+  boss.picoIndex += 1;
+}
+
+function spawnNachoCheesePuddle(x, y, ttl) {
+  hazards.push({
+    type: "nachoCheesePuddle",
+    x: clamp(x, world.arena.x + 70, world.arena.x + world.arena.w - 70),
+    y: clamp(y, world.arena.y + 70, world.arena.y + world.arena.h - 70),
+    r: boss.enraged ? 68 : 62,
+    warn: 0.38,
+    ttl,
+    damage: boss.enraged ? 8 : 6,
+    damageTimer: 0,
+    quadrantCheese: true,
+  });
+}
+
+function spawnNachoChips() {
+  const count = 6;
+  const offset = Math.random() * Math.PI * 2;
+  for (let i = 0; i < count; i += 1) {
+    const angle = offset + (Math.PI * 2 * i) / count;
+    const speed = boss.enraged ? 265 : 235;
+    hazards.push({
+      type: "nachoChip",
+      x: boss.x + Math.cos(angle) * (boss.radius + 18),
+      y: boss.y + Math.sin(angle) * (boss.radius + 18),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      angle,
+      r: 24,
+      ttl: 2.4,
+      traveled: 0,
+      shatterDistance: 330,
+      damage: 15,
+    });
+  }
+  log("Tortilla chips fly out.");
+}
+
+function shatterNachoChip(chip, targetList = hazards) {
+  const points = [
+    { distance: 26, angle: chip.angle },
+    { distance: 20, angle: chip.angle + 2.32 },
+    { distance: 20, angle: chip.angle - 2.32 },
+  ];
+  points.forEach((point, pointIndex) => {
+    const x = chip.x + Math.cos(point.angle) * point.distance;
+    const y = chip.y + Math.sin(point.angle) * point.distance;
+    for (let i = 0; i < 5; i += 1) {
+      const angle = chip.angle + (i - 2) * 0.42 + (pointIndex - 1) * 0.18;
+      const speed = 220 + Math.random() * 95;
+      targetList.push({
+        type: "nachoCrumb",
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: 6,
+        ttl: 1.45,
+        damage: 8,
+        color: "#e8bd50",
+      });
+    }
+  });
+  particles.push({ x: chip.x, y: chip.y - 16, text: "crunch", color: "#ffd76a", ttl: 0.55 });
 }
 
 function spawnShakePattern() {
@@ -1284,6 +1563,47 @@ function updateHazards(dt) {
           hazard.damageTimer = boss.enraged ? 0.14 : 0.12;
         }
       }
+    } else if (hazard.type === "pico") {
+      hazard.ttl -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      hazard.vx *= Math.pow(0.84, dt * 4);
+      hazard.vy *= Math.pow(0.84, dt * 4);
+    } else if (hazard.type === "nachoCheesePuddle") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Melted cheese");
+          hazard.damageTimer = 0.45;
+        }
+      }
+    } else if (hazard.type === "cheeseWave") {
+      const slow = hazards.some((item) => item.type === "nachoCheesePuddle" && item.warn <= 0 && distance(item, hazard) < item.r + hazard.r * 0.7);
+      const speed = (slow ? 46 : 78) + (boss.enraged ? 12 : 0);
+      const angle = Math.atan2(player.y - hazard.y, player.x - hazard.x);
+      hazard.x += Math.cos(angle) * speed * dt;
+      hazard.y += Math.sin(angle) * speed * dt;
+      hazard.damageTimer -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r && hazard.damageTimer <= 0) {
+        damagePlayer(hazard.damage, "Nacho cheese wave");
+        hazard.damageTimer = 0.38;
+      }
+    } else if (hazard.type === "nachoChip") {
+      hazard.ttl -= dt;
+      const dx = hazard.vx * dt;
+      const dy = hazard.vy * dt;
+      hazard.x += dx;
+      hazard.y += dy;
+      hazard.traveled += Math.hypot(dx, dy);
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, "Tortilla chip");
+        hazard.ttl = 0;
+      } else if (hazard.traveled >= hazard.shatterDistance) {
+        shatterNachoChip(hazard, spawnedHazards);
+        hazard.ttl = 0;
+      }
     } else if (hazard.type === "colaBubble") {
       hazard.ttl -= dt;
       hazard.x += hazard.vx * dt;
@@ -1397,7 +1717,7 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb") {
       hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
@@ -1411,7 +1731,7 @@ function updateHazards(dt) {
         bounceProjectileInArena(hazard);
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : "Arc bolt";
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : "Arc bolt";
         damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         hazard.ttl = 0;
@@ -1672,9 +1992,21 @@ function winFight() {
     showFloat("Next boss: Peanut Buster Shake");
     return;
   }
+  if (boss.kind === "shake") {
+    boss = createBoss("nacho");
+    condimentBosses = [];
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Peanut Buster Shake defeated. Nacho Libre enters next.";
+    showFloat("Next boss: Nacho Libre");
+    return;
+  }
   player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat(boss.kind === "shake" ? "Peanut Buster Shake defeated" : "Boss defeated");
+  showFloat(boss.kind === "nacho" ? "Nacho Libre defeated" : "Boss defeated");
 }
 
 function update(dt) {
@@ -1701,6 +2033,10 @@ function updatePlayerProjectiles(dt) {
     projectile.y += projectile.vy * dt;
     const hitBoss = livingBosses().find((target) => distance(projectile, target) < target.radius + projectile.r);
     if (hitBoss) {
+      if (hitBoss.kind === "nacho" && hitBoss.invulnerableTimer > 0) {
+        particles.push({ x: hitBoss.x, y: hitBoss.y - 44, text: "immune", color: "#fff2c6", ttl: 0.75 });
+        return false;
+      }
       const damage = hitBoss.shieldTimer > 0 ? Math.ceil(projectile.damage * 0.5) : projectile.damage;
       hitBoss.hp = Math.max(0, hitBoss.hp - damage);
       particles.push({ x: hitBoss.x, y: hitBoss.y - 40, text: `-${damage}`, color: "#ffe08a", ttl: 0.8 });
@@ -1823,6 +2159,8 @@ function drawBoss() {
     drawBigColaBoss();
   } else if (boss.kind === "shake") {
     drawPeanutBusterShakeBoss();
+  } else if (boss.kind === "nacho") {
+    drawNachoLibreBoss();
   } else {
     drawBurgerBoss();
   }
@@ -1831,8 +2169,13 @@ function drawBoss() {
   ctx.fillStyle = "#fff2c6";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : "";
+  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" ? ` Phase ${boss.phase}` : "";
   ctx.fillText(`${boss.name}${phaseText}`, boss.x, boss.y - boss.radius - 38);
+  if (boss.kind === "nacho" && boss.enrageTextTimer > 0) {
+    ctx.fillStyle = "#ffda6b";
+    ctx.font = "bold 18px sans-serif";
+    ctx.fillText("Now I'm angry.", boss.x, boss.y + boss.radius + 30);
+  }
   ctx.textAlign = "left";
 }
 
@@ -1956,6 +2299,43 @@ function drawPeanutBusterShakeBoss() {
   if (boss.shieldTimer > 0) drawRing(boss.x, boss.y - 10, boss.radius + 12, "#fff6df");
 }
 
+function drawNachoLibreBoss() {
+  const pulse = Math.sin(boss.animationTime * 5) * 3;
+  ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y, boss.radius + pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f2c95f";
+  for (let i = 0; i < 10; i += 1) {
+    const angle = boss.animationTime * 0.8 + (Math.PI * 2 * i) / 10;
+    ctx.beginPath();
+    ctx.moveTo(boss.x + Math.cos(angle) * 16, boss.y + Math.sin(angle) * 12);
+    ctx.lineTo(boss.x + Math.cos(angle + 0.22) * 64, boss.y + Math.sin(angle + 0.22) * 52);
+    ctx.lineTo(boss.x + Math.cos(angle - 0.22) * 64, boss.y + Math.sin(angle - 0.22) * 52);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = "#4b2b1a";
+  ctx.beginPath();
+  ctx.arc(boss.x - 22, boss.y - 7, 7, 0, Math.PI * 2);
+  ctx.arc(boss.x + 22, boss.y - 7, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#1f1712";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(boss.x - 42, boss.y - 22);
+  ctx.lineTo(boss.x - 8, boss.y - 4);
+  ctx.moveTo(boss.x + 42, boss.y - 22);
+  ctx.lineTo(boss.x + 8, boss.y - 4);
+  ctx.stroke();
+  ctx.strokeStyle = "#e64635";
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y - 4, boss.radius * 0.78, Math.PI * 1.08, Math.PI * 1.92);
+  ctx.stroke();
+  if (boss.invulnerableTimer > 0) drawRing(boss.x, boss.y, boss.radius + 18, "#fff2c6");
+}
+
 function drawCurlyFriesBoss() {
   if (curlyFriesSprite.complete && curlyFriesSprite.naturalWidth > 0) {
     drawCurlyFriesSprite();
@@ -2013,6 +2393,20 @@ function drawCurlyFriesSprite() {
   );
 }
 
+function drawNachoWalls() {
+  if (boss.kind !== "nacho" || boss.quadrantMode === "idle") return;
+  const centerX = world.arena.x + world.arena.w / 2;
+  const centerY = world.arena.y + world.arena.h / 2;
+  const warning = boss.quadrantMode === "warning";
+  ctx.fillStyle = warning ? "rgba(255, 242, 182, 0.22)" : "rgba(95, 57, 22, 0.88)";
+  ctx.strokeStyle = warning ? "rgba(255, 242, 182, 0.82)" : "#f0c35b";
+  ctx.lineWidth = warning ? 3 : 4;
+  ctx.fillRect(centerX - 18, world.arena.y + 18, 36, world.arena.h - 36);
+  ctx.fillRect(world.arena.x + 18, centerY - 18, world.arena.w - 36, 36);
+  ctx.strokeRect(centerX - 18, world.arena.y + 18, 36, world.arena.h - 36);
+  ctx.strokeRect(world.arena.x + 18, centerY - 18, world.arena.w - 36, 36);
+}
+
 function drawHazards() {
   hazards.forEach((hazard) => {
     if (hazard.type === "grease") {
@@ -2031,6 +2425,59 @@ function drawHazards() {
         ctx.arc(hazard.x, hazard.y, hazard.r * (0.52 + pulse * 0.52), 0, Math.PI * 2);
         ctx.stroke();
       }
+      return;
+    }
+    if (hazard.type === "pico") {
+      ctx.fillStyle = hazard.color;
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.ttl * 8);
+      ctx.fillRect(-hazard.r, -hazard.r, hazard.r * 2, hazard.r * 2);
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "nachoCheesePuddle") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 210, 73, 0.12)" : "rgba(255, 190, 35, 0.42)";
+      ctx.strokeStyle = warning ? "#ffe7a0" : "#f2a91f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.72, Math.sin(hazard.x) * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "cheeseWave") {
+      ctx.fillStyle = "rgba(255, 189, 39, 0.5)";
+      ctx.strokeStyle = "#ffd66b";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.25, hazard.r * 0.82, Math.sin(boss.animationTime) * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 235, 145, 0.5)";
+      for (let i = 0; i < 4; i += 1) {
+        ctx.beginPath();
+        ctx.arc(hazard.x + Math.cos(boss.animationTime * 2 + i) * 42, hazard.y + Math.sin(boss.animationTime * 1.7 + i) * 26, 9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    if (hazard.type === "nachoChip") {
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.angle);
+      ctx.fillStyle = "#e7bd56";
+      ctx.strokeStyle = "#8f5f20";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(27, 0);
+      ctx.lineTo(-18, -20);
+      ctx.lineTo(-18, 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
       return;
     }
     if (hazard.type === "colaBubble") {
@@ -2182,13 +2629,15 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot") {
-      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : "#8ad8ff");
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : hazard.type === "nachoCrumb" ? "#e8bd50" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
       } else if (hazard.type === "peanut") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.35, hazard.r * 0.82, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
+      } else if (hazard.type === "nachoCrumb") {
+        ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.3, hazard.r * 0.8, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
       } else {
         ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       }
@@ -2204,6 +2653,7 @@ function drawHazards() {
     ctx.fill();
     ctx.stroke();
   });
+  drawNachoWalls();
 }
 
 function drawPlayerProjectiles() {
@@ -2339,7 +2789,9 @@ function renderUi() {
   const bossHp = bossHealthSummary();
   ui.bossHpText.textContent = boss.kind === "shake"
     ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
-    : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
+    : boss.kind === "nacho"
+      ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/3`
+      : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
   ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
   ui.potionButton.textContent = `Potion (${player.potions})`;
   const weapon = gear.weapon[player.gear.weapon];
