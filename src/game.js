@@ -107,6 +107,8 @@ function createPlayer() {
     maxHp: 115,
     potions: 3,
     attackCooldown: 0,
+    castTimer: 0,
+    castAngle: 0,
     gateCooldown: 0,
     room: "starter",
     dead: false,
@@ -1025,17 +1027,24 @@ function firePlayerProjectile(angle) {
   if (player.attackCooldown > 0) return;
   const weapon = gear.weapon[player.gear.weapon];
   const speed = projectileSpeedForWeapon(weapon.tag);
+  const magicAttack = weapon.tag === "Magic";
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    r: weapon.tag === "Magic" ? 8 : 6,
+    r: magicAttack ? 11 : 6,
     damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
-    color: weapon.color,
+    color: magicAttack ? "#48efe4" : weapon.color,
     ttl: projectileTravelTime(weapon, speed),
+    age: 0,
+    heavy: magicAttack,
     tag: weapon.tag,
   });
+  if (magicAttack) {
+    player.castTimer = 0.36;
+    player.castAngle = angle;
+  }
   player.attackCooldown = weapon.speed;
   ui.status.textContent = `Firing ${weapon.name}.`;
 }
@@ -2574,6 +2583,7 @@ function winFight() {
 
 function update(dt) {
   movePlayer(dt);
+  player.castTimer = Math.max(0, player.castTimer - dt);
   updateRoom(dt);
   updateCombat(dt);
   updateHazards(dt);
@@ -2592,6 +2602,7 @@ function update(dt) {
 function updatePlayerProjectiles(dt) {
   playerProjectiles = playerProjectiles.filter((projectile) => {
     projectile.ttl -= dt;
+    projectile.age = (projectile.age || 0) + dt;
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
     const hitBoss = livingBosses().find((target) => distance(projectile, target) < target.radius + projectile.r);
@@ -3435,12 +3446,26 @@ function drawPlayerProjectiles() {
     ctx.translate(projectile.x, projectile.y);
     ctx.rotate(angle);
     if (projectile.tag === "Magic") {
-      ctx.fillStyle = projectile.color;
+      const pulse = Math.sin((projectile.age || 0) * 24) * 0.5 + 0.5;
       ctx.shadowColor = projectile.color;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 20 + pulse * 10;
+      ctx.fillStyle = "rgba(72, 239, 228, 0.2)";
       ctx.beginPath();
-      ctx.arc(0, 0, projectile.r, 0, Math.PI * 2);
+      ctx.ellipse(-18, 0, 26, 10, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = "#dffffc";
+      ctx.shadowColor = projectile.color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = projectile.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-30, -6);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-30, 6);
+      ctx.stroke();
     } else if (projectile.tag === "Ranged") {
       ctx.strokeStyle = projectile.color;
       ctx.lineWidth = 4;
@@ -3460,13 +3485,15 @@ function drawPlayerProjectiles() {
 
 function drawPlayer() {
   drawRing(player.x, player.y, player.radius + 7, player.dead ? "#c7443b" : "#92d4ff");
+  if (player.castTimer > 0) drawMageCastAura();
   const outfit = playerOutfitSprite();
   if (outfit || (playerSprite.complete && playerSprite.naturalWidth > 0)) {
     drawPlayerSprite();
   } else {
     drawFallbackPlayer();
   }
-  if (isMageArmorCombo() && !outfit) drawGlassMageOutfit();
+  if (isGlassMageBuild() && !outfit) drawGlassMageOutfit();
+  if (player.castTimer > 0) drawMageCastBurst();
   if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
 }
 
@@ -3476,10 +3503,6 @@ function isGlassMageBuild() {
 
 function isFastMageBuild() {
   return player.gear.weapon === "pulseStaff" && player.gear.armor === "duelistCoat";
-}
-
-function isMageArmorCombo() {
-  return isGlassMageBuild() || isFastMageBuild();
 }
 
 function playerOutfitSprite() {
@@ -3578,6 +3601,63 @@ function drawFallbackPlayer() {
   ctx.moveTo(player.x + 12, player.y + 4);
   ctx.lineTo(player.x + 34, player.y - 8);
   ctx.stroke();
+}
+
+function drawMageCastAura() {
+  const progress = 1 - player.castTimer / 0.36;
+  const alpha = clamp(1 - progress, 0, 1);
+  const pulse = Math.sin(progress * Math.PI);
+  ctx.save();
+  ctx.globalAlpha = 0.75 * alpha;
+  ctx.strokeStyle = "#48efe4";
+  ctx.fillStyle = "rgba(72, 239, 228, 0.14)";
+  ctx.shadowColor = "#48efe4";
+  ctx.shadowBlur = 20;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y - 16, 28 + pulse * 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(220, 255, 252, 0.75)";
+  ctx.beginPath();
+  ctx.arc(player.x, player.y - 16, 15 + pulse * 26, Math.PI * 0.15, Math.PI * 1.65);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMageCastBurst() {
+  const progress = 1 - player.castTimer / 0.36;
+  const alpha = clamp(1 - progress, 0, 1);
+  const angle = player.castAngle || 0;
+  const muzzleX = player.x + Math.cos(angle) * 32;
+  const muzzleY = player.y - 18 + Math.sin(angle) * 32;
+  ctx.save();
+  ctx.translate(muzzleX, muzzleY);
+  ctx.rotate(angle);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = "#48efe4";
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = "rgba(72, 239, 228, 0.5)";
+  ctx.beginPath();
+  ctx.moveTo(34 + progress * 18, 0);
+  ctx.lineTo(-8, -13 - progress * 7);
+  ctx.lineTo(2, 0);
+  ctx.lineTo(-8, 13 + progress * 7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#e8fffc";
+  ctx.beginPath();
+  ctx.arc(0, 0, 9 + progress * 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#48efe4";
+  ctx.lineWidth = 3;
+  for (let i = -1; i <= 1; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(-8, i * 8);
+    ctx.lineTo(30 + progress * 22, i * 14);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawGlassMageOutfit() {
