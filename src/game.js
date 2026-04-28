@@ -58,6 +58,18 @@ playerSprite.src = "./assets/player-spritesheet.png";
 playerSprite.addEventListener("load", () => {
   cleanedPlayerSprite = createTransparentSprite(playerSprite);
 });
+const glassMageSprite = new Image();
+let cleanedGlassMageSprite = null;
+glassMageSprite.src = "./assets/glass-mage-spritesheet.png";
+glassMageSprite.addEventListener("load", () => {
+  cleanedGlassMageSprite = createTransparentSprite(glassMageSprite);
+});
+const fastMageSprite = new Image();
+let cleanedFastMageSprite = null;
+fastMageSprite.src = "./assets/light-armor-mage.png";
+fastMageSprite.addEventListener("load", () => {
+  cleanedFastMageSprite = createTransparentSprite(fastMageSprite);
+});
 const curlyFriesSprite = new Image();
 let cleanedCurlyFriesSprite = null;
 curlyFriesSprite.src = "./assets/curly-fries-spritesheet.png";
@@ -3448,30 +3460,74 @@ function drawPlayerProjectiles() {
 
 function drawPlayer() {
   drawRing(player.x, player.y, player.radius + 7, player.dead ? "#c7443b" : "#92d4ff");
-  if (playerSprite.complete && playerSprite.naturalWidth > 0) {
+  const outfit = playerOutfitSprite();
+  if (outfit || (playerSprite.complete && playerSprite.naturalWidth > 0)) {
     drawPlayerSprite();
   } else {
     drawFallbackPlayer();
   }
+  if (isMageArmorCombo() && !outfit) drawGlassMageOutfit();
   if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
 }
 
+function isGlassMageBuild() {
+  return player.gear.weapon === "pulseStaff" && player.gear.armor === "channelerRobe";
+}
+
+function isFastMageBuild() {
+  return player.gear.weapon === "pulseStaff" && player.gear.armor === "duelistCoat";
+}
+
+function isMageArmorCombo() {
+  return isGlassMageBuild() || isFastMageBuild();
+}
+
+function playerOutfitSprite() {
+  if (isGlassMageBuild() && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedGlassMageSprite || glassMageSprite,
+      sideCrop: 0.13,
+      cropWidth: 0.72,
+      cropBottom: 0.93,
+      drawWidth: 72,
+      drawHeight: 88,
+      topCrop: 0.02,
+    };
+  }
+  if (isFastMageBuild() && fastMageSprite.complete && fastMageSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedFastMageSprite || fastMageSprite,
+      sideCrop: 0.1,
+      cropWidth: 0.8,
+      cropBottom: 0.94,
+      drawWidth: 82,
+      drawHeight: 94,
+      topCrop: 0.015,
+    };
+  }
+  return null;
+}
+
 function drawPlayerSprite() {
-  const sprite = cleanedPlayerSprite || playerSprite;
+  const outfit = playerOutfitSprite();
+  const sprite = outfit?.sprite || cleanedPlayerSprite || playerSprite;
   const rows = { down: 0, left: 1, right: 2, up: 3 };
   const frameWidth = sprite.width / 4;
   const frameHeight = sprite.height / 4;
   const frame = player.moving ? Math.floor(player.animationTime * 8) % 4 : 1;
   const row = rows[player.facing] ?? 0;
-  const topCrop = player.facing === "up" ? 0.04 : 0.1;
+  const topCrop = outfit?.topCrop ?? (player.facing === "up" ? 0.04 : 0.1);
+  const sideCrop = outfit?.sideCrop ?? 0.2;
+  const cropWidth = outfit?.cropWidth ?? 0.56;
+  const cropBottom = outfit?.cropBottom ?? 0.86;
   const crop = {
-    x: frameWidth * 0.2,
+    x: frameWidth * sideCrop,
     y: frameHeight * topCrop,
-    w: frameWidth * 0.56,
-    h: frameHeight * (0.86 - topCrop),
+    w: frameWidth * cropWidth,
+    h: frameHeight * (cropBottom - topCrop),
   };
-  const drawWidth = 58;
-  const drawHeight = 74;
+  const drawWidth = outfit?.drawWidth ?? 58;
+  const drawHeight = outfit?.drawHeight ?? 74;
   ctx.drawImage(
     sprite,
     frame * frameWidth + crop.x,
@@ -3522,6 +3578,126 @@ function drawFallbackPlayer() {
   ctx.moveTo(player.x + 12, player.y + 4);
   ctx.lineTo(player.x + 34, player.y - 8);
   ctx.stroke();
+}
+
+function drawGlassMageOutfit() {
+  const x = player.x;
+  const y = player.y;
+  const bob = player.moving ? Math.sin(player.animationTime * 8) * 1.6 : 0;
+  const side = player.facing === "left" ? -1 : player.facing === "right" ? 1 : 0;
+  const backFacing = player.facing === "up";
+  const sideFacing = player.facing === "left" || player.facing === "right";
+  const robeX = x - (sideFacing ? 14 : 18) + side * 2;
+  const robeY = y - 31 + bob;
+  const robeW = sideFacing ? 29 : 36;
+  const robeH = 45;
+
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.fillStyle = "#3f236d";
+  ctx.strokeStyle = "#151019";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(robeX, robeY, robeW, robeH, 11);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = "#d99a36";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(robeX + 4, robeY + robeH - 9);
+  ctx.lineTo(robeX + robeW - 4, robeY + robeH - 9);
+  ctx.moveTo(robeX + 5, robeY + 24);
+  ctx.lineTo(robeX + robeW - 5, robeY + 24);
+  ctx.stroke();
+
+  if (!backFacing) {
+    ctx.fillStyle = "#d99a36";
+    ctx.fillRect(x - 7 + side * 2, robeY + 22, 14, 5);
+    ctx.fillStyle = "#19121d";
+    ctx.fillRect(x - 4 + side * 2, robeY + 23, 8, 3);
+  }
+
+  ctx.strokeStyle = "#25143b";
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  if (sideFacing) {
+    ctx.moveTo(x - side * 7, robeY + 7);
+    ctx.lineTo(x + side * 16, robeY + 24);
+  } else {
+    ctx.moveTo(x - 18, robeY + 8);
+    ctx.lineTo(x - 23, robeY + 25);
+    ctx.moveTo(x + 18, robeY + 8);
+    ctx.lineTo(x + 23, robeY + 25);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = "#d99a36";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (sideFacing) {
+    ctx.moveTo(x + side * 13, robeY + 20);
+    ctx.lineTo(x + side * 20, robeY + 26);
+  } else {
+    ctx.moveTo(x - 22, robeY + 22);
+    ctx.lineTo(x - 25, robeY + 29);
+    ctx.moveTo(x + 22, robeY + 22);
+    ctx.lineTo(x + 25, robeY + 29);
+  }
+  ctx.stroke();
+
+  drawWizardHat(x + side * 4, y - 51 + bob, side, backFacing);
+  ctx.restore();
+}
+
+function drawWizardHat(x, y, side, backFacing) {
+  const lean = side || (backFacing ? -0.3 : 0.45);
+  ctx.fillStyle = "#4b2880";
+  ctx.strokeStyle = "#151019";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.ellipse(x, y + 22, 29, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x - 18, y + 18);
+  ctx.quadraticCurveTo(x - 4, y - 25, x + lean * 30, y - 31);
+  ctx.quadraticCurveTo(x + 24 + lean * 7, y - 28, x + 12 + lean * 11, y - 18);
+  ctx.quadraticCurveTo(x + 22, y - 4, x + 17, y + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = "#d99a36";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(x, y + 15, 22, 0.16, Math.PI - 0.16, true);
+  ctx.stroke();
+
+  ctx.fillStyle = "#f0b94a";
+  ctx.beginPath();
+  ctx.arc(x - 3, y - 2, 7, Math.PI * 0.5, Math.PI * 1.5, false);
+  ctx.arc(x + 1, y - 2, 5, Math.PI * 1.5, Math.PI * 0.5, true);
+  ctx.fill();
+  drawTinyStar(x - 13, y - 14, 4);
+  drawTinyStar(x + 13, y + 3, 3.5);
+  if (!backFacing) drawTinyStar(x + 4, y - 21, 3.2);
+}
+
+function drawTinyStar(x, y, radius) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / 10;
+    const pointRadius = i % 2 === 0 ? radius : radius * 0.42;
+    const px = x + Math.cos(angle) * pointRadius;
+    const py = y + Math.sin(angle) * pointRadius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawParticles() {
