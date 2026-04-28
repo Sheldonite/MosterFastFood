@@ -693,7 +693,7 @@ function updateNachoQuadrant(dt) {
   boss.quadrantTimer -= dt;
   boss.cheeseDropTimer -= dt;
   while (boss.cheeseDropTimer <= 0 && boss.quadrantTimer > 0) {
-    spawnNachoCheeseCluster(player.x, player.y, boss.quadrantTimer + 0.6);
+    spawnNachoCheesePuddle(player.x, player.y, boss.quadrantTimer + 0.6);
     boss.cheeseDropTimer += boss.enraged ? 0.52 : boss.phase === 3 ? 0.65 : 0.75;
   }
   if (boss.quadrantTimer <= 0) {
