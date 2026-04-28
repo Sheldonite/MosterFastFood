@@ -691,7 +691,7 @@ function updateNachoQuadrant(dt) {
   boss.cheeseDropTimer -= dt;
   while (boss.cheeseDropTimer <= 0 && boss.quadrantTimer > 0) {
     spawnNachoCheesePuddle(player.x, player.y, boss.quadrantTimer + 0.6);
-    boss.cheeseDropTimer += boss.enraged ? 0.68 : boss.phase === 3 ? 0.82 : 0.95;
+    boss.cheeseDropTimer += boss.enraged ? 0.52 : boss.phase === 3 ? 0.65 : 0.75;
   }
   if (boss.quadrantTimer <= 0) {
     clearNachoQuadrants();
@@ -1100,7 +1100,7 @@ function ensureNachoCheeseWave() {
     y: clamp(player.y, world.arena.y + 100, world.arena.y + world.arena.h - 100),
     r: 76,
     ttl: Number.POSITIVE_INFINITY,
-    damage: 9,
+    damage: 1000,
     damageTimer: 0,
   });
   boss.cheeseWaveActive = true;
@@ -1129,7 +1129,7 @@ function spawnNachoCheesePuddle(x, y, ttl) {
     x: clamp(x, world.arena.x + 70, world.arena.x + world.arena.w - 70),
     y: clamp(y, world.arena.y + 70, world.arena.y + world.arena.h - 70),
     r: boss.enraged ? 68 : 62,
-    warn: 0.38,
+    warn: 0.62,
     ttl,
     damage: boss.enraged ? 8 : 6,
     damageTimer: 0,
