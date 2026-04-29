@@ -59,7 +59,7 @@ const abilityLoadouts = {
   mage: [
     { key: "Q", name: "Arcane Lance", cooldown: 6 },
     { key: "E", name: "Blink Step", cooldown: 10 },
-    { key: "R", name: "Frost Sigil", cooldown: 18 },
+    { key: "R", name: "Blizzard", cooldown: 18 },
   ],
   rogue: [
     { key: "Q", name: "Shadow Step", cooldown: 8 },
@@ -1114,9 +1114,7 @@ function moveCondimentToward(target, destination, speed, dt) {
     target.destination = null;
     return;
   }
-  const sigil = activeFrostSigil();
-  const slow = sigil && distance(sigil, target) < sigil.r + target.radius ? 0.55 : 1;
-  const step = Math.min(dist, speed * slow * dt);
+  const step = Math.min(dist, speed * dt);
   target.x += (dx / dist) * step;
   target.y += (dy / dist) * step;
 }
@@ -1152,14 +1150,13 @@ function firePlayerProjectile(angle) {
   const rangedAttack = weapon.tag === "Ranged";
   const meleeAttack = weapon.tag === "Melee";
   const rogueAttack = weapon.tag === "Rogue";
-  const damageMultiplier = magicAttack && playerInFrostSigil() ? 2 : 1;
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     r: magicAttack ? 11 : meleeAttack ? 12 : rogueAttack ? 8 : 6,
-    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44) * damageMultiplier),
+    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
     color: magicAttack ? "#48efe4" : weapon.color,
     ttl: projectileTravelTime(weapon, speed),
     age: 0,
@@ -1349,8 +1346,8 @@ function useMageAbility(index, ability) {
     return;
   }
   spendAbility(index, ability);
-  abilityEffects = abilityEffects.filter((effect) => effect.type !== "frostSigil");
-  abilityEffects.push({ type: "frostSigil", x: player.x, y: player.y, r: 108, ttl: 5, maxTtl: 5, pulseTimer: 0 });
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "blizzard");
+  abilityEffects.push({ type: "blizzard", x: player.x, y: player.y, r: 132, ttl: 5, maxTtl: 5 });
 }
 
 function useRogueAbility(index, ability) {
@@ -3064,11 +3061,10 @@ function updateAbilities(dt) {
     }
     if (effect.type === "volleyTrap") updateVolleyTrap(effect, dt);
     if (effect.type === "blinkRune") updateBlinkRune(effect, dt);
-    if (effect.type === "frostSigil") updateFrostSigil(effect, dt);
     if (effect.type === "smokeBomb") updateSmokeBomb(effect, dt);
     return effect.ttl > 0;
   });
-  applyFrostSigilSlow(dt);
+  applyBlizzardSlow(dt);
 }
 
 function updateRogueDebuffs(target, dt) {
@@ -3147,20 +3143,6 @@ function updateBlinkRune(effect, dt) {
   });
 }
 
-function updateFrostSigil(effect, dt) {
-  if (distance(player, effect) > effect.r + player.radius * 0.5) {
-    effect.ttl = 0;
-    particles.push({ x: effect.x, y: effect.y - 24, text: "sigil broken", color: "#bafcff", ttl: 0.65 });
-    return;
-  }
-  effect.pulseTimer -= dt;
-  if (effect.pulseTimer > 0) return;
-  effect.pulseTimer = 0.5;
-  livingBosses().forEach((target) => {
-    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, 6, "Frost Sigil");
-  });
-}
-
 function updateSmokeBomb(effect, dt) {
   const inside = distance(player, effect) < effect.r + player.radius;
   if (inside) {
@@ -3186,26 +3168,21 @@ function updateSmokeBomb(effect, dt) {
   });
 }
 
-function applyFrostSigilSlow(dt) {
-  const sigil = activeFrostSigil();
-  if (!sigil) return;
-  const decay = Math.pow(0.38, dt);
+function applyBlizzardSlow(dt) {
+  const blizzard = activeBlizzard();
+  if (!blizzard) return;
+  const decay = Math.pow(0.25, dt);
   hazards.forEach((hazard) => {
     if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
-    if (distance(sigil, hazard) < sigil.r + (hazard.r || 0)) {
+    if (distance(blizzard, hazard) < blizzard.r + (hazard.r || 0)) {
       hazard.vx *= decay;
       hazard.vy *= decay;
     }
   });
 }
 
-function activeFrostSigil() {
-  return abilityEffects.find((effect) => effect.type === "frostSigil" && effect.ttl > 0) || null;
-}
-
-function playerInFrostSigil() {
-  const sigil = activeFrostSigil();
-  return Boolean(sigil && distance(player, sigil) <= sigil.r);
+function activeBlizzard() {
+  return abilityEffects.find((effect) => effect.type === "blizzard" && effect.ttl > 0) || null;
 }
 
 function update(dt) {
@@ -3277,7 +3254,7 @@ function damageBossTarget(target, amount, source, options = {}) {
   }
   const damage = target.shieldTimer > 0 ? Math.ceil(amount * 0.5) : amount;
   target.hp = Math.max(0, target.hp - damage);
-  const color = options.poison ? "#9be06f" : source === "Bleed" || source === "Backstab" ? "#ff6e7f" : source === "Frost Sigil" ? "#bafcff" : "#ffe08a";
+  const color = options.poison ? "#9be06f" : source === "Bleed" || source === "Backstab" ? "#ff6e7f" : "#ffe08a";
   particles.push({ x: target.x, y: target.y - 40, text: `-${damage}`, color, ttl: 0.8 });
   if (target.hp <= 0) handleBossDefeated(target);
   return true;
@@ -4298,18 +4275,28 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
-    if (effect.type === "blinkRune" || effect.type === "frostSigil") {
-      const frost = effect.type === "frostSigil";
-      ctx.globalAlpha = frost ? 0.9 : alpha;
-      ctx.strokeStyle = frost ? "rgba(186, 252, 255, 0.86)" : "rgba(186, 252, 255, 0.72)";
-      ctx.fillStyle = frost ? "rgba(96, 206, 255, 0.12)" : "rgba(120, 255, 244, 0.1)";
+    if (effect.type === "blinkRune" || effect.type === "blizzard") {
+      const blizzard = effect.type === "blizzard";
+      ctx.globalAlpha = blizzard ? 0.82 : alpha;
+      ctx.strokeStyle = blizzard ? "rgba(186, 252, 255, 0.78)" : "rgba(186, 252, 255, 0.72)";
+      ctx.fillStyle = blizzard ? "rgba(96, 206, 255, 0.1)" : "rgba(120, 255, 244, 0.1)";
       ctx.shadowColor = "#8cf8ff";
-      ctx.shadowBlur = frost ? 14 : 18;
-      ctx.lineWidth = frost ? 4 : 3;
+      ctx.shadowBlur = blizzard ? 18 : 18;
+      ctx.lineWidth = blizzard ? 4 : 3;
       ctx.beginPath();
-      ctx.arc(effect.x, effect.y, effect.r * (frost ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
+      ctx.arc(effect.x, effect.y, effect.r * (blizzard ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      if (blizzard) {
+        ctx.strokeStyle = "rgba(235, 255, 255, 0.42)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (effect.age || 0) * -1.1 + i * 1.05;
+          ctx.beginPath();
+          ctx.arc(effect.x + Math.cos(angle) * 46, effect.y + Math.sin(angle) * 32, 8, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
       return;
     }
