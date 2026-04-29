@@ -47,7 +47,7 @@ const combatTuning = {
 
 const abilityLoadouts = {
   melee: [
-    { key: "Q", name: "Shield Bash", cooldown: 6 },
+    { key: "Q", name: "Shield Bash", cooldown: 4.5 },
     { key: "E", name: "Whirlwind Dash", cooldown: 8 },
     { key: "R", name: "Shield Wall", cooldown: 15 },
   ],
@@ -57,7 +57,7 @@ const abilityLoadouts = {
     { key: "R", name: "Volley Trap", cooldown: 16 },
   ],
   mage: [
-    { key: "Q", name: "Arcane Lance", cooldown: 6 },
+    { key: "Q", name: "Fire Blast", cooldown: 6 },
     { key: "E", name: "Blink Step", cooldown: 10 },
     { key: "R", name: "Blizzard", cooldown: 18 },
   ],
@@ -1198,7 +1198,7 @@ function firePlayerProjectile(angle) {
     player.rogueAttackTimer = 0.24;
     player.rogueAttackAngle = angle;
   }
-  player.attackCooldown = weapon.speed;
+  player.attackCooldown = magicAttack && playerInBlizzard() ? weapon.speed / 1.5 : weapon.speed;
   ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
 }
 
@@ -1253,12 +1253,16 @@ function shieldBash() {
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   player.meleeAttackTimer = 0.3;
   player.meleeAttackAngle = angle;
-  const hit = damageTargetsInCone(player.x, player.y, angle, 138, Math.PI * 0.36, Math.round(player.stats.damage * 0.72), "Shield Bash");
+  const range = 138;
+  const halfAngle = Math.PI * 0.36;
+  const hit = damageTargetsInCone(player.x, player.y, angle, range, halfAngle, Math.round(player.stats.damage * 0.72), "Shield Bash");
   hit.forEach((target) => {
     interruptTarget(target);
     shoveTarget(target, player.x, player.y, 54);
   });
-  abilityEffects.push({ type: "shieldBash", x: player.x, y: player.y, angle, range: 138, ttl: 0.24, maxTtl: 0.24 });
+  const blocked = destroyProjectilesInCone(player.x, player.y, angle, range + 22, halfAngle + 0.08);
+  if (blocked > 0) particles.push({ x: player.x, y: player.y - 48, text: `blocked ${blocked}`, color: "#f0d47c", ttl: 0.7 });
+  abilityEffects.push({ type: "shieldBash", x: player.x, y: player.y, angle, range, ttl: 0.24, maxTtl: 0.24 });
 }
 
 function whirlwindDash() {
@@ -1353,9 +1357,9 @@ function useMageAbility(index, ability) {
   const angle = aimAngle();
   if (index === 0) {
     spendAbility(index, ability);
-    player.pendingAbilityCast = { type: "arcaneLance", timer: 0.25, angle };
-    player.castTimer = 0.32;
-    player.castMoveLockTimer = 0.25;
+    player.pendingAbilityCast = { type: "fireBlast", timer: 0.28, angle };
+    player.castTimer = 0.36;
+    player.castMoveLockTimer = 0.28;
     player.castAngle = angle;
     return;
   }
@@ -1428,24 +1432,24 @@ function blinkStep(angle) {
   particles.push({ x: player.x, y: player.y - 35, text: "blink", color: "#bafcff", ttl: 0.65 });
 }
 
-function fireArcaneLance(angle) {
+function fireFireBlast(angle) {
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 30,
     y: player.y + Math.sin(angle) * 30,
-    vx: Math.cos(angle) * 920,
-    vy: Math.sin(angle) * 920,
-    r: 8,
-    damage: Math.round(player.stats.damage * 1.48),
-    color: "#8cf8ff",
-    ttl: 0.52,
+    vx: Math.cos(angle) * 520,
+    vy: Math.sin(angle) * 520,
+    r: 18,
+    damage: Math.round(player.stats.damage * 3),
+    color: "#ff8a32",
+    ttl: 1.05,
     age: 0,
     heavy: true,
     tag: "Magic",
     ability: true,
-    piercing: true,
-    hitTargets: [],
+    fireBlast: true,
+    explosionRadius: 132,
   });
-  abilityEffects.push({ type: "arcaneLance", x: player.x, y: player.y - 12, angle, ttl: 0.22, maxTtl: 0.22 });
+  abilityEffects.push({ type: "fireBlastCast", x: player.x, y: player.y - 12, angle, ttl: 0.28, maxTtl: 0.28 });
 }
 
 function damageTargetsInCone(x, y, angle, range, halfAngle, amount, source) {
@@ -1467,6 +1471,26 @@ function damageTargetsInRadius(x, y, radius, amount, source, hitTargets = []) {
     if (hit) hitTargets.push(target);
     return hit;
   });
+}
+
+function destroyProjectilesInCone(x, y, angle, range, halfAngle) {
+  let blocked = 0;
+  hazards = hazards.filter((hazard) => {
+    if (!isDestroyableProjectile(hazard)) return true;
+    const dx = hazard.x - x;
+    const dy = hazard.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > range + (hazard.r || 0)) return true;
+    if (Math.abs(angleDifference(Math.atan2(dy, dx), angle)) > halfAngle) return true;
+    blocked += 1;
+    abilityEffects.push({ type: "projectileBlock", x: hazard.x, y: hazard.y, r: (hazard.r || 10) + 10, ttl: 0.22, maxTtl: 0.22 });
+    return false;
+  });
+  return blocked;
+}
+
+function isDestroyableProjectile(hazard) {
+  return Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy) && hazard.damage > 0;
 }
 
 function shoveTarget(target, x, y, amount) {
@@ -3061,7 +3085,7 @@ function updateAbilities(dt) {
   if (player.pendingAbilityCast) {
     player.pendingAbilityCast.timer -= dt;
     if (player.pendingAbilityCast.timer <= 0) {
-      if (player.pendingAbilityCast.type === "arcaneLance") fireArcaneLance(player.pendingAbilityCast.angle);
+      if (player.pendingAbilityCast.type === "fireBlast") fireFireBlast(player.pendingAbilityCast.angle);
       player.pendingAbilityCast = null;
     }
   }
@@ -3199,6 +3223,11 @@ function activeBlizzard() {
   return abilityEffects.find((effect) => effect.type === "blizzard" && effect.ttl > 0) || null;
 }
 
+function playerInBlizzard() {
+  const blizzard = activeBlizzard();
+  return Boolean(blizzard && distance(player, blizzard) < blizzard.r + player.radius);
+}
+
 function update(dt) {
   movePlayer(dt);
   player.castTimer = Math.max(0, player.castTimer - dt);
@@ -3231,6 +3260,10 @@ function updatePlayerProjectiles(dt) {
     const hitBoss = livingBosses().find((target) => !projectile.hitTargets.includes(target) && distance(projectile, target) < target.radius + projectile.r);
     if (hitBoss) {
       projectile.hitTargets.push(hitBoss);
+      if (projectile.fireBlast) {
+        explodeFireBlast(projectile);
+        return false;
+      }
       if (projectile.markedShot) {
         markBossTarget(hitBoss);
         damageBossTarget(hitBoss, projectile.damage, "Marked Shot");
@@ -3251,6 +3284,13 @@ function updatePlayerProjectiles(dt) {
     }
     return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
   });
+}
+
+function explodeFireBlast(projectile) {
+  const radius = projectile.explosionRadius || 132;
+  damageTargetsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast");
+  abilityEffects.push({ type: "fireBlastExplosion", x: projectile.x, y: projectile.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
+  particles.push({ x: projectile.x, y: projectile.y - 24, text: "boom", color: "#ffb14a", ttl: 0.55 });
 }
 
 function markBossTarget(target) {
@@ -4226,6 +4266,20 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (effect.type === "projectileBlock") {
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "rgba(255, 238, 178, 0.88)";
+      ctx.fillStyle = "rgba(240, 212, 124, 0.18)";
+      ctx.shadowColor = "#f0d47c";
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r * (0.55 + progress * 0.75), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     if (effect.type === "shieldWall") {
       const spin = (effect.age || 0) * 2.8;
       const radius = effect.r + Math.sin((effect.age || 0) * 5) * 3;
@@ -4350,6 +4404,49 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (effect.type === "fireBlastCast") {
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "#ff8a32";
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = "rgba(255, 122, 43, 0.42)";
+      ctx.beginPath();
+      ctx.moveTo(54 + progress * 24, 0);
+      ctx.lineTo(-8, -18 - progress * 6);
+      ctx.lineTo(4, 0);
+      ctx.lineTo(-8, 18 + progress * 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#fff1b8";
+      ctx.beginPath();
+      ctx.arc(0, 0, 11 + progress * 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "fireBlastExplosion") {
+      const ring = effect.r * (0.28 + progress * 0.72);
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "#ff8a32";
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = "rgba(255, 108, 31, 0.22)";
+      ctx.strokeStyle = "rgba(255, 230, 151, 0.9)";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, ring, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 241, 184, 0.68)";
+      for (let i = 0; i < 8; i += 1) {
+        const angle = i * Math.PI * 0.25 + progress * 0.8;
+        ctx.beginPath();
+        ctx.arc(effect.x + Math.cos(angle) * ring * 0.55, effect.y + Math.sin(angle) * ring * 0.55, 8 + progress * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
     if (effect.type === "arcaneLance") {
       ctx.translate(effect.x, effect.y);
       ctx.rotate(effect.angle);
@@ -4425,6 +4522,30 @@ function drawPlayerProjectiles() {
     ctx.translate(projectile.x, projectile.y);
     ctx.rotate(angle);
     if (projectile.tag === "Magic") {
+      if (projectile.fireBlast) {
+        const pulse = Math.sin((projectile.age || 0) * 18) * 0.5 + 0.5;
+        ctx.shadowColor = "#ff8a32";
+        ctx.shadowBlur = 26 + pulse * 16;
+        ctx.fillStyle = "rgba(255, 111, 35, 0.26)";
+        ctx.beginPath();
+        ctx.ellipse(-18, 0, 44, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ff7a2b";
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.r + pulse * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff1b8";
+        ctx.beginPath();
+        ctx.arc(4, -4, projectile.r * 0.46, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 230, 151, 0.85)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, projectile.r + 7, -0.7, 1.25);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
       const pulse = Math.sin((projectile.age || 0) * 24) * 0.5 + 0.5;
       ctx.shadowColor = projectile.color;
       ctx.shadowBlur = 20 + pulse * 10;
