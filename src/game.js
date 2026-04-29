@@ -29,7 +29,7 @@ const world = {
 
 const gear = {
   weapon: {
-    ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 46, range: 54, speed: 1.05, moveSpeedBonus: 30, color: "#d8d1c4" },
+    ironBlade: { slot: "weapon", name: "Sword", tag: "Warrior", damage: 46, range: 54, speed: 1.05, moveSpeedBonus: 30, color: "#d8d1c4" },
     emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 27, range: 230, speed: 0.78, color: "#e0a14e" },
     pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
     shadowDaggers: { slot: "weapon", name: "Daggers", tag: "Rogue", damage: 32, range: 82, speed: 0.62, moveSpeedBonus: 36, color: "#9be06f" },
@@ -48,8 +48,8 @@ const combatTuning = {
 const abilityLoadouts = {
   melee: [
     { key: "Q", name: "Shield Bash", cooldown: 6 },
-    { key: "E", name: "Lunging Slash", cooldown: 8 },
-    { key: "R", name: "Iron Guard", cooldown: 14 },
+    { key: "E", name: "Whirlwind Dash", cooldown: 8 },
+    { key: "R", name: "Shield Wall", cooldown: 15 },
   ],
   ranger: [
     { key: "Q", name: "Marked Shot", cooldown: 7 },
@@ -163,8 +163,7 @@ function createPlayer() {
     smokeSpeedGranted: false,
     tumbleTimer: 0,
     invulnerableTimer: 0,
-    ironGuardTimer: 0,
-    ironGuardCounterReady: false,
+    shieldWallTimer: 0,
     guardSpeedTimer: 0,
     gateCooldown: 0,
     room: "starter",
@@ -342,11 +341,12 @@ function applyGear() {
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
   const rogueArmorBonus = weapon.tag === "Rogue" ? 2 : 0;
+  const warriorArmorBonus = isWarriorTag(weapon.tag) ? 4 : 0;
   player.stats = {
     damage: Math.round(weapon.damage * (armor.damageMultiplier || 1)),
     range: weapon.range,
     speed: armor.speed + (weapon.moveSpeedBonus || 0),
-    armor: armor.armor + rogueArmorBonus,
+    armor: armor.armor + rogueArmorBonus + warriorArmorBonus,
   };
   const hpPercent = player.hp / player.maxHp || 1;
   player.maxHp = armor.maxHp;
@@ -459,6 +459,10 @@ function currentClassKey() {
   if (weaponTag === "Magic") return "mage";
   if (weaponTag === "Rogue") return "rogue";
   return "melee";
+}
+
+function isWarriorTag(tag) {
+  return tag === "Warrior" || tag === "Melee";
 }
 
 function currentAbilities() {
@@ -607,6 +611,19 @@ function moveSlidingPlayer(dt) {
   player.slide.timer -= dt;
   player.x += player.slide.vx * dt;
   player.y += player.slide.vy * dt;
+  if (player.slide.whirlwind) {
+    player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.08);
+    player.slide.damageTimer -= dt;
+    if (player.slide.damageTimer <= 0) {
+      player.slide.damageTimer = 0.06;
+      const hit = damageTargetsInRadius(player.x, player.y, 92, Math.round(player.stats.damage * 0.28), "Whirlwind Dash");
+      if (hit.length > 0 && !player.slide.reducedShieldCooldown) {
+        player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
+        player.slide.reducedShieldCooldown = true;
+      }
+      abilityEffects.push({ type: "whirlwindDash", x: player.x, y: player.y, r: 92, ttl: 0.16, maxTtl: 0.16 });
+    }
+  }
   player.slide.vx *= Math.pow(0.82, dt * 6);
   player.slide.vy *= Math.pow(0.82, dt * 6);
 
@@ -1148,7 +1165,7 @@ function firePlayerProjectile(angle) {
   const speed = projectileSpeedForWeapon(weapon.tag);
   const magicAttack = weapon.tag === "Magic";
   const rangedAttack = weapon.tag === "Ranged";
-  const meleeAttack = weapon.tag === "Melee";
+  const meleeAttack = isWarriorTag(weapon.tag);
   const rogueAttack = weapon.tag === "Rogue";
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
@@ -1193,7 +1210,7 @@ function projectileSpeedForWeapon(tag) {
 }
 
 function projectileTravelTime(weapon, speed) {
-  const rangeBonus = weapon.tag === "Melee" ? 150 : weapon.tag === "Rogue" ? 62 : 210;
+  const rangeBonus = isWarriorTag(weapon.tag) ? 150 : weapon.tag === "Rogue" ? 62 : 210;
   return (player.stats.range + rangeBonus) / speed;
 }
 
@@ -1222,13 +1239,13 @@ function useMeleeAbility(index, ability) {
   }
   if (index === 1) {
     spendAbility(index, ability);
-    lungingSlash();
+    whirlwindDash();
     return;
   }
   spendAbility(index, ability);
-  player.ironGuardTimer = 0.8;
-  player.ironGuardCounterReady = true;
-  abilityEffects.push({ type: "ironGuard", x: player.x, y: player.y, r: 46, ttl: 0.8, maxTtl: 0.8 });
+  player.shieldWallTimer = 10;
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "shieldWall");
+  abilityEffects.push({ type: "shieldWall", x: player.x, y: player.y, r: 52, ttl: 10, maxTtl: 10 });
 }
 
 function shieldBash() {
@@ -1244,19 +1261,21 @@ function shieldBash() {
   abilityEffects.push({ type: "shieldBash", x: player.x, y: player.y, angle, range: 138, ttl: 0.24, maxTtl: 0.24 });
 }
 
-function lungingSlash() {
+function whirlwindDash() {
   const angle = movementOrAimAngle();
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   player.meleeAttackTimer = 0.34;
   player.meleeAttackAngle = angle;
   player.slide = {
-    vx: Math.cos(angle) * player.stats.speed * 2.55,
-    vy: Math.sin(angle) * player.stats.speed * 2.55,
-    timer: 0.18,
+    vx: Math.cos(angle) * player.stats.speed * 2.75,
+    vy: Math.sin(angle) * player.stats.speed * 2.75,
+    timer: 0.3,
+    whirlwind: true,
+    damageTimer: 0,
+    reducedShieldCooldown: false,
   };
-  const hit = damageTargetsInCone(player.x, player.y, angle, 118, Math.PI * 0.58, Math.round(player.stats.damage * 1.16), "Lunging Slash");
-  if (hit.length > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
-  abilityEffects.push({ type: "lungingSlash", x: player.x, y: player.y, angle, range: 124, ttl: 0.28, maxTtl: 0.28 });
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.32);
+  abilityEffects.push({ type: "whirlwindDash", x: player.x, y: player.y, r: 92, ttl: 0.2, maxTtl: 0.2 });
 }
 
 function useRangerAbility(index, ability) {
@@ -1347,7 +1366,7 @@ function useMageAbility(index, ability) {
   }
   spendAbility(index, ability);
   abilityEffects = abilityEffects.filter((effect) => effect.type !== "blizzard");
-  abilityEffects.push({ type: "blizzard", x: player.x, y: player.y, r: 132, ttl: 5, maxTtl: 5 });
+  abilityEffects.push({ type: "blizzard", x: player.x, y: player.y, r: 132, ttl: 7.5, maxTtl: 7.5 });
 }
 
 function useRogueAbility(index, ability) {
@@ -1440,6 +1459,16 @@ function damageTargetsInCone(x, y, angle, range, halfAngle, amount, source) {
   });
 }
 
+function damageTargetsInRadius(x, y, radius, amount, source, hitTargets = []) {
+  return livingBosses().filter((target) => {
+    if (hitTargets.includes(target)) return false;
+    if (distance({ x, y }, target) > radius + target.radius) return false;
+    const hit = damageBossTarget(target, amount, source);
+    if (hit) hitTargets.push(target);
+    return hit;
+  });
+}
+
 function shoveTarget(target, x, y, amount) {
   if (target.kind !== "ketchup" && target.kind !== "mayo" && target.kind !== "mustard") return;
   const angle = Math.atan2(target.y - y, target.x - x);
@@ -1455,17 +1484,6 @@ function interruptTarget(target) {
   target.stateTimer = 0.45;
   target.attackTimer = Math.min(target.attackTimer || 1, 1.0);
   particles.push({ x: target.x, y: target.y - target.radius - 32, text: "interrupted", color: "#fff08a", ttl: 0.8 });
-}
-
-function triggerIronGuardCounter() {
-  player.ironGuardCounterReady = false;
-  player.guardSpeedTimer = 1.4;
-  const angle = aimAngle();
-  player.meleeAttackTimer = 0.34;
-  player.meleeAttackAngle = angle;
-  damageTargetsInCone(player.x, player.y, angle, 118, Math.PI * 0.82, Math.round(player.stats.damage * 1.05), "Iron Counter");
-  abilityEffects.push({ type: "ironCounter", x: player.x, y: player.y, angle, range: 118, ttl: 0.32, maxTtl: 0.32 });
-  particles.push({ x: player.x, y: player.y - 42, text: "counter", color: "#f0d47c", ttl: 0.7 });
 }
 
 function spawnBossPattern() {
@@ -2889,10 +2907,7 @@ function damagePlayer(amount, source, options = {}) {
     return;
   }
   let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
-  if (player.ironGuardTimer > 0) {
-    hit = Math.max(1, Math.ceil(hit * 0.28));
-    if (player.ironGuardCounterReady) triggerIronGuardCounter();
-  }
+  if (player.shieldWallTimer > 0) hit = Math.max(1, Math.ceil(hit * 0.5));
   player.hp = Math.max(0, player.hp - hit);
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
@@ -3033,10 +3048,9 @@ function updateAbilities(dt) {
   player.abilityCooldowns = player.abilityCooldowns.map((cooldown) => Math.max(0, cooldown - dt));
   player.invulnerableTimer = Math.max(0, player.invulnerableTimer - dt);
   player.tumbleTimer = Math.max(0, player.tumbleTimer - dt);
-  player.ironGuardTimer = Math.max(0, player.ironGuardTimer - dt);
+  player.shieldWallTimer = Math.max(0, player.shieldWallTimer - dt);
   player.guardSpeedTimer = Math.max(0, player.guardSpeedTimer - dt);
   player.backstabTimer = Math.max(0, player.backstabTimer - dt);
-  if (player.ironGuardTimer <= 0) player.ironGuardCounterReady = false;
 
   livingBosses().forEach((target) => {
     target.markedTimer = Math.max(0, (target.markedTimer || 0) - dt);
@@ -3055,7 +3069,7 @@ function updateAbilities(dt) {
   abilityEffects = abilityEffects.filter((effect) => {
     effect.ttl -= dt;
     effect.age = (effect.age || 0) + dt;
-    if (effect.type === "ironGuard") {
+    if (effect.type === "shieldWall") {
       effect.x = player.x;
       effect.y = player.y;
     }
@@ -4173,8 +4187,8 @@ function drawAbilityEffects() {
     const progress = 1 - effect.ttl / effect.maxTtl;
     const alpha = clamp(effect.ttl / effect.maxTtl, 0, 1);
     ctx.save();
-    if (effect.type === "shieldBash" || effect.type === "lungingSlash" || effect.type === "ironCounter") {
-      const color = effect.type === "shieldBash" ? "rgba(240, 212, 124," : effect.type === "ironCounter" ? "rgba(255, 238, 178," : "rgba(231, 194, 122,";
+    if (effect.type === "shieldBash" || effect.type === "ironCounter") {
+      const color = effect.type === "shieldBash" ? "rgba(240, 212, 124," : "rgba(255, 238, 178,";
       ctx.translate(effect.x, effect.y);
       ctx.rotate(effect.angle);
       ctx.globalAlpha = alpha;
@@ -4190,14 +4204,50 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
-    if (effect.type === "ironGuard") {
+    if (effect.type === "whirlwindDash") {
+      const spin = (effect.age || 0) * 18;
       ctx.globalAlpha = alpha;
-      ctx.strokeStyle = "#f0d47c";
+      ctx.fillStyle = "rgba(240, 212, 124, 0.14)";
+      ctx.strokeStyle = "rgba(255, 238, 178, 0.86)";
+      ctx.shadowColor = "#f0d47c";
+      ctx.shadowBlur = 14;
       ctx.lineWidth = 4;
-      ctx.setLineDash([8, 6]);
       ctx.beginPath();
-      ctx.arc(effect.x, effect.y, effect.r + Math.sin(progress * Math.PI) * 8, 0, Math.PI * 2);
+      ctx.arc(effect.x, effect.y, effect.r * (0.72 + progress * 0.28), 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
+      ctx.lineWidth = 5;
+      for (let i = 0; i < 2; i += 1) {
+        const start = spin + i * Math.PI;
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.r * (0.48 + i * 0.22), start, start + Math.PI * 0.72);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "shieldWall") {
+      const spin = (effect.age || 0) * 2.8;
+      const radius = effect.r + Math.sin((effect.age || 0) * 5) * 3;
+      ctx.globalAlpha = effect.ttl < 1 ? alpha : 1;
+      ctx.strokeStyle = "rgba(240, 212, 124, 0.78)";
+      ctx.fillStyle = "rgba(240, 212, 124, 0.08)";
+      ctx.shadowColor = "#f0d47c";
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      for (let i = 0; i < 4; i += 1) {
+        const angle = spin + i * Math.PI * 0.5;
+        drawOrbitingShield(
+          effect.x + Math.cos(angle) * radius,
+          effect.y + Math.sin(angle) * radius * 0.82,
+          angle + Math.PI / 2,
+          0.82 + Math.sin((effect.age || 0) * 6 + i) * 0.08,
+        );
+      }
       ctx.restore();
       return;
     }
@@ -4340,6 +4390,34 @@ function drawStackPips(target, count, color, yOffset) {
   ctx.restore();
 }
 
+function drawOrbitingShield(x, y, angle, scale = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "rgba(255, 238, 178, 0.92)";
+  ctx.strokeStyle = "#8f7140";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -13);
+  ctx.quadraticCurveTo(13, -8, 11, 5);
+  ctx.quadraticCurveTo(6, 15, 0, 19);
+  ctx.quadraticCurveTo(-6, 15, -11, 5);
+  ctx.quadraticCurveTo(-13, -8, 0, -13);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.78)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, -9);
+  ctx.lineTo(0, 13);
+  ctx.moveTo(-7, -1);
+  ctx.lineTo(7, -1);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPlayerProjectiles() {
   playerProjectiles.forEach((projectile) => {
     const angle = Math.atan2(projectile.vy, projectile.vx);
@@ -4374,7 +4452,7 @@ function drawPlayerProjectiles() {
       ctx.moveTo(-12, 0);
       ctx.lineTo(12, 0);
       ctx.stroke();
-    } else if (projectile.tag === "Melee") {
+    } else if (isWarriorTag(projectile.tag)) {
       drawMeleeProjectile(projectile);
     } else {
       ctx.fillStyle = projectile.color;
