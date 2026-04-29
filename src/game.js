@@ -306,6 +306,7 @@ function createBoss(kind = "burger") {
     deliveryTimer: 0,
     deliveryGoalHp: 0,
     deliveryTextTimer: 0,
+    deliveryUsed: false,
   };
 }
 
@@ -912,12 +913,12 @@ function updatePizzaPhase() {
 }
 
 function updatePizzaDelivery(dt) {
-  if (boss.phase < 3) return;
+  if (boss.phase < 3 || boss.deliveryUsed) return;
   if (boss.deliveryActive) {
     boss.deliveryTimer -= dt;
     if (boss.hp <= boss.deliveryGoalHp) {
       boss.deliveryActive = false;
-      boss.deliveryCooldown = boss.enraged ? 9 : 11;
+      boss.deliveryUsed = true;
       boss.deliveryTextTimer = 0;
       log("Delivery timer broken.");
       showFloat("Timer broken");
@@ -925,7 +926,7 @@ function updatePizzaDelivery(dt) {
     }
     if (boss.deliveryTimer <= 0) {
       boss.deliveryActive = false;
-      boss.deliveryCooldown = boss.enraged ? 8 : 10;
+      boss.deliveryUsed = true;
       boss.deliveryTextTimer = 0;
       spawnPizzaBoxSlam();
       log("Pizza box slam incoming.");
@@ -3090,7 +3091,7 @@ function updateRogueDebuffs(target, dt) {
     target.poisonTickTimer = (target.poisonTickTimer || 1) - dt;
     if (target.poisonTickTimer <= 0) {
       target.poisonTickTimer += 1;
-      damageBossTarget(target, target.poisonStacks, "Poison", { poison: true });
+      damageBossTarget(target, target.poisonStacks * roguePoisonDamagePerStack(), "Poison", { poison: true });
     }
   }
   target.bleedTimer = Math.max(0, (target.bleedTimer || 0) - dt);
@@ -3297,6 +3298,10 @@ function applyPoisonStack(target) {
   target.poisonTimer = 5;
   if (!target.poisonTickTimer || target.poisonTickTimer <= 0) target.poisonTickTimer = 1;
   particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
+}
+
+function roguePoisonDamagePerStack() {
+  return isRogueBuild() && player.gear.armor === "channelerRobe" ? 2 : 1;
 }
 
 function applyBleed(target) {
