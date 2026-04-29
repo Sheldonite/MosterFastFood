@@ -1572,8 +1572,9 @@ function spawnPizzaDash() {
 
 function spawnPepperoniVolley(count, spread) {
   const base = Math.atan2(player.y - boss.y, player.x - boss.x);
-  for (let i = 0; i < count; i += 1) {
-    const angle = base + (i - (count - 1) / 2) * (spread / Math.max(1, count - 1)) + (Math.random() - 0.5) * 0.08;
+  const reducedCount = Math.max(1, Math.round(count * 0.8));
+  for (let i = 0; i < reducedCount; i += 1) {
+    const angle = base + (i - (reducedCount - 1) / 2) * (spread / Math.max(1, reducedCount - 1)) + (Math.random() - 0.5) * 0.08;
     const speed = (boss.enraged ? 285 : 245) + Math.random() * 45;
     hazards.push({
       type: "pepperoni",
