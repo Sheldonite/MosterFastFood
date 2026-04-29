@@ -341,11 +341,12 @@ function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
 function applyGear() {
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
+  const rogueArmorBonus = weapon.tag === "Rogue" ? 2 : 0;
   player.stats = {
     damage: Math.round(weapon.damage * (armor.damageMultiplier || 1)),
     range: weapon.range,
     speed: armor.speed + (weapon.moveSpeedBonus || 0),
-    armor: armor.armor,
+    armor: armor.armor + rogueArmorBonus,
   };
   const hpPercent = player.hp / player.maxHp || 1;
   player.maxHp = armor.maxHp;
@@ -1151,13 +1152,14 @@ function firePlayerProjectile(angle) {
   const rangedAttack = weapon.tag === "Ranged";
   const meleeAttack = weapon.tag === "Melee";
   const rogueAttack = weapon.tag === "Rogue";
+  const damageMultiplier = magicAttack && playerInFrostSigil() ? 2 : 1;
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     r: magicAttack ? 11 : meleeAttack ? 12 : rogueAttack ? 8 : 6,
-    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
+    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44) * damageMultiplier),
     color: magicAttack ? "#48efe4" : weapon.color,
     ttl: projectileTravelTime(weapon, speed),
     age: 0,
@@ -1182,7 +1184,7 @@ function firePlayerProjectile(angle) {
     player.rogueAttackTimer = 0.24;
     player.rogueAttackAngle = angle;
   }
-  player.attackCooldown = magicAttack && playerInFrostSigil() ? weapon.speed * 0.65 : weapon.speed;
+  player.attackCooldown = weapon.speed;
   ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
 }
 
@@ -1369,16 +1371,9 @@ function useRogueAbility(index, ability) {
 }
 
 function shadowStep() {
-  const target = rogueStepTarget();
-  const angle = target ? Math.atan2(target.y - player.y, target.x - player.x) : aimAngle();
+  const angle = aimAngle();
   const origin = { x: player.x, y: player.y };
-  let destination;
-  if (target) {
-    const behindAngle = Math.atan2(target.y - player.y, target.x - player.x);
-    destination = clampArenaPoint(target.x + Math.cos(behindAngle) * (target.radius + 42), target.y + Math.sin(behindAngle) * (target.radius + 42), player.radius);
-  } else {
-    destination = constrainToRoom(player.x + Math.cos(angle) * 185, player.y + Math.sin(angle) * 185);
-  }
+  const destination = constrainToRoom(player.x + Math.cos(angle) * 185, player.y + Math.sin(angle) * 185);
   player.x = destination.x;
   player.y = destination.y;
   player.slide = null;
@@ -1387,12 +1382,6 @@ function shadowStep() {
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   abilityEffects.push({ type: "shadowStep", x: origin.x, y: origin.y, x2: player.x, y2: player.y, ttl: 0.42, maxTtl: 0.42 });
   particles.push({ x: player.x, y: player.y - 36, text: "backstab ready", color: "#c8ff9a", ttl: 0.85 });
-}
-
-function rogueStepTarget() {
-  return livingBosses()
-    .filter((target) => distance(mouseWorld, target) < target.radius + 170 || distance(player, target) < target.radius + 260)
-    .sort((a, b) => distance(mouseWorld, a) - distance(mouseWorld, b))[0] || null;
 }
 
 function backstabStrike() {
