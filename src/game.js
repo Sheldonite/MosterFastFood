@@ -48,23 +48,23 @@ const combatTuning = {
 const abilityLoadouts = {
   melee: [
     { key: "Q", name: "Shield Bash", cooldown: 6 },
-    { key: "W", name: "Lunging Slash", cooldown: 8 },
-    { key: "E", name: "Iron Guard", cooldown: 14 },
+    { key: "E", name: "Lunging Slash", cooldown: 8 },
+    { key: "R", name: "Iron Guard", cooldown: 14 },
   ],
   ranger: [
     { key: "Q", name: "Marked Shot", cooldown: 7 },
-    { key: "W", name: "Tumble Shot", cooldown: 9 },
-    { key: "E", name: "Volley Trap", cooldown: 16 },
+    { key: "E", name: "Tumble Shot", cooldown: 9 },
+    { key: "R", name: "Volley Trap", cooldown: 16 },
   ],
   mage: [
     { key: "Q", name: "Arcane Lance", cooldown: 6 },
-    { key: "W", name: "Blink Step", cooldown: 10 },
-    { key: "E", name: "Frost Sigil", cooldown: 18 },
+    { key: "E", name: "Blink Step", cooldown: 10 },
+    { key: "R", name: "Frost Sigil", cooldown: 18 },
   ],
   rogue: [
     { key: "Q", name: "Shadow Step", cooldown: 8 },
-    { key: "W", name: "Backstab", cooldown: 6 },
-    { key: "E", name: "Smoke Bomb", cooldown: 16 },
+    { key: "E", name: "Backstab", cooldown: 6 },
+    { key: "R", name: "Smoke Bomb", cooldown: 16 },
   ],
 };
 
@@ -5154,12 +5154,11 @@ window.addEventListener("keydown", (event) => {
   if (direction) {
     event.preventDefault();
     movementKeys[direction] = true;
-    if (key === "w" && !event.repeat) useAbility(1);
     return;
   }
-  if (key === "q" || key === "e") {
+  if (key === "q" || key === "e" || key === "r") {
     event.preventDefault();
-    if (!event.repeat) useAbility(key === "q" ? 0 : 2);
+    if (!event.repeat) useAbility(key === "q" ? 0 : key === "e" ? 1 : 2);
     return;
   }
   if (key !== "f") return;
