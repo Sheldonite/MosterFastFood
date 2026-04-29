@@ -48,21 +48,21 @@ const combatTuning = {
 const abilityLoadouts = {
   melee: [
     { key: "Q", name: "Shield Bash", cooldown: 4.5 },
-    { key: "E", name: "Whirlwind Dash", cooldown: 8 },
+    { key: "Space", name: "Whirlwind Dash", cooldown: 8 },
     { key: "R", name: "Shield Wall", cooldown: 15 },
   ],
   ranger: [
     { key: "Q", name: "Marked Shot", cooldown: 7 },
-    { key: "E", name: "Tumble Shot", cooldown: 9 },
+    { key: "Space", name: "Tumble Shot", cooldown: 9 },
     { key: "R", name: "Volley Trap", cooldown: 16 },
   ],
   mage: [
     { key: "Q", name: "Fire Blast", cooldown: 6 },
-    { key: "E", name: "Blink Step", cooldown: 10 },
+    { key: "Space", name: "Blink Step", cooldown: 10 },
     { key: "R", name: "Blizzard", cooldown: 18 },
   ],
   rogue: [
-    { key: "Q", name: "Shadow Step", cooldown: 8 },
+    { key: "Space", name: "Shadow Step", cooldown: 8 },
     { key: "E", name: "Backstab", cooldown: 6 },
     { key: "R", name: "Smoke Bomb", cooldown: 16 },
   ],
@@ -1223,6 +1223,11 @@ function useAbility(index) {
   if (currentClassKey() === "ranger") useRangerAbility(index, ability);
   if (currentClassKey() === "mage") useMageAbility(index, ability);
   if (currentClassKey() === "rogue") useRogueAbility(index, ability);
+}
+
+function abilityIndexForKey(event) {
+  const pressed = event.code === "Space" ? "space" : event.key.toLowerCase();
+  return currentAbilities().findIndex((ability) => ability.key.toLowerCase() === pressed);
 }
 
 function spendAbility(index, ability) {
@@ -5220,7 +5225,7 @@ function drawRing(x, y, r, color) {
 
 function drawAbilityBar() {
   const abilities = currentAbilities();
-  const slotW = 152;
+  const slotW = 164;
   const slotH = 56;
   const gap = 8;
   const totalW = abilities.length * slotW + (abilities.length - 1) * gap;
@@ -5243,15 +5248,25 @@ function drawAbilityBar() {
       ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
       ctx.fillRect(x, y + slotH * (1 - fill), slotW, slotH * fill);
     }
+    const keyW = ability.key.length > 1 ? 56 : 30;
+    ctx.fillStyle = ready ? "rgba(240, 212, 124, 0.16)" : "rgba(244, 232, 203, 0.08)";
+    ctx.strokeStyle = ready ? "rgba(240, 212, 124, 0.62)" : "rgba(244, 232, 203, 0.18)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x + 10, y + 11, keyW, 22, 5);
+    ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = ready ? "#f0d47c" : "#9e9588";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(ability.key, x + 12, y + 18);
+    ctx.font = ability.key.length > 1 ? "bold 13px sans-serif" : "bold 18px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(ability.key, x + 10 + keyW / 2, y + 23);
+    ctx.textAlign = "left";
     ctx.fillStyle = "#f7efd9";
     ctx.font = "bold 12px sans-serif";
-    ctx.fillText(ability.name, x + 42, y + 18);
+    ctx.fillText(ability.name, x + keyW + 20, y + 18);
     ctx.fillStyle = cooldown > 0 ? "#d0c6b4" : "#9be06f";
     ctx.font = "11px sans-serif";
-    ctx.fillText(cooldown > 0 ? `${cooldown.toFixed(1)}s` : "Ready", x + 42, y + 38);
+    ctx.fillText(cooldown > 0 ? `${cooldown.toFixed(1)}s` : "Ready", x + keyW + 20, y + 38);
   });
   const potionX = startX + totalW + gap;
   ctx.fillStyle = "rgba(25, 24, 22, 0.88)";
@@ -5369,9 +5384,10 @@ window.addEventListener("keydown", (event) => {
     movementKeys[direction] = true;
     return;
   }
-  if (key === "q" || key === "e" || key === "r") {
+  const abilityIndex = abilityIndexForKey(event);
+  if (abilityIndex >= 0) {
     event.preventDefault();
-    if (!event.repeat) useAbility(key === "q" ? 0 : key === "e" ? 1 : 2);
+    if (!event.repeat) useAbility(abilityIndex);
     return;
   }
   if (key !== "f") return;
