@@ -4451,7 +4451,28 @@ function drawPlayer() {
   if (player.meleeAttackTimer > 0 && isMeleeBuild()) drawMeleeAttackSlash();
   if (player.castTimer > 0) drawMageCastBurst();
   if (player.rangerAttackTimer > 0 && isRangedBuild()) drawRangerAttackRelease();
+  drawPlayerHealthBar();
   if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
+}
+
+function drawPlayerHealthBar() {
+  if (player.hp >= player.maxHp && player.room === "starter" && !player.dead) return;
+  const width = 58;
+  const height = 7;
+  const x = player.x - width / 2;
+  const y = player.y - 72;
+  const healthPercent = clamp(player.hp / player.maxHp, 0, 1);
+  ctx.save();
+  ctx.fillStyle = "rgba(10, 12, 11, 0.78)";
+  ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
+  ctx.fillStyle = "#2c1412";
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = healthPercent > 0.45 ? "#69d06e" : healthPercent > 0.22 ? "#f0c35b" : "#df5a4c";
+  ctx.fillRect(x, y, width * healthPercent, height);
+  ctx.strokeStyle = "rgba(244, 241, 230, 0.82)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, width, height);
+  ctx.restore();
 }
 
 function isGlassMageBuild() {
