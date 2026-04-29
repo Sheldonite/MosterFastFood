@@ -3929,12 +3929,23 @@ function drawHazards() {
     }
     if (hazard.type === "pizzaSlice" || hazard.type === "pizzaSliceReturn") {
       if (hazard.type === "pizzaSliceReturn" && hazard.warn > 0) {
-        ctx.strokeStyle = "rgba(255, 244, 196, 0.48)";
-        ctx.lineWidth = 4;
+        const arrowX = hazard.x + Math.cos(hazard.angle) * 46;
+        const arrowY = hazard.y + Math.sin(hazard.angle) * 46;
+        ctx.save();
+        ctx.translate(arrowX, arrowY);
+        ctx.rotate(hazard.angle);
+        ctx.fillStyle = "rgba(255, 244, 196, 0.76)";
+        ctx.strokeStyle = "rgba(140, 70, 38, 0.78)";
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(hazard.x, hazard.y);
-        ctx.lineTo(hazard.x + Math.cos(hazard.angle) * 620, hazard.y + Math.sin(hazard.angle) * 620);
+        ctx.moveTo(14, 0);
+        ctx.lineTo(-8, -10);
+        ctx.lineTo(-4, 0);
+        ctx.lineTo(-8, 10);
+        ctx.closePath();
+        ctx.fill();
         ctx.stroke();
+        ctx.restore();
       }
       ctx.save();
       ctx.translate(hazard.x, hazard.y);
