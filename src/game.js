@@ -14,6 +14,8 @@ const ui = {
   floatText: document.querySelector("#floatText"),
   potionButton: document.querySelector("#potionButton"),
   resetButton: document.querySelector("#resetButton"),
+  deathScreen: document.querySelector("#deathScreen"),
+  deathResetButton: document.querySelector("#deathResetButton"),
 };
 
 const world = {
@@ -30,9 +32,10 @@ const gear = {
     ironBlade: { slot: "weapon", name: "Sword", tag: "Melee", damage: 46, range: 54, speed: 1.05, moveSpeedBonus: 30, color: "#d8d1c4" },
     emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 27, range: 230, speed: 0.78, color: "#e0a14e" },
     pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
+    shadowDaggers: { slot: "weapon", name: "Daggers", tag: "Rogue", damage: 32, range: 82, speed: 0.62, moveSpeedBonus: 36, color: "#9be06f" },
   },
   armor: {
-    duelistCoat: { slot: "armor", name: "Light Armor", tag: "Fast", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
+    duelistCoat: { slot: "armor", name: "Light Armor", tag: "Light", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
     bulwarkPlate: { slot: "armor", name: "Heavy Armor", tag: "Tank", armor: 8, maxHp: 160, speed: 195, color: "#8d8f92" },
     channelerRobe: { slot: "armor", name: "Mage Armor", tag: "Glass", armor: 0, maxHp: 75, speed: 270, damageMultiplier: 1.5, color: "#6f75b8" },
   },
@@ -42,10 +45,34 @@ const combatTuning = {
   incomingDamageMultiplier: 1.8975,
 };
 
+const abilityLoadouts = {
+  melee: [
+    { key: "Q", name: "Shield Bash", cooldown: 6 },
+    { key: "W", name: "Lunging Slash", cooldown: 8 },
+    { key: "E", name: "Iron Guard", cooldown: 14 },
+  ],
+  ranger: [
+    { key: "Q", name: "Marked Shot", cooldown: 7 },
+    { key: "W", name: "Tumble Shot", cooldown: 9 },
+    { key: "E", name: "Volley Trap", cooldown: 16 },
+  ],
+  mage: [
+    { key: "Q", name: "Arcane Lance", cooldown: 6 },
+    { key: "W", name: "Blink Step", cooldown: 10 },
+    { key: "E", name: "Frost Sigil", cooldown: 18 },
+  ],
+  rogue: [
+    { key: "Q", name: "Shadow Step", cooldown: 8 },
+    { key: "W", name: "Backstab", cooldown: 6 },
+    { key: "E", name: "Smoke Bomb", cooldown: 16 },
+  ],
+};
+
 const stands = [
-  { x: 205, y: 270, type: "weapon", id: "ironBlade" },
-  { x: 340, y: 270, type: "weapon", id: "emberBow" },
-  { x: 475, y: 270, type: "weapon", id: "pulseStaff" },
+  { x: 165, y: 270, type: "weapon", id: "ironBlade" },
+  { x: 285, y: 270, type: "weapon", id: "emberBow" },
+  { x: 405, y: 270, type: "weapon", id: "pulseStaff" },
+  { x: 525, y: 270, type: "weapon", id: "shadowDaggers" },
   { x: 205, y: 520, type: "armor", id: "duelistCoat" },
   { x: 340, y: 520, type: "armor", id: "bulwarkPlate" },
   { x: 475, y: 520, type: "armor", id: "channelerRobe" },
@@ -64,11 +91,23 @@ glassMageSprite.src = "./assets/glass-mage-spritesheet.png";
 glassMageSprite.addEventListener("load", () => {
   cleanedGlassMageSprite = createTransparentSprite(glassMageSprite);
 });
-const fastMageSprite = new Image();
-let cleanedFastMageSprite = null;
-fastMageSprite.src = "./assets/light-armor-mage.png";
-fastMageSprite.addEventListener("load", () => {
-  cleanedFastMageSprite = createTransparentSprite(fastMageSprite);
+const rangedSprite = new Image();
+let cleanedRangedSprite = null;
+rangedSprite.src = "./assets/ranged-spritesheet.png";
+rangedSprite.addEventListener("load", () => {
+  cleanedRangedSprite = createTransparentSprite(rangedSprite);
+});
+const meleeSprite = new Image();
+let cleanedMeleeSprite = null;
+meleeSprite.src = "./assets/melee-spritesheet.png";
+meleeSprite.addEventListener("load", () => {
+  cleanedMeleeSprite = createTransparentSprite(meleeSprite);
+});
+const rogueSprite = new Image();
+let cleanedRogueSprite = null;
+rogueSprite.src = "./assets/rogue-spritesheet.png";
+rogueSprite.addEventListener("load", () => {
+  cleanedRogueSprite = createTransparentSprite(rogueSprite);
 });
 const curlyFriesSprite = new Image();
 let cleanedCurlyFriesSprite = null;
@@ -82,8 +121,10 @@ let boss = createBoss("cola");
 let condimentBosses = [];
 let hazards = [];
 let playerProjectiles = [];
+let abilityEffects = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
+let mouseWorld = { x: 300, y: 685 };
 const movementKeys = { up: false, down: false, left: false, right: false };
 const keyDirections = {
   w: "up",
@@ -107,8 +148,24 @@ function createPlayer() {
     maxHp: 115,
     potions: 3,
     attackCooldown: 0,
+    abilityCooldowns: [0, 0, 0],
     castTimer: 0,
+    castMoveLockTimer: 0,
     castAngle: 0,
+    pendingAbilityCast: null,
+    rangerAttackTimer: 0,
+    rangerAttackAngle: 0,
+    meleeAttackTimer: 0,
+    meleeAttackAngle: 0,
+    rogueAttackTimer: 0,
+    rogueAttackAngle: 0,
+    backstabTimer: 0,
+    smokeSpeedGranted: false,
+    tumbleTimer: 0,
+    invulnerableTimer: 0,
+    ironGuardTimer: 0,
+    ironGuardCounterReady: false,
+    guardSpeedTimer: 0,
     gateCooldown: 0,
     room: "starter",
     dead: false,
@@ -328,10 +385,12 @@ function resetFight(keepPosition = false) {
     player.x = 705;
     player.y = 455;
   }
+  mouseWorld = { x: player.x + player.lastMoveX * 120, y: player.y + player.lastMoveY * 120 };
   boss = createBoss(bossKind);
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
+  abilityEffects = [];
   particles = [];
   selectedBoss = null;
   fightStartedAt = 0;
@@ -347,11 +406,13 @@ function selectBoss(kind) {
   player.room = "arena";
   player.x = world.arena.x + 130;
   player.y = world.arena.y + world.arena.h / 2;
+  mouseWorld = { x: player.x + 120, y: player.y };
   player.gateCooldown = 1.2;
   boss = createBoss(kind);
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
+  abilityEffects = [];
   particles = [];
   selectedBoss = null;
   fightStartedAt = 0;
@@ -388,6 +449,43 @@ function isTypingTarget(element) {
 
 function currentBounds() {
   return player.room === "arena" ? world.arena : world.starter;
+}
+
+function currentClassKey() {
+  const weaponTag = gear.weapon[player.gear.weapon].tag;
+  if (weaponTag === "Ranged") return "ranger";
+  if (weaponTag === "Magic") return "mage";
+  if (weaponTag === "Rogue") return "rogue";
+  return "melee";
+}
+
+function currentAbilities() {
+  return abilityLoadouts[currentClassKey()];
+}
+
+function aimAngle() {
+  const dx = mouseWorld.x - player.x;
+  const dy = mouseWorld.y - player.y;
+  if (Math.hypot(dx, dy) > 8) return Math.atan2(dy, dx);
+  return Math.atan2(player.lastMoveY || 1, player.lastMoveX || 0);
+}
+
+function movementOrAimAngle() {
+  const dx = (movementKeys.right ? 1 : 0) - (movementKeys.left ? 1 : 0);
+  const dy = (movementKeys.down ? 1 : 0) - (movementKeys.up ? 1 : 0);
+  if (Math.hypot(dx, dy) > 0.1) return Math.atan2(dy, dx);
+  return aimAngle();
+}
+
+function angleDifference(a, b) {
+  return Math.atan2(Math.sin(a - b), Math.cos(a - b));
+}
+
+function pointFromAngle(x, y, angle, distanceValue) {
+  return {
+    x: x + Math.cos(angle) * distanceValue,
+    y: y + Math.sin(angle) * distanceValue,
+  };
 }
 
 function nachoQuadrantBounds() {
@@ -444,6 +542,8 @@ function constrainToRoom(x, y) {
 
 function equipFromStand(stand) {
   player.gear[stand.type] = stand.id;
+  player.abilityCooldowns = [0, 0, 0];
+  player.pendingAbilityCast = null;
   applyGear();
   player.hp = player.maxHp;
   saveGear();
@@ -453,10 +553,22 @@ function equipFromStand(stand) {
 }
 
 function movePlayer(dt) {
+  if (player.dead || player.won) {
+    player.destination = null;
+    player.slide = null;
+    player.moving = false;
+    return;
+  }
   player.moving = false;
+  player.castMoveLockTimer = Math.max(0, player.castMoveLockTimer - dt);
   player.freezeTimer = Math.max(0, player.freezeTimer - dt);
   player.chillTimer = Math.max(0, player.chillTimer - dt);
   if (player.chillTimer <= 0) player.chillStacks = 0;
+  if (player.castMoveLockTimer > 0) {
+    player.destination = null;
+    player.slide = null;
+    return;
+  }
   if (player.freezeTimer > 0) {
     player.destination = null;
     player.slide = null;
@@ -476,11 +588,15 @@ function movePlayer(dt) {
   player.animationTime += dt;
   player.lastMoveX = dx / dist;
   player.lastMoveY = dy / dist;
-  player.x += player.lastMoveX * player.stats.speed * dt;
-  player.y += player.lastMoveY * player.stats.speed * dt;
+  player.x += player.lastMoveX * playerSpeed() * dt;
+  player.y += player.lastMoveY * playerSpeed() * dt;
   const point = constrainToRoom(player.x, player.y);
   player.x = point.x;
   player.y = point.y;
+}
+
+function playerSpeed() {
+  return player.stats.speed * (player.guardSpeedTimer > 0 ? 1.45 : 1);
 }
 
 function moveSlidingPlayer(dt) {
@@ -547,6 +663,7 @@ function updateRoom(dt) {
     player.room = "arena";
     player.x = world.arena.x + 130;
     player.y = world.arena.y + world.arena.h / 2;
+    mouseWorld = { x: player.x + 120, y: player.y };
     player.destination = null;
     player.slide = null;
     player.gateCooldown = 1.2;
@@ -995,7 +1112,9 @@ function moveCondimentToward(target, destination, speed, dt) {
     target.destination = null;
     return;
   }
-  const step = Math.min(dist, speed * dt);
+  const sigil = activeFrostSigil();
+  const slow = sigil && distance(sigil, target) < sigil.r + target.radius ? 0.55 : 1;
+  const step = Math.min(dist, speed * slow * dt);
   target.x += (dx / dist) * step;
   target.y += (dy / dist) * step;
 }
@@ -1028,12 +1147,15 @@ function firePlayerProjectile(angle) {
   const weapon = gear.weapon[player.gear.weapon];
   const speed = projectileSpeedForWeapon(weapon.tag);
   const magicAttack = weapon.tag === "Magic";
+  const rangedAttack = weapon.tag === "Ranged";
+  const meleeAttack = weapon.tag === "Melee";
+  const rogueAttack = weapon.tag === "Rogue";
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    r: magicAttack ? 11 : 6,
+    r: magicAttack ? 11 : meleeAttack ? 12 : rogueAttack ? 8 : 6,
     damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
     color: magicAttack ? "#48efe4" : weapon.color,
     ttl: projectileTravelTime(weapon, speed),
@@ -1043,21 +1165,320 @@ function firePlayerProjectile(angle) {
   });
   if (magicAttack) {
     player.castTimer = 0.36;
+    player.castMoveLockTimer = 0.3;
     player.castAngle = angle;
+    player.slide = null;
   }
-  player.attackCooldown = weapon.speed;
-  ui.status.textContent = `Firing ${weapon.name}.`;
+  if (rangedAttack) {
+    player.rangerAttackTimer = 0.28;
+    player.rangerAttackAngle = angle;
+  }
+  if (meleeAttack) {
+    player.meleeAttackTimer = 0.34;
+    player.meleeAttackAngle = angle;
+  }
+  if (rogueAttack) {
+    player.rogueAttackTimer = 0.24;
+    player.rogueAttackAngle = angle;
+  }
+  player.attackCooldown = magicAttack && playerInFrostSigil() ? weapon.speed * 0.65 : weapon.speed;
+  ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
 }
 
 function projectileSpeedForWeapon(tag) {
   if (tag === "Ranged") return 620;
   if (tag === "Magic") return 480;
+  if (tag === "Rogue") return 720;
   return 760;
 }
 
 function projectileTravelTime(weapon, speed) {
-  const rangeBonus = weapon.tag === "Melee" ? 150 : 210;
+  const rangeBonus = weapon.tag === "Melee" ? 150 : weapon.tag === "Rogue" ? 62 : 210;
   return (player.stats.range + rangeBonus) / speed;
+}
+
+function useAbility(index) {
+  if (player.dead || player.won || player.room !== "arena") return;
+  const ability = currentAbilities()[index];
+  if (!ability || player.abilityCooldowns[index] > 0) return;
+  startFight();
+  if (currentClassKey() === "melee") useMeleeAbility(index, ability);
+  if (currentClassKey() === "ranger") useRangerAbility(index, ability);
+  if (currentClassKey() === "mage") useMageAbility(index, ability);
+  if (currentClassKey() === "rogue") useRogueAbility(index, ability);
+}
+
+function spendAbility(index, ability) {
+  player.abilityCooldowns[index] = ability.cooldown;
+  ui.status.textContent = `${ability.name}.`;
+  showFloat(ability.name);
+}
+
+function useMeleeAbility(index, ability) {
+  if (index === 0) {
+    spendAbility(index, ability);
+    shieldBash();
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    lungingSlash();
+    return;
+  }
+  spendAbility(index, ability);
+  player.ironGuardTimer = 0.8;
+  player.ironGuardCounterReady = true;
+  abilityEffects.push({ type: "ironGuard", x: player.x, y: player.y, r: 46, ttl: 0.8, maxTtl: 0.8 });
+}
+
+function shieldBash() {
+  const angle = aimAngle();
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  player.meleeAttackTimer = 0.3;
+  player.meleeAttackAngle = angle;
+  const hit = damageTargetsInCone(player.x, player.y, angle, 138, Math.PI * 0.36, Math.round(player.stats.damage * 0.72), "Shield Bash");
+  hit.forEach((target) => {
+    interruptTarget(target);
+    shoveTarget(target, player.x, player.y, 54);
+  });
+  abilityEffects.push({ type: "shieldBash", x: player.x, y: player.y, angle, range: 138, ttl: 0.24, maxTtl: 0.24 });
+}
+
+function lungingSlash() {
+  const angle = movementOrAimAngle();
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  player.meleeAttackTimer = 0.34;
+  player.meleeAttackAngle = angle;
+  player.slide = {
+    vx: Math.cos(angle) * player.stats.speed * 2.55,
+    vy: Math.sin(angle) * player.stats.speed * 2.55,
+    timer: 0.18,
+  };
+  const hit = damageTargetsInCone(player.x, player.y, angle, 118, Math.PI * 0.58, Math.round(player.stats.damage * 1.16), "Lunging Slash");
+  if (hit.length > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
+  abilityEffects.push({ type: "lungingSlash", x: player.x, y: player.y, angle, range: 124, ttl: 0.28, maxTtl: 0.28 });
+}
+
+function useRangerAbility(index, ability) {
+  const angle = aimAngle();
+  if (index === 0) {
+    spendAbility(index, ability);
+    fireAbilityArrow(angle, {
+      damage: Math.round(player.stats.damage * 0.72),
+      speed: 860,
+      color: "#ffd782",
+      markedShot: true,
+      ttl: 0.75,
+    });
+    player.rangerAttackTimer = 0.28;
+    player.rangerAttackAngle = angle;
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    tumbleShot(angle);
+    return;
+  }
+  spendAbility(index, ability);
+  abilityEffects.push({
+    type: "volleyTrap",
+    x: player.x,
+    y: player.y,
+    r: 36,
+    ttl: 4,
+    maxTtl: 4,
+    triggerTimer: 0.6,
+    shotTimer: 0,
+    shotsRemaining: 5,
+  });
+}
+
+function tumbleShot(angle) {
+  const rollAngle = movementOrAimAngle();
+  player.facing = getFacing(Math.cos(rollAngle), Math.sin(rollAngle));
+  player.slide = {
+    vx: Math.cos(rollAngle) * player.stats.speed * 3.0,
+    vy: Math.sin(rollAngle) * player.stats.speed * 3.0,
+    timer: 0.24,
+  };
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.22);
+  player.tumbleTimer = 0.28;
+  fireAbilityArrow(angle, {
+    damage: Math.round(player.stats.damage * 0.66),
+    speed: 760,
+    color: "#f6c46d",
+    ttl: 0.65,
+  });
+  abilityEffects.push({ type: "tumbleShot", x: player.x, y: player.y, angle: rollAngle, ttl: 0.32, maxTtl: 0.32 });
+}
+
+function fireAbilityArrow(angle, options) {
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  playerProjectiles.push({
+    x: player.x + Math.cos(angle) * 28,
+    y: player.y + Math.sin(angle) * 28,
+    vx: Math.cos(angle) * options.speed,
+    vy: Math.sin(angle) * options.speed,
+    r: 7,
+    damage: options.damage,
+    color: options.color,
+    ttl: options.ttl,
+    age: 0,
+    tag: "Ranged",
+    ability: true,
+    markedShot: Boolean(options.markedShot),
+  });
+}
+
+function useMageAbility(index, ability) {
+  const angle = aimAngle();
+  if (index === 0) {
+    spendAbility(index, ability);
+    player.pendingAbilityCast = { type: "arcaneLance", timer: 0.25, angle };
+    player.castTimer = 0.32;
+    player.castMoveLockTimer = 0.25;
+    player.castAngle = angle;
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    blinkStep(angle);
+    return;
+  }
+  spendAbility(index, ability);
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "frostSigil");
+  abilityEffects.push({ type: "frostSigil", x: player.x, y: player.y, r: 108, ttl: 5, maxTtl: 5, pulseTimer: 0 });
+}
+
+function useRogueAbility(index, ability) {
+  if (index === 0) {
+    spendAbility(index, ability);
+    shadowStep();
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    backstabStrike();
+    return;
+  }
+  spendAbility(index, ability);
+  abilityEffects.push({ type: "smokeBomb", x: player.x, y: player.y, r: 92, ttl: 4.2, maxTtl: 4.2, wasInside: true });
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.35);
+  player.smokeSpeedGranted = false;
+}
+
+function shadowStep() {
+  const target = rogueStepTarget();
+  const angle = target ? Math.atan2(target.y - player.y, target.x - player.x) : aimAngle();
+  const origin = { x: player.x, y: player.y };
+  let destination;
+  if (target) {
+    const behindAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    destination = clampArenaPoint(target.x + Math.cos(behindAngle) * (target.radius + 42), target.y + Math.sin(behindAngle) * (target.radius + 42), player.radius);
+  } else {
+    destination = constrainToRoom(player.x + Math.cos(angle) * 185, player.y + Math.sin(angle) * 185);
+  }
+  player.x = destination.x;
+  player.y = destination.y;
+  player.slide = null;
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.32);
+  player.backstabTimer = 2;
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  abilityEffects.push({ type: "shadowStep", x: origin.x, y: origin.y, x2: player.x, y2: player.y, ttl: 0.42, maxTtl: 0.42 });
+  particles.push({ x: player.x, y: player.y - 36, text: "backstab ready", color: "#c8ff9a", ttl: 0.85 });
+}
+
+function rogueStepTarget() {
+  return livingBosses()
+    .filter((target) => distance(mouseWorld, target) < target.radius + 170 || distance(player, target) < target.radius + 260)
+    .sort((a, b) => distance(mouseWorld, a) - distance(mouseWorld, b))[0] || null;
+}
+
+function backstabStrike() {
+  const angle = aimAngle();
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  const empowered = player.backstabTimer > 0;
+  const targets = damageTargetsInCone(player.x, player.y, angle, 122, Math.PI * 0.52, Math.round(player.stats.damage * (empowered ? 1.85 : 1.05)), empowered ? "Backstab" : "Twin Cut");
+  targets.forEach((target) => {
+    applyBleed(target);
+    if (target.poisonStacks > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
+    if (empowered) consumeExposed(target);
+  });
+  player.backstabTimer = 0;
+  player.rogueAttackTimer = 0.3;
+  player.rogueAttackAngle = angle;
+  abilityEffects.push({ type: "backstab", x: player.x, y: player.y, angle, range: 126, empowered, ttl: 0.28, maxTtl: 0.28 });
+}
+
+function blinkStep(angle) {
+  const origin = { x: player.x, y: player.y };
+  const target = constrainToRoom(player.x + Math.cos(angle) * 165, player.y + Math.sin(angle) * 165);
+  player.x = target.x;
+  player.y = target.y;
+  player.slide = null;
+  player.castTimer = 0.22;
+  player.castAngle = angle;
+  abilityEffects.push({ type: "blinkRune", x: origin.x, y: origin.y, r: 72, ttl: 1.15, maxTtl: 1.15, pulseTimer: 0 });
+  particles.push({ x: player.x, y: player.y - 35, text: "blink", color: "#bafcff", ttl: 0.65 });
+}
+
+function fireArcaneLance(angle) {
+  playerProjectiles.push({
+    x: player.x + Math.cos(angle) * 30,
+    y: player.y + Math.sin(angle) * 30,
+    vx: Math.cos(angle) * 920,
+    vy: Math.sin(angle) * 920,
+    r: 8,
+    damage: Math.round(player.stats.damage * 1.48),
+    color: "#8cf8ff",
+    ttl: 0.52,
+    age: 0,
+    heavy: true,
+    tag: "Magic",
+    ability: true,
+    piercing: true,
+    hitTargets: [],
+  });
+  abilityEffects.push({ type: "arcaneLance", x: player.x, y: player.y - 12, angle, ttl: 0.22, maxTtl: 0.22 });
+}
+
+function damageTargetsInCone(x, y, angle, range, halfAngle, amount, source) {
+  return livingBosses().filter((target) => {
+    const dx = target.x - x;
+    const dy = target.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > range + target.radius) return false;
+    if (Math.abs(angleDifference(Math.atan2(dy, dx), angle)) > halfAngle) return false;
+    return damageBossTarget(target, amount, source);
+  });
+}
+
+function shoveTarget(target, x, y, amount) {
+  if (target.kind !== "ketchup" && target.kind !== "mayo" && target.kind !== "mustard") return;
+  const angle = Math.atan2(target.y - y, target.x - x);
+  const point = clampArenaPoint(target.x + Math.cos(angle) * amount, target.y + Math.sin(angle) * amount, target.radius);
+  target.x = point.x;
+  target.y = point.y;
+  target.destination = null;
+}
+
+function interruptTarget(target) {
+  if (target.state !== "winding") return;
+  target.state = "recovering";
+  target.stateTimer = 0.45;
+  target.attackTimer = Math.min(target.attackTimer || 1, 1.0);
+  particles.push({ x: target.x, y: target.y - target.radius - 32, text: "interrupted", color: "#fff08a", ttl: 0.8 });
+}
+
+function triggerIronGuardCounter() {
+  player.ironGuardCounterReady = false;
+  player.guardSpeedTimer = 1.4;
+  const angle = aimAngle();
+  player.meleeAttackTimer = 0.34;
+  player.meleeAttackAngle = angle;
+  damageTargetsInCone(player.x, player.y, angle, 118, Math.PI * 0.82, Math.round(player.stats.damage * 1.05), "Iron Counter");
+  abilityEffects.push({ type: "ironCounter", x: player.x, y: player.y, angle, range: 118, ttl: 0.32, maxTtl: 0.32 });
+  particles.push({ x: player.x, y: player.y - 42, text: "counter", color: "#f0d47c", ttl: 0.7 });
 }
 
 function spawnBossPattern() {
@@ -1380,12 +1801,15 @@ function spawnFizzBurst() {
 function spawnSodaSpill() {
   const point = randomArenaPointNearPlayer(180);
   hazards.push({
-    type: "sodaPuddle",
+    type: "sodaDrop",
     x: point.x,
     y: point.y,
-    r: 45,
-    ttl: boss.enraged ? 6 : 5,
-    damageTimer: 0,
+    r: 47,
+    warn: boss.enraged ? 0.65 : 0.85,
+    warnDuration: boss.enraged ? 0.65 : 0.85,
+    ttl: boss.enraged ? 0.95 : 1.15,
+    fallHeight: 155,
+    hit: false,
     damage: 12,
   });
 }
@@ -2173,6 +2597,17 @@ function updateHazards(dt) {
           knockPlayerFrom(hazard.x, hazard.y, boss.enraged ? 360 : 285);
         }
       }
+    } else if (hazard.type === "sodaDrop") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        hazard.type = "sodaPuddle";
+        hazard.ttl = boss.enraged ? 6 : 5;
+        hazard.warn = 0;
+        hazard.damageTimer = 0;
+        particles.push({ x: hazard.x, y: hazard.y - 18, text: "splash", color: "#b9f4ff", ttl: 0.55 });
+      }
     } else if (hazard.type === "sodaPuddle") {
       hazard.ttl -= dt;
       if (distance(player, hazard) < player.radius + hazard.r) {
@@ -2461,15 +2896,39 @@ function spawnCherryBurst(source, targetList = hazards) {
 }
 
 function damagePlayer(amount, source, options = {}) {
-  const hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
+  if (player.invulnerableTimer > 0) {
+    particles.push({ x: player.x, y: player.y - 35, text: "evade", color: "#ffd782", ttl: 0.55 });
+    return;
+  }
+  let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
+  if (player.ironGuardTimer > 0) {
+    hit = Math.max(1, Math.ceil(hit * 0.28));
+    if (player.ironGuardCounterReady) triggerIronGuardCounter();
+  }
   player.hp = Math.max(0, player.hp - hit);
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
-    player.dead = true;
-    selectedBoss = null;
-    log(`${source} defeated you.`);
-    ui.status.textContent = "Defeated. Reset the fight or tweak your gear.";
+    enterDeathState(source);
   }
+}
+
+function enterDeathState(source) {
+  if (player.dead) return;
+  player.dead = true;
+  player.hp = 0;
+  player.destination = null;
+  player.slide = null;
+  player.moving = false;
+  selectedBoss = null;
+  hazards = [];
+  playerProjectiles = [];
+  abilityEffects = [];
+  Object.keys(movementKeys).forEach((direction) => {
+    movementKeys[direction] = false;
+  });
+  log(`${source} stuffed you.`);
+  ui.status.textContent = "You're Stuffed. Reset to try again.";
+  showFloat("You're Stuffed");
 }
 
 function drinkPotion() {
@@ -2484,6 +2943,7 @@ function winFight() {
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
+  abilityEffects = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   if (boss.kind === "shake" && boss.phase < boss.totalPhases) {
     boss.phase += 1;
@@ -2581,9 +3041,189 @@ function winFight() {
   showFloat(boss.kind === "pizza" ? "Pizza Phantom defeated" : "Boss defeated");
 }
 
+function updateAbilities(dt) {
+  player.abilityCooldowns = player.abilityCooldowns.map((cooldown) => Math.max(0, cooldown - dt));
+  player.invulnerableTimer = Math.max(0, player.invulnerableTimer - dt);
+  player.tumbleTimer = Math.max(0, player.tumbleTimer - dt);
+  player.ironGuardTimer = Math.max(0, player.ironGuardTimer - dt);
+  player.guardSpeedTimer = Math.max(0, player.guardSpeedTimer - dt);
+  player.backstabTimer = Math.max(0, player.backstabTimer - dt);
+  if (player.ironGuardTimer <= 0) player.ironGuardCounterReady = false;
+
+  livingBosses().forEach((target) => {
+    target.markedTimer = Math.max(0, (target.markedTimer || 0) - dt);
+    if (target.markedTimer <= 0) target.markedShots = 0;
+    updateRogueDebuffs(target, dt);
+  });
+
+  if (player.pendingAbilityCast) {
+    player.pendingAbilityCast.timer -= dt;
+    if (player.pendingAbilityCast.timer <= 0) {
+      if (player.pendingAbilityCast.type === "arcaneLance") fireArcaneLance(player.pendingAbilityCast.angle);
+      player.pendingAbilityCast = null;
+    }
+  }
+
+  abilityEffects = abilityEffects.filter((effect) => {
+    effect.ttl -= dt;
+    effect.age = (effect.age || 0) + dt;
+    if (effect.type === "ironGuard") {
+      effect.x = player.x;
+      effect.y = player.y;
+    }
+    if (effect.type === "volleyTrap") updateVolleyTrap(effect, dt);
+    if (effect.type === "blinkRune") updateBlinkRune(effect, dt);
+    if (effect.type === "frostSigil") updateFrostSigil(effect, dt);
+    if (effect.type === "smokeBomb") updateSmokeBomb(effect, dt);
+    return effect.ttl > 0;
+  });
+  applyFrostSigilSlow(dt);
+}
+
+function updateRogueDebuffs(target, dt) {
+  target.poisonTimer = Math.max(0, (target.poisonTimer || 0) - dt);
+  if (target.poisonTimer <= 0) {
+    target.poisonStacks = 0;
+    target.poisonTickTimer = 0;
+  }
+  if (target.poisonStacks > 0) {
+    target.poisonTickTimer = (target.poisonTickTimer || 1) - dt;
+    if (target.poisonTickTimer <= 0) {
+      target.poisonTickTimer += 1;
+      damageBossTarget(target, target.poisonStacks, "Poison", { poison: true });
+    }
+  }
+  target.bleedTimer = Math.max(0, (target.bleedTimer || 0) - dt);
+  if (target.bleedTimer > 0) {
+    target.bleedTickTimer = (target.bleedTickTimer || 0.5) - dt;
+    if (target.bleedTickTimer <= 0) {
+      target.bleedTickTimer += 0.5;
+      damageBossTarget(target, 4, "Bleed");
+    }
+  }
+  target.exposedTimer = Math.max(0, (target.exposedTimer || 0) - dt);
+  if (target.exposedTimer <= 0) target.exposedStacks = 0;
+}
+
+function updateVolleyTrap(effect, dt) {
+  effect.triggerTimer -= dt;
+  if (effect.triggerTimer > 0) return;
+  effect.shotTimer -= dt;
+  if (effect.shotsRemaining <= 0) {
+    effect.ttl = Math.min(effect.ttl, 0.35);
+    return;
+  }
+  if (effect.shotTimer > 0) return;
+  const target = volleyTrapTarget(effect);
+  if (!target) return;
+  const angle = Math.atan2(target.y - effect.y, target.x - effect.x);
+  playerProjectiles.push({
+    x: effect.x + Math.cos(angle) * 20,
+    y: effect.y + Math.sin(angle) * 20,
+    vx: Math.cos(angle) * 710,
+    vy: Math.sin(angle) * 710,
+    r: 6,
+    damage: Math.round(player.stats.damage * 0.5),
+    color: "#ffd782",
+    ttl: 0.8,
+    age: 0,
+    tag: "Ranged",
+    ability: true,
+  });
+  effect.shotsRemaining -= 1;
+  effect.shotTimer = 0.13;
+}
+
+function volleyTrapTarget(effect) {
+  const marked = livingBosses().find((target) => target.markedTimer > 0);
+  if (marked) return marked;
+  return livingBosses().slice().sort((a, b) => distance(effect, a) - distance(effect, b))[0] || null;
+}
+
+function updateBlinkRune(effect, dt) {
+  effect.pulseTimer -= dt;
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = 0.35;
+  livingBosses().forEach((target) => {
+    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, 8, "Blink Rune");
+  });
+  hazards.forEach((hazard) => {
+    if (!hazard.r || hazard.r > 11 || !Number.isFinite(hazard.ttl)) return;
+    if (distance(effect, hazard) < effect.r + hazard.r) {
+      hazard.ttl = 0;
+      particles.push({ x: hazard.x, y: hazard.y - 10, text: "cleared", color: "#bafcff", ttl: 0.45 });
+    }
+  });
+}
+
+function updateFrostSigil(effect, dt) {
+  if (distance(player, effect) > effect.r + player.radius * 0.5) {
+    effect.ttl = 0;
+    particles.push({ x: effect.x, y: effect.y - 24, text: "sigil broken", color: "#bafcff", ttl: 0.65 });
+    return;
+  }
+  effect.pulseTimer -= dt;
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = 0.5;
+  livingBosses().forEach((target) => {
+    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, 6, "Frost Sigil");
+  });
+}
+
+function updateSmokeBomb(effect, dt) {
+  const inside = distance(player, effect) < effect.r + player.radius;
+  if (inside) {
+    player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.08);
+    effect.wasInside = true;
+    player.smokeSpeedGranted = false;
+  } else if (effect.wasInside && !player.smokeSpeedGranted) {
+    player.guardSpeedTimer = Math.max(player.guardSpeedTimer, 1.25);
+    player.backstabTimer = Math.max(player.backstabTimer, 1.5);
+    player.smokeSpeedGranted = true;
+    particles.push({ x: player.x, y: player.y - 36, text: "ambush", color: "#c8ff9a", ttl: 0.65 });
+  }
+  hazards.forEach((hazard) => {
+    if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
+    if (distance(effect, hazard) < effect.r + (hazard.r || 0)) {
+      hazard.vx *= Math.pow(0.5, dt);
+      hazard.vy *= Math.pow(0.5, dt);
+      if (!hazard.smokeWeakened && Number.isFinite(hazard.damage)) {
+        hazard.damage = Math.max(1, Math.ceil(hazard.damage * 0.75));
+        hazard.smokeWeakened = true;
+      }
+    }
+  });
+}
+
+function applyFrostSigilSlow(dt) {
+  const sigil = activeFrostSigil();
+  if (!sigil) return;
+  const decay = Math.pow(0.38, dt);
+  hazards.forEach((hazard) => {
+    if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
+    if (distance(sigil, hazard) < sigil.r + (hazard.r || 0)) {
+      hazard.vx *= decay;
+      hazard.vy *= decay;
+    }
+  });
+}
+
+function activeFrostSigil() {
+  return abilityEffects.find((effect) => effect.type === "frostSigil" && effect.ttl > 0) || null;
+}
+
+function playerInFrostSigil() {
+  const sigil = activeFrostSigil();
+  return Boolean(sigil && distance(player, sigil) <= sigil.r);
+}
+
 function update(dt) {
   movePlayer(dt);
   player.castTimer = Math.max(0, player.castTimer - dt);
+  player.rangerAttackTimer = Math.max(0, player.rangerAttackTimer - dt);
+  player.meleeAttackTimer = Math.max(0, player.meleeAttackTimer - dt);
+  player.rogueAttackTimer = Math.max(0, player.rogueAttackTimer - dt);
+  updateAbilities(dt);
   updateRoom(dt);
   updateCombat(dt);
   updateHazards(dt);
@@ -2605,29 +3245,93 @@ function updatePlayerProjectiles(dt) {
     projectile.age = (projectile.age || 0) + dt;
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
-    const hitBoss = livingBosses().find((target) => distance(projectile, target) < target.radius + projectile.r);
+    projectile.hitTargets = projectile.hitTargets || [];
+    const hitBoss = livingBosses().find((target) => !projectile.hitTargets.includes(target) && distance(projectile, target) < target.radius + projectile.r);
     if (hitBoss) {
-      if (hitBoss.kind === "nacho" && hitBoss.invulnerableTimer > 0) {
-        particles.push({ x: hitBoss.x, y: hitBoss.y - 44, text: "immune", color: "#fff2c6", ttl: 0.75 });
-        return false;
-      }
-      const damage = hitBoss.shieldTimer > 0 ? Math.ceil(projectile.damage * 0.5) : projectile.damage;
-      hitBoss.hp = Math.max(0, hitBoss.hp - damage);
-      particles.push({ x: hitBoss.x, y: hitBoss.y - 40, text: `-${damage}`, color: "#ffe08a", ttl: 0.8 });
-      if (hitBoss.hp <= 0) {
-        particles.push({ x: hitBoss.x, y: hitBoss.y - 62, text: `${hitBoss.name} down`, color: "#ffd27a", ttl: 1.2 });
-        if (hitBoss === selectedBoss) selectedBoss = null;
-        if (hitBoss.kind === "ketchup") clearKetchupHazards();
-        if (hitBoss.kind === "mayo") makeKetchupPuddlesPermanent();
-        if (livingBosses().length === 0) {
-          if (boss.kind === "trio") spawnSpecialSauce();
-          else winFight();
+      projectile.hitTargets.push(hitBoss);
+      if (projectile.markedShot) {
+        markBossTarget(hitBoss);
+        damageBossTarget(hitBoss, projectile.damage, "Marked Shot");
+      } else {
+        const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitBoss.markedTimer > 0 && hitBoss.markedShots > 0;
+        const damage = markedBonus ? Math.ceil(projectile.damage * 1.45) : projectile.damage;
+        if (markedBonus) {
+          hitBoss.markedShots -= 1;
+          particles.push({ x: hitBoss.x, y: hitBoss.y - 58, text: "mark", color: "#ffd782", ttl: 0.65 });
+        }
+        damageBossTarget(hitBoss, damage, projectile.ability ? "Ability" : "Shot");
+        if (projectile.tag === "Rogue" && !projectile.ability) {
+          applyPoisonStack(hitBoss);
+          applyExposedStack(hitBoss, projectile);
         }
       }
-      return false;
+      return projectile.piercing && projectile.ttl > 0;
     }
     return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
   });
+}
+
+function markBossTarget(target) {
+  target.markedTimer = 5;
+  target.markedShots = 4;
+  selectedBoss = target;
+  particles.push({ x: target.x, y: target.y - target.radius - 36, text: "marked", color: "#ffd782", ttl: 0.95 });
+}
+
+function damageBossTarget(target, amount, source, options = {}) {
+  if (!target || target.hp <= 0) return false;
+  if (target.kind === "nacho" && target.invulnerableTimer > 0) {
+    particles.push({ x: target.x, y: target.y - 44, text: "immune", color: "#fff2c6", ttl: 0.75 });
+    return false;
+  }
+  const damage = target.shieldTimer > 0 ? Math.ceil(amount * 0.5) : amount;
+  target.hp = Math.max(0, target.hp - damage);
+  const color = options.poison ? "#9be06f" : source === "Bleed" || source === "Backstab" ? "#ff6e7f" : source === "Frost Sigil" ? "#bafcff" : "#ffe08a";
+  particles.push({ x: target.x, y: target.y - 40, text: `-${damage}`, color, ttl: 0.8 });
+  if (target.hp <= 0) handleBossDefeated(target);
+  return true;
+}
+
+function applyPoisonStack(target) {
+  target.poisonStacks = Math.min(5, (target.poisonStacks || 0) + 1);
+  target.poisonTimer = 5;
+  if (!target.poisonTickTimer || target.poisonTickTimer <= 0) target.poisonTickTimer = 1;
+  particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
+}
+
+function applyBleed(target) {
+  target.bleedTimer = 4;
+  target.bleedTickTimer = 0.5;
+  particles.push({ x: target.x, y: target.y - target.radius - 44, text: "bleed", color: "#ff6e7f", ttl: 0.65 });
+}
+
+function applyExposedStack(target, projectile) {
+  const targetToPlayer = Math.atan2(player.y - target.y, player.x - target.x);
+  const strikeAngle = Math.atan2(projectile.vy, projectile.vx);
+  const angledHit = Math.abs(angleDifference(strikeAngle, targetToPlayer)) < Math.PI * 0.62;
+  if (!angledHit && player.backstabTimer <= 0) return;
+  target.exposedStacks = Math.min(3, (target.exposedStacks || 0) + 1);
+  target.exposedTimer = 4;
+  particles.push({ x: target.x, y: target.y - target.radius - 58, text: `exposed ${target.exposedStacks}`, color: "#c8ff9a", ttl: 0.65 });
+}
+
+function consumeExposed(target) {
+  if ((target.exposedStacks || 0) < 3) return;
+  target.exposedStacks = 0;
+  target.exposedTimer = 0;
+  damageBossTarget(target, Math.round(player.stats.damage * 0.8), "Expose");
+  particles.push({ x: target.x, y: target.y - target.radius - 60, text: "exploit", color: "#c8ff9a", ttl: 0.75 });
+}
+
+function handleBossDefeated(target) {
+  particles.push({ x: target.x, y: target.y - 62, text: `${target.name} down`, color: "#ffd27a", ttl: 1.2 });
+  if (target === selectedBoss) selectedBoss = null;
+  if (target.kind === "ketchup") clearKetchupHazards();
+  if (target.kind === "mayo") makeKetchupPuddlesPermanent();
+  if (livingBosses().length === 0) {
+    if (boss.kind === "trio") spawnSpecialSauce();
+    else winFight();
+  }
 }
 
 function clearKetchupHazards() {
@@ -2650,6 +3354,7 @@ function spawnSpecialSauce() {
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
+  abilityEffects = [];
   condimentBosses = [];
   boss = createBoss("sauce");
   fightStartedAt = performance.now();
@@ -2666,10 +3371,12 @@ function draw() {
   drawStands();
   drawBoss();
   drawHazards();
+  drawAbilityEffects();
   drawPlayerProjectiles();
   drawPlayer();
   drawParticles();
   ctx.restore();
+  drawAbilityBar();
 }
 
 function drawRooms() {
@@ -2682,6 +3389,7 @@ function drawRooms() {
   ctx.fillStyle = "#d8c693";
   ctx.font = "16px sans-serif";
   ctx.fillText("GATE", world.gate.x + 24, world.gate.y + 72);
+  drawStarterRoomLabels();
 
   ctx.fillStyle = "rgba(238, 228, 188, 0.1)";
   for (let x = world.arena.x + 70; x < world.arena.x + world.arena.w; x += 92) {
@@ -2698,6 +3406,20 @@ function drawRoom(rect, fill, trim) {
   ctx.strokeStyle = trim;
   ctx.lineWidth = world.wall;
   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+}
+
+function drawStarterRoomLabels() {
+  const centerX = world.starter.x + world.starter.w / 2;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#f4f1e6";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = 4;
+  ctx.font = "bold 24px sans-serif";
+  ctx.fillText("Choose a class", centerX, world.starter.y + 72);
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText("Choose your armor", centerX, world.starter.y + 332);
+  ctx.restore();
 }
 
 function drawStands() {
@@ -3287,6 +4009,41 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
+    if (hazard.type === "sodaDrop") {
+      const progress = clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 0.85), 0, 1);
+      const dropY = hazard.y - (hazard.fallHeight || 155) + progress * (hazard.fallHeight || 155);
+      const pulse = 0.45 + Math.sin(boss.animationTime * 16) * 0.12;
+      ctx.fillStyle = `rgba(185, 244, 255, ${0.08 + pulse * 0.08})`;
+      ctx.strokeStyle = "rgba(185, 244, 255, 0.82)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.58, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.save();
+      ctx.globalAlpha = 0.3 + progress * 0.35;
+      ctx.strokeStyle = "rgba(185, 244, 255, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y - (hazard.fallHeight || 155));
+      ctx.lineTo(hazard.x, dropY - 12);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#5c3320";
+      ctx.strokeStyle = "#b9f4ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, dropY, 11, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.beginPath();
+      ctx.arc(hazard.x - 4, dropY - 6, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
     if (hazard.type === "sodaPuddle") {
       ctx.fillStyle = "rgba(86, 45, 24, 0.34)";
       ctx.strokeStyle = "rgba(185, 244, 255, 0.42)";
@@ -3439,6 +4196,168 @@ function drawHazards() {
   drawNachoWalls();
 }
 
+function drawAbilityEffects() {
+  abilityEffects.forEach((effect) => {
+    const progress = 1 - effect.ttl / effect.maxTtl;
+    const alpha = clamp(effect.ttl / effect.maxTtl, 0, 1);
+    ctx.save();
+    if (effect.type === "shieldBash" || effect.type === "lungingSlash" || effect.type === "ironCounter") {
+      const color = effect.type === "shieldBash" ? "rgba(240, 212, 124," : effect.type === "ironCounter" ? "rgba(255, 238, 178," : "rgba(231, 194, 122,";
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `${color} 0.22)`;
+      ctx.strokeStyle = `${color} 0.82)`;
+      ctx.lineWidth = effect.type === "shieldBash" ? 4 : 5;
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.arc(0, 0, effect.range * (0.65 + progress * 0.35), -0.62, 0.62);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "ironGuard") {
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "#f0d47c";
+      ctx.lineWidth = 4;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r + Math.sin(progress * Math.PI) * 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "tumbleShot") {
+      ctx.globalAlpha = alpha * 0.65;
+      ctx.strokeStyle = "#ffd782";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.x - Math.cos(effect.angle) * (42 + progress * 50), effect.y - Math.sin(effect.angle) * (42 + progress * 50));
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "volleyTrap") {
+      const armed = effect.triggerTimer <= 0;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = armed ? "#ffd782" : "rgba(255, 215, 130, 0.52)";
+      ctx.fillStyle = armed ? "rgba(255, 215, 130, 0.18)" : "rgba(255, 215, 130, 0.08)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r + Math.sin((effect.age || 0) * 10) * 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "shadowStep") {
+      ctx.globalAlpha = alpha * 0.75;
+      ctx.strokeStyle = "rgba(155, 224, 111, 0.75)";
+      ctx.lineWidth = 9;
+      ctx.shadowColor = "#9be06f";
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y - 18);
+      ctx.lineTo(effect.x2, effect.y2 - 18);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(24, 19, 32, 0.55)";
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 24 + progress * 18, 0, Math.PI * 2);
+      ctx.arc(effect.x2, effect.y2, 18 + progress * 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "backstab") {
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = effect.empowered ? "#ff6e7f" : "#c8ff9a";
+      ctx.shadowColor = effect.empowered ? "#ff6e7f" : "#9be06f";
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = effect.empowered ? 6 : 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, effect.range * (0.5 + progress * 0.5), -0.48, 0.48);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "smokeBomb") {
+      ctx.globalAlpha = Math.min(0.72, alpha + 0.18);
+      ctx.fillStyle = "rgba(25, 23, 30, 0.58)";
+      ctx.strokeStyle = "rgba(155, 224, 111, 0.34)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r + Math.sin((effect.age || 0) * 5) * 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      for (let i = 0; i < 5; i += 1) {
+        const angle = (effect.age || 0) * 0.8 + i * 1.26;
+        ctx.beginPath();
+        ctx.arc(effect.x + Math.cos(angle) * 34, effect.y + Math.sin(angle) * 22, 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "blinkRune" || effect.type === "frostSigil") {
+      const frost = effect.type === "frostSigil";
+      ctx.globalAlpha = frost ? 0.9 : alpha;
+      ctx.strokeStyle = frost ? "rgba(186, 252, 255, 0.86)" : "rgba(186, 252, 255, 0.72)";
+      ctx.fillStyle = frost ? "rgba(96, 206, 255, 0.12)" : "rgba(120, 255, 244, 0.1)";
+      ctx.shadowColor = "#8cf8ff";
+      ctx.shadowBlur = frost ? 14 : 18;
+      ctx.lineWidth = frost ? 4 : 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r * (frost ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "arcaneLance") {
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "#8cf8ff";
+      ctx.shadowBlur = 24;
+      ctx.strokeStyle = "rgba(186, 252, 255, 0.9)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(160 + progress * 120, 0);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    ctx.restore();
+  });
+  livingBosses().forEach((target) => {
+    if (!target.markedTimer || target.markedTimer <= 0) return;
+    const pulse = Math.sin(performance.now() / 120) * 4;
+    drawRing(target.x, target.y, target.radius + 18 + pulse, "#ffd782");
+  });
+  livingBosses().forEach((target) => {
+    if (target.poisonStacks > 0) drawStackPips(target, target.poisonStacks, "#9be06f", 0);
+    if (target.exposedStacks > 0) drawStackPips(target, target.exposedStacks, "#c8ff9a", 12);
+  });
+}
+
+function drawStackPips(target, count, color, yOffset) {
+  ctx.save();
+  ctx.fillStyle = color;
+  const startX = target.x - (count - 1) * 5;
+  for (let i = 0; i < count; i += 1) {
+    ctx.beginPath();
+    ctx.arc(startX + i * 10, target.y - target.radius - 20 - yOffset, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawPlayerProjectiles() {
   playerProjectiles.forEach((projectile) => {
     const angle = Math.atan2(projectile.vy, projectile.vx);
@@ -3473,6 +4392,8 @@ function drawPlayerProjectiles() {
       ctx.moveTo(-12, 0);
       ctx.lineTo(12, 0);
       ctx.stroke();
+    } else if (projectile.tag === "Melee") {
+      drawMeleeProjectile(projectile);
     } else {
       ctx.fillStyle = projectile.color;
       ctx.beginPath();
@@ -3483,9 +4404,43 @@ function drawPlayerProjectiles() {
   });
 }
 
+function drawMeleeProjectile(projectile) {
+  const age = projectile.age || 0;
+  const pulse = Math.sin(age * 22) * 0.5 + 0.5;
+  ctx.save();
+  ctx.shadowColor = "#fff0bf";
+  ctx.shadowBlur = 16 + pulse * 10;
+  ctx.fillStyle = "rgba(255, 235, 188, 0.16)";
+  ctx.beginPath();
+  ctx.ellipse(-18, 0, 44, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = "rgba(255, 244, 210, 0.78)";
+  ctx.strokeStyle = "#d8d1c4";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(30, 0);
+  ctx.quadraticCurveTo(-4, -28, -34, -10);
+  ctx.quadraticCurveTo(-16, 0, -34, 10);
+  ctx.quadraticCurveTo(-4, 28, 30, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(-3, 0, 23 + pulse * 3, -0.88, 0.88);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPlayer() {
   drawRing(player.x, player.y, player.radius + 7, player.dead ? "#c7443b" : "#92d4ff");
+  if (player.meleeAttackTimer > 0 && isMeleeBuild()) drawMeleeAttackWindup();
   if (player.castTimer > 0) drawMageCastAura();
+  if (player.rangerAttackTimer > 0 && isRangedBuild()) drawRangerAttackWindup();
   const outfit = playerOutfitSprite();
   if (outfit || (playerSprite.complete && playerSprite.naturalWidth > 0)) {
     drawPlayerSprite();
@@ -3493,7 +4448,9 @@ function drawPlayer() {
     drawFallbackPlayer();
   }
   if (isGlassMageBuild() && !outfit) drawGlassMageOutfit();
+  if (player.meleeAttackTimer > 0 && isMeleeBuild()) drawMeleeAttackSlash();
   if (player.castTimer > 0) drawMageCastBurst();
+  if (player.rangerAttackTimer > 0 && isRangedBuild()) drawRangerAttackRelease();
   if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
 }
 
@@ -3501,12 +4458,57 @@ function isGlassMageBuild() {
   return player.gear.weapon === "pulseStaff" && player.gear.armor === "channelerRobe";
 }
 
-function isFastMageBuild() {
-  return player.gear.weapon === "pulseStaff" && player.gear.armor === "duelistCoat";
+function isMagicBuild() {
+  return player.gear.weapon === "pulseStaff";
+}
+
+function isRangedBuild() {
+  return player.gear.weapon === "emberBow";
+}
+
+function isMeleeBuild() {
+  return player.gear.weapon === "ironBlade";
+}
+
+function isRogueBuild() {
+  return player.gear.weapon === "shadowDaggers";
 }
 
 function playerOutfitSprite() {
-  if (isGlassMageBuild() && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
+  if (isRangedBuild() && rangedSprite.complete && rangedSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedRangedSprite || rangedSprite,
+      sideCrop: 0.06,
+      cropWidth: 0.88,
+      cropBottom: 0.94,
+      drawWidth: 84,
+      drawHeight: 96,
+      topCrop: 0.01,
+    };
+  }
+  if (isRogueBuild() && rogueSprite.complete && rogueSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedRogueSprite || rogueSprite,
+      sideCrop: 0.08,
+      cropWidth: 0.84,
+      cropBottom: 0.94,
+      drawWidth: 82,
+      drawHeight: 94,
+      topCrop: 0.01,
+    };
+  }
+  if (isMeleeBuild() && meleeSprite.complete && meleeSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedMeleeSprite || meleeSprite,
+      sideCrop: 0.07,
+      cropWidth: 0.86,
+      cropBottom: 0.94,
+      drawWidth: 84,
+      drawHeight: 96,
+      topCrop: 0.01,
+    };
+  }
+  if (isMagicBuild() && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
     return {
       sprite: cleanedGlassMageSprite || glassMageSprite,
       sideCrop: 0.13,
@@ -3515,17 +4517,6 @@ function playerOutfitSprite() {
       drawWidth: 72,
       drawHeight: 88,
       topCrop: 0.02,
-    };
-  }
-  if (isFastMageBuild() && fastMageSprite.complete && fastMageSprite.naturalWidth > 0) {
-    return {
-      sprite: cleanedFastMageSprite || fastMageSprite,
-      sideCrop: 0.1,
-      cropWidth: 0.8,
-      cropBottom: 0.94,
-      drawWidth: 82,
-      drawHeight: 94,
-      topCrop: 0.015,
     };
   }
   return null;
@@ -3537,7 +4528,18 @@ function drawPlayerSprite() {
   const rows = { down: 0, left: 1, right: 2, up: 3 };
   const frameWidth = sprite.width / 4;
   const frameHeight = sprite.height / 4;
-  const frame = player.moving ? Math.floor(player.animationTime * 8) % 4 : 1;
+  const rangerAttacking = player.rangerAttackTimer > 0 && isRangedBuild();
+  const meleeAttacking = player.meleeAttackTimer > 0 && isMeleeBuild();
+  const rogueAttacking = player.rogueAttackTimer > 0 && isRogueBuild();
+  const frame = rangerAttacking
+    ? (player.rangerAttackTimer > 0.14 ? 2 : 3)
+    : rogueAttacking
+      ? (player.rogueAttackTimer > 0.12 ? 2 : 3)
+    : meleeAttacking
+      ? (player.meleeAttackTimer > 0.17 ? 2 : 3)
+      : player.moving
+        ? Math.floor(player.animationTime * 8) % 4
+        : 1;
   const row = rows[player.facing] ?? 0;
   const topCrop = outfit?.topCrop ?? (player.facing === "up" ? 0.04 : 0.1);
   const sideCrop = outfit?.sideCrop ?? 0.2;
@@ -3551,14 +4553,31 @@ function drawPlayerSprite() {
   };
   const drawWidth = outfit?.drawWidth ?? 58;
   const drawHeight = outfit?.drawHeight ?? 74;
+  const rangedPulse = rangerAttacking ? Math.sin((1 - player.rangerAttackTimer / 0.28) * Math.PI) : 0;
+  const meleePulse = meleeAttacking ? Math.sin((1 - player.meleeAttackTimer / 0.34) * Math.PI) : 0;
+  const roguePulse = rogueAttacking ? Math.sin((1 - player.rogueAttackTimer / 0.24) * Math.PI) : 0;
+  const recoilX = rangerAttacking
+    ? -Math.cos(player.rangerAttackAngle) * rangedPulse * 4
+    : rogueAttacking
+      ? Math.cos(player.rogueAttackAngle) * roguePulse * 7
+    : meleeAttacking
+      ? Math.cos(player.meleeAttackAngle) * meleePulse * 8
+      : 0;
+  const recoilY = rangerAttacking
+    ? -Math.sin(player.rangerAttackAngle) * rangedPulse * 4
+    : rogueAttacking
+      ? Math.sin(player.rogueAttackAngle) * roguePulse * 7
+    : meleeAttacking
+      ? Math.sin(player.meleeAttackAngle) * meleePulse * 8
+      : 0;
   ctx.drawImage(
     sprite,
     frame * frameWidth + crop.x,
     row * frameHeight + crop.y,
     crop.w,
     crop.h,
-    player.x - drawWidth / 2,
-    player.y - drawHeight * 0.66,
+    player.x - drawWidth / 2 + recoilX,
+    player.y - drawHeight * 0.66 + recoilY,
     drawWidth,
     drawHeight,
   );
@@ -3573,17 +4592,83 @@ function createTransparentSprite(image) {
   const pixels = bufferCtx.getImageData(0, 0, buffer.width, buffer.height);
   const data = pixels.data;
 
-  for (let i = 0; i < data.length; i += 4) {
-    const red = data[i];
-    const green = data[i + 1];
-    const blue = data[i + 2];
-    const isLightBackground = red > 218 && green > 208 && blue > 190;
-    const isGridLine = Math.abs(red - green) < 18 && Math.abs(green - blue) < 18 && red > 180;
-    if (isLightBackground || isGridLine) data[i + 3] = 0;
-  }
-
+  removeSpriteSheetBackground(data, buffer.width, buffer.height);
+  featherSpriteEdges(data, buffer.width, buffer.height, 3);
   bufferCtx.putImageData(pixels, 0, 0);
   return buffer;
+}
+
+function removeSpriteSheetBackground(data, width, height) {
+  const visited = new Uint8Array(width * height);
+  const queue = [];
+  const enqueue = (x, y) => {
+    if (x < 0 || x >= width || y < 0 || y >= height) return;
+    const p = y * width + x;
+    if (visited[p]) return;
+    visited[p] = 1;
+    const i = p * 4;
+    if (!isSpriteSheetBackground(data[i], data[i + 1], data[i + 2], data[i + 3])) return;
+    queue.push(p);
+    data[i + 3] = 0;
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    enqueue(x, 0);
+    enqueue(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    enqueue(0, y);
+    enqueue(width - 1, y);
+  }
+
+  for (let head = 0; head < queue.length; head += 1) {
+    const p = queue[head];
+    const x = p % width;
+    const y = Math.floor(p / width);
+    enqueue(x + 1, y);
+    enqueue(x - 1, y);
+    enqueue(x, y + 1);
+    enqueue(x, y - 1);
+  }
+}
+
+function isSpriteSheetBackground(red, green, blue, alpha) {
+  if (alpha === 0) return true;
+  const veryLight = red > 232 && green > 228 && blue > 220;
+  const warmPaper = red > 212 && green > 202 && blue > 184 && red > blue + 6 && green > blue + 2;
+  const paleGridLine = Math.abs(red - green) < 18 && Math.abs(green - blue) < 18 && red > 205;
+  return veryLight || warmPaper || paleGridLine;
+}
+
+function featherSpriteEdges(data, width, height, radius) {
+  const alpha = new Uint8Array(width * height);
+  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+    alpha[p] = data[i + 3];
+  }
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const p = y * width + x;
+      if (alpha[p] === 0) continue;
+
+      let nearestTransparent = radius + 1;
+      for (let oy = -radius; oy <= radius; oy += 1) {
+        const sampleY = y + oy;
+        if (sampleY < 0 || sampleY >= height) continue;
+        for (let ox = -radius; ox <= radius; ox += 1) {
+          const sampleX = x + ox;
+          if (sampleX < 0 || sampleX >= width) continue;
+          if (alpha[sampleY * width + sampleX] !== 0) continue;
+          nearestTransparent = Math.min(nearestTransparent, Math.hypot(ox, oy));
+        }
+      }
+
+      if (nearestTransparent <= radius) {
+        const softness = clamp(nearestTransparent / radius, 0.35, 1);
+        data[p * 4 + 3] = Math.round(alpha[p] * softness);
+      }
+    }
+  }
 }
 
 function drawFallbackPlayer() {
@@ -3603,24 +4688,87 @@ function drawFallbackPlayer() {
   ctx.stroke();
 }
 
+function drawMeleeAttackWindup() {
+  const progress = 1 - player.meleeAttackTimer / 0.34;
+  const angle = player.meleeAttackAngle || 0;
+  const pull = clamp(progress / 0.42, 0, 1);
+  ctx.save();
+  ctx.translate(player.x, player.y - 24);
+  ctx.rotate(angle);
+  ctx.globalAlpha = clamp(0.85 - progress * 0.45, 0, 0.85);
+  ctx.strokeStyle = "rgba(255, 230, 170, 0.72)";
+  ctx.lineWidth = 2 + pull * 2;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath();
+  ctx.arc(-4, 0, 34 + pull * 15, -2.45, -0.35);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowColor = "#fff0bf";
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = "rgba(255, 244, 210, 0.58)";
+  ctx.beginPath();
+  ctx.arc(-24 - pull * 10, -18, 4 + pull * 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawMeleeAttackSlash() {
+  const progress = 1 - player.meleeAttackTimer / 0.34;
+  const swing = clamp((progress - 0.14) / 0.7, 0, 1);
+  if (swing <= 0) return;
+  const angle = player.meleeAttackAngle || 0;
+  const alpha = Math.sin(swing * Math.PI);
+  const reach = 43 + swing * 16;
+  ctx.save();
+  ctx.translate(player.x, player.y - 24);
+  ctx.rotate(angle);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = "#fff0bf";
+  ctx.shadowBlur = 24;
+  ctx.lineCap = "round";
+
+  ctx.strokeStyle = "rgba(255, 244, 210, 0.9)";
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.arc(16, 0, reach, -1.05 + swing * 0.32, 0.95 + swing * 0.32);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(216, 209, 196, 0.82)";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(20, 0, reach + 10, -0.86 + swing * 0.25, 0.72 + swing * 0.25);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.62)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i += 1) {
+    const offset = -14 + i * 14;
+    ctx.beginPath();
+    ctx.moveTo(34 + swing * 20, offset);
+    ctx.lineTo(62 + swing * 24, offset * 0.42);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawMageCastAura() {
   const progress = 1 - player.castTimer / 0.36;
   const alpha = clamp(1 - progress, 0, 1);
   const pulse = Math.sin(progress * Math.PI);
   ctx.save();
-  ctx.globalAlpha = 0.75 * alpha;
+  ctx.globalAlpha = 0.45 * alpha;
   ctx.strokeStyle = "#48efe4";
-  ctx.fillStyle = "rgba(72, 239, 228, 0.14)";
+  ctx.fillStyle = "rgba(72, 239, 228, 0.08)";
   ctx.shadowColor = "#48efe4";
-  ctx.shadowBlur = 20;
-  ctx.lineWidth = 3;
+  ctx.shadowBlur = 10;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(player.x, player.y - 16, 28 + pulse * 16, 0, Math.PI * 2);
+  ctx.arc(player.x, player.y - 16, 20 + pulse * 8, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  ctx.strokeStyle = "rgba(220, 255, 252, 0.75)";
+  ctx.strokeStyle = "rgba(220, 255, 252, 0.45)";
   ctx.beginPath();
-  ctx.arc(player.x, player.y - 16, 15 + pulse * 26, Math.PI * 0.15, Math.PI * 1.65);
+  ctx.arc(player.x, player.y - 16, 12 + pulse * 12, Math.PI * 0.15, Math.PI * 1.65);
   ctx.stroke();
   ctx.restore();
 }
@@ -3657,6 +4805,65 @@ function drawMageCastBurst() {
     ctx.lineTo(30 + progress * 22, i * 14);
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+function drawRangerAttackWindup() {
+  const progress = 1 - player.rangerAttackTimer / 0.28;
+  const draw = Math.sin(progress * Math.PI);
+  const angle = player.rangerAttackAngle || 0;
+  const bowX = player.x + Math.cos(angle) * 18;
+  const bowY = player.y - 30 + Math.sin(angle) * 18;
+  ctx.save();
+  ctx.translate(bowX, bowY);
+  ctx.rotate(angle);
+  ctx.globalAlpha = 0.35 + draw * 0.45;
+  ctx.shadowColor = "#e0a14e";
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = "#ffe4a7";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, 23, -1.2, 1.2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(255, 244, 204, 0.82)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -21);
+  ctx.lineTo(-18 - draw * 10, 0);
+  ctx.lineTo(0, 21);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(224, 161, 78, 0.7)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-22 - draw * 8, 0);
+  ctx.lineTo(20, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRangerAttackRelease() {
+  const progress = 1 - player.rangerAttackTimer / 0.28;
+  const alpha = clamp(1 - progress * 0.75, 0, 1);
+  const angle = player.rangerAttackAngle || 0;
+  const startX = player.x + Math.cos(angle) * 30;
+  const startY = player.y - 28 + Math.sin(angle) * 30;
+  ctx.save();
+  ctx.translate(startX, startY);
+  ctx.rotate(angle);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = "#ffd782";
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = "rgba(255, 236, 180, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-6 - progress * 10, 0);
+  ctx.lineTo(42 + progress * 28, 0);
+  ctx.stroke();
+  ctx.fillStyle = "#fff5c7";
+  ctx.beginPath();
+  ctx.arc(10 + progress * 18, 0, 5 - progress * 2, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -3798,8 +5005,60 @@ function drawRing(x, y, r, color) {
   ctx.stroke();
 }
 
+function drawAbilityBar() {
+  const abilities = currentAbilities();
+  const slotW = 152;
+  const slotH = 56;
+  const gap = 8;
+  const totalW = abilities.length * slotW + (abilities.length - 1) * gap;
+  const startX = canvas.clientWidth / 2 - totalW / 2;
+  const y = canvas.clientHeight - slotH - 18;
+  ctx.save();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  abilities.forEach((ability, index) => {
+    const x = startX + index * (slotW + gap);
+    const cooldown = player.abilityCooldowns[index] || 0;
+    const ready = cooldown <= 0 && player.room === "arena" && !player.dead && !player.won;
+    ctx.fillStyle = ready ? "rgba(25, 24, 22, 0.88)" : "rgba(15, 15, 14, 0.82)";
+    ctx.strokeStyle = ready ? "rgba(226, 189, 114, 0.82)" : "rgba(244, 232, 203, 0.22)";
+    ctx.lineWidth = 2;
+    ctx.fillRect(x, y, slotW, slotH);
+    ctx.strokeRect(x, y, slotW, slotH);
+    if (cooldown > 0) {
+      const fill = clamp(cooldown / ability.cooldown, 0, 1);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
+      ctx.fillRect(x, y + slotH * (1 - fill), slotW, slotH * fill);
+    }
+    ctx.fillStyle = ready ? "#f0d47c" : "#9e9588";
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillText(ability.key, x + 12, y + 18);
+    ctx.fillStyle = "#f7efd9";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillText(ability.name, x + 42, y + 18);
+    ctx.fillStyle = cooldown > 0 ? "#d0c6b4" : "#9be06f";
+    ctx.font = "11px sans-serif";
+    ctx.fillText(cooldown > 0 ? `${cooldown.toFixed(1)}s` : "Ready", x + 42, y + 38);
+  });
+  const potionX = startX + totalW + gap;
+  ctx.fillStyle = "rgba(25, 24, 22, 0.88)";
+  ctx.strokeStyle = player.potions > 0 ? "rgba(142, 199, 255, 0.62)" : "rgba(244, 232, 203, 0.22)";
+  ctx.fillRect(potionX, y, 96, slotH);
+  ctx.strokeRect(potionX, y, 96, slotH);
+  ctx.fillStyle = "#8ec7ff";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("F", potionX + 12, y + 18);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText("Potion", potionX + 38, y + 18);
+  ctx.fillStyle = "#d0c6b4";
+  ctx.font = "11px sans-serif";
+  ctx.fillText(`${player.potions} left`, potionX + 38, y + 38);
+  ctx.restore();
+}
+
 function renderUi() {
-  ui.roomText.textContent = player.room === "starter" ? "Starter Room" : player.won ? "Victory" : "Boss Arena";
+  ui.roomText.textContent = player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.won ? "Victory" : "Boss Arena";
   ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
   const bossHp = bossHealthSummary();
@@ -3829,6 +5088,9 @@ function renderUi() {
   ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.boss === boss.kind);
   });
+  if (ui.deathScreen) {
+    ui.deathScreen.hidden = !player.dead;
+  }
 }
 
 function bossHealthSummary() {
@@ -3855,7 +5117,13 @@ function gameLoop(now) {
 
 canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
-  handleCanvasClick(event.clientX - rect.left + camera.x, event.clientY - rect.top + camera.y);
+  mouseWorld = { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
+  handleCanvasClick(mouseWorld.x, mouseWorld.y);
+});
+
+canvas.addEventListener("mousemove", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseWorld = { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
 });
 
 if (ui.armory) {
@@ -3878,6 +5146,7 @@ ui.bossSelector.addEventListener("click", (event) => {
 
 ui.potionButton.addEventListener("click", drinkPotion);
 ui.resetButton.addEventListener("click", () => resetFight(false));
+ui.deathResetButton?.addEventListener("click", () => resetFight(false));
 window.addEventListener("keydown", (event) => {
   if (isTypingTarget(document.activeElement)) return;
   const key = event.key.toLowerCase();
@@ -3885,9 +5154,15 @@ window.addEventListener("keydown", (event) => {
   if (direction) {
     event.preventDefault();
     movementKeys[direction] = true;
+    if (key === "w" && !event.repeat) useAbility(1);
     return;
   }
-  if (key !== "q") return;
+  if (key === "q" || key === "e") {
+    event.preventDefault();
+    if (!event.repeat) useAbility(key === "q" ? 0 : 2);
+    return;
+  }
+  if (key !== "f") return;
   event.preventDefault();
   drinkPotion();
 });

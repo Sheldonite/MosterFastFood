@@ -103,6 +103,51 @@ canvas {
   pointer-events: none;
 }
 
+.death-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  gap: 22px;
+  background: rgba(5, 4, 4, 0.74);
+  text-align: center;
+}
+
+.death-screen[hidden] {
+  display: none;
+}
+
+.death-title {
+  color: #ff2b21;
+  font-size: clamp(54px, 10vw, 132px);
+  font-weight: 1000;
+  line-height: 0.92;
+  text-shadow:
+    0 4px 0 #4b0704,
+    0 0 34px rgba(255, 25, 20, 0.88),
+    0 0 82px rgba(255, 25, 20, 0.5);
+  text-transform: uppercase;
+}
+
+.death-reset {
+  justify-self: center;
+  min-width: 150px;
+  min-height: 48px;
+  border-color: rgba(255, 61, 48, 0.76);
+  background: #260706;
+  color: #fff4ec;
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  box-shadow: 0 0 30px rgba(255, 43, 33, 0.32);
+}
+
+.death-reset:hover,
+.death-reset:focus-visible {
+  background: #6f120d;
+}
+
 .hud {
   display: grid;
   align-content: start;

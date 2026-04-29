@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Boss Fight</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260427-3" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260428-1" />
   </head>
   <body>
     <main class="shell">
@@ -15,10 +15,14 @@
             <strong>Boss Fight</strong>
             <span id="statusText">Gear up, use WASD to enter the arena, then click to shoot.</span>
           </div>
-          <button id="potionButton" type="button" title="Drink potion (Q)" data-tooltip="Press Q to use potion">Potion</button>
+          <button id="potionButton" type="button" title="Drink potion (F)" data-tooltip="Press F to use potion">Potion</button>
           <button id="resetButton" type="button" title="Reset fight">Reset Fight</button>
         </div>
         <div id="floatText" class="float-text" aria-live="polite"></div>
+        <div id="deathScreen" class="death-screen" aria-live="assertive" hidden>
+          <div class="death-title">You're Stuffed</div>
+          <button id="deathResetButton" class="death-reset" type="button">Reset</button>
+        </div>
       </section>
 
       <aside class="hud" aria-label="Character information">
@@ -64,6 +68,6 @@
       </aside>
     </main>
 
-    <script src="./src/game.js?v=20260427-32"></script>
+    <script src="./src/game.js?v=20260428-ability-bar"></script>
   </body>
 </html>
