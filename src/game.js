@@ -4821,19 +4821,26 @@ function drawRemotePlayers() {
     ctx.save();
     ctx.globalAlpha = alpha;
     drawRing(peer.x, peer.y, 25, color);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
-    ctx.beginPath();
-    ctx.ellipse(peer.x, peer.y + 19, 18, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(peer.x, peer.y - 10, 13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(peer.x - 13, peer.y - 2, 26, 27);
-    ctx.fillStyle = "#f1bd7d";
-    ctx.beginPath();
-    ctx.arc(peer.x, peer.y - 18, 9, 0, Math.PI * 2);
-    ctx.fill();
+    const outfit = outfitSpriteForGear(peer.weapon, peer.armor);
+    const sprite = outfit?.sprite || cleanedPlayerSprite || playerSprite;
+    if (outfit || (sprite.complete && sprite.naturalWidth > 0)) {
+      drawCharacterSprite({
+        x: peer.x,
+        y: peer.y,
+        facing: peer.facing || "down",
+        moving: peer.moving,
+        animationTime: peer.animationTime || performance.now() / 1000,
+        rangerAttackTimer: 0,
+        rangerAttackAngle: 0,
+        meleeAttackTimer: 0,
+        meleeAttackAngle: 0,
+        rogueAttackTimer: 0,
+        rogueAttackAngle: 0,
+        weapon: peer.weapon,
+      }, outfit, sprite);
+    } else {
+      drawRemoteFallbackPlayer(peer, color);
+    }
     const hpPercent = clamp((peer.hp || 0) / Math.max(1, peer.maxHp || 1), 0, 1);
     ctx.fillStyle = "rgba(15, 12, 10, 0.82)";
     ctx.fillRect(peer.x - 25, peer.y - 47, 50, 6);
@@ -4845,6 +4852,22 @@ function drawRemotePlayers() {
     ctx.fillText(id.slice(0, 4).toUpperCase(), peer.x, peer.y - 54);
     ctx.restore();
   });
+}
+
+function drawRemoteFallbackPlayer(peer, color) {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(peer.x, peer.y + 19, 18, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(peer.x, peer.y - 10, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(peer.x - 13, peer.y - 2, 26, 27);
+  ctx.fillStyle = "#f1bd7d";
+  ctx.beginPath();
+  ctx.arc(peer.x, peer.y - 18, 9, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function remotePlayerColor(tag) {
@@ -4896,7 +4919,11 @@ function isRogueBuild() {
 }
 
 function playerOutfitSprite() {
-  if (isRangedBuild() && rangedSprite.complete && rangedSprite.naturalWidth > 0) {
+  return outfitSpriteForGear(player.gear.weapon, player.gear.armor);
+}
+
+function outfitSpriteForGear(weaponId, armorId) {
+  if (weaponId === "emberBow" && rangedSprite.complete && rangedSprite.naturalWidth > 0) {
     return {
       sprite: cleanedRangedSprite || rangedSprite,
       sideCrop: 0.06,
@@ -4907,7 +4934,7 @@ function playerOutfitSprite() {
       topCrop: 0.01,
     };
   }
-  if (isRogueBuild() && rogueSprite.complete && rogueSprite.naturalWidth > 0) {
+  if (weaponId === "shadowDaggers" && rogueSprite.complete && rogueSprite.naturalWidth > 0) {
     return {
       sprite: cleanedRogueSprite || rogueSprite,
       sideCrop: 0.08,
@@ -4918,7 +4945,7 @@ function playerOutfitSprite() {
       topCrop: 0.01,
     };
   }
-  if (isMeleeBuild() && meleeSprite.complete && meleeSprite.naturalWidth > 0) {
+  if (weaponId === "ironBlade" && meleeSprite.complete && meleeSprite.naturalWidth > 0) {
     return {
       sprite: cleanedMeleeSprite || meleeSprite,
       sideCrop: 0.07,
@@ -4929,7 +4956,7 @@ function playerOutfitSprite() {
       topCrop: 0.01,
     };
   }
-  if (isMagicBuild() && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
+  if (weaponId === "pulseStaff" && armorId === "channelerRobe" && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
     return {
       sprite: cleanedGlassMageSprite || glassMageSprite,
       sideCrop: 0.13,
@@ -4946,23 +4973,40 @@ function playerOutfitSprite() {
 function drawPlayerSprite() {
   const outfit = playerOutfitSprite();
   const sprite = outfit?.sprite || cleanedPlayerSprite || playerSprite;
+  drawCharacterSprite({
+    x: player.x,
+    y: player.y,
+    facing: player.facing,
+    moving: player.moving,
+    animationTime: player.animationTime,
+    rangerAttackTimer: player.rangerAttackTimer,
+    rangerAttackAngle: player.rangerAttackAngle,
+    meleeAttackTimer: player.meleeAttackTimer,
+    meleeAttackAngle: player.meleeAttackAngle,
+    rogueAttackTimer: player.rogueAttackTimer,
+    rogueAttackAngle: player.rogueAttackAngle,
+    weapon: player.gear.weapon,
+  }, outfit, sprite);
+}
+
+function drawCharacterSprite(character, outfit, sprite) {
   const rows = { down: 0, left: 1, right: 2, up: 3 };
   const frameWidth = sprite.width / 4;
   const frameHeight = sprite.height / 4;
-  const rangerAttacking = player.rangerAttackTimer > 0 && isRangedBuild();
-  const meleeAttacking = player.meleeAttackTimer > 0 && isMeleeBuild();
-  const rogueAttacking = player.rogueAttackTimer > 0 && isRogueBuild();
+  const rangerAttacking = character.rangerAttackTimer > 0 && character.weapon === "emberBow";
+  const meleeAttacking = character.meleeAttackTimer > 0 && character.weapon === "ironBlade";
+  const rogueAttacking = character.rogueAttackTimer > 0 && character.weapon === "shadowDaggers";
   const frame = rangerAttacking
-    ? (player.rangerAttackTimer > 0.14 ? 2 : 3)
+    ? (character.rangerAttackTimer > 0.14 ? 2 : 3)
     : rogueAttacking
-      ? (player.rogueAttackTimer > 0.12 ? 2 : 3)
+      ? (character.rogueAttackTimer > 0.12 ? 2 : 3)
     : meleeAttacking
-      ? (player.meleeAttackTimer > 0.17 ? 2 : 3)
-      : player.moving
-        ? Math.floor(player.animationTime * 8) % 4
+      ? (character.meleeAttackTimer > 0.17 ? 2 : 3)
+      : character.moving
+        ? Math.floor(character.animationTime * 8) % 4
         : 1;
-  const row = rows[player.facing] ?? 0;
-  const topCrop = outfit?.topCrop ?? (player.facing === "up" ? 0.04 : 0.1);
+  const row = rows[character.facing] ?? 0;
+  const topCrop = outfit?.topCrop ?? (character.facing === "up" ? 0.04 : 0.1);
   const sideCrop = outfit?.sideCrop ?? 0.2;
   const cropWidth = outfit?.cropWidth ?? 0.56;
   const cropBottom = outfit?.cropBottom ?? 0.86;
@@ -4974,22 +5018,22 @@ function drawPlayerSprite() {
   };
   const drawWidth = outfit?.drawWidth ?? 58;
   const drawHeight = outfit?.drawHeight ?? 74;
-  const rangedPulse = rangerAttacking ? Math.sin((1 - player.rangerAttackTimer / 0.28) * Math.PI) : 0;
-  const meleePulse = meleeAttacking ? Math.sin((1 - player.meleeAttackTimer / 0.34) * Math.PI) : 0;
-  const roguePulse = rogueAttacking ? Math.sin((1 - player.rogueAttackTimer / 0.24) * Math.PI) : 0;
+  const rangedPulse = rangerAttacking ? Math.sin((1 - character.rangerAttackTimer / 0.28) * Math.PI) : 0;
+  const meleePulse = meleeAttacking ? Math.sin((1 - character.meleeAttackTimer / 0.34) * Math.PI) : 0;
+  const roguePulse = rogueAttacking ? Math.sin((1 - character.rogueAttackTimer / 0.24) * Math.PI) : 0;
   const recoilX = rangerAttacking
-    ? -Math.cos(player.rangerAttackAngle) * rangedPulse * 4
+    ? -Math.cos(character.rangerAttackAngle) * rangedPulse * 4
     : rogueAttacking
-      ? Math.cos(player.rogueAttackAngle) * roguePulse * 7
+      ? Math.cos(character.rogueAttackAngle) * roguePulse * 7
     : meleeAttacking
-      ? Math.cos(player.meleeAttackAngle) * meleePulse * 8
+      ? Math.cos(character.meleeAttackAngle) * meleePulse * 8
       : 0;
   const recoilY = rangerAttacking
-    ? -Math.sin(player.rangerAttackAngle) * rangedPulse * 4
+    ? -Math.sin(character.rangerAttackAngle) * rangedPulse * 4
     : rogueAttacking
-      ? Math.sin(player.rogueAttackAngle) * roguePulse * 7
+      ? Math.sin(character.rogueAttackAngle) * roguePulse * 7
     : meleeAttacking
-      ? Math.sin(player.meleeAttackAngle) * meleePulse * 8
+      ? Math.sin(character.meleeAttackAngle) * meleePulse * 8
       : 0;
   ctx.drawImage(
     sprite,
@@ -4997,8 +5041,8 @@ function drawPlayerSprite() {
     row * frameHeight + crop.y,
     crop.w,
     crop.h,
-    player.x - drawWidth / 2 + recoilX,
-    player.y - drawHeight * 0.66 + recoilY,
+    character.x - drawWidth / 2 + recoilX,
+    character.y - drawHeight * 0.66 + recoilY,
     drawWidth,
     drawHeight,
   );
@@ -5703,6 +5747,7 @@ function multiplayerSnapshot() {
     won: player.won,
     facing: player.facing,
     moving: player.moving,
+    animationTime: player.animationTime,
     weapon: player.gear.weapon,
     armor: player.gear.armor,
     weaponTag: weapon.tag,
