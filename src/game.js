@@ -11,6 +11,26 @@ const ui = {
   buildPanel: document.querySelector("#buildPanel"),
   coopStatus: document.querySelector("#coopStatus"),
   coopCount: document.querySelector("#coopCount"),
+  menuOverlay: document.querySelector("#menuOverlay"),
+  mainMenu: document.querySelector("#mainMenu"),
+  multiplayerMenu: document.querySelector("#multiplayerMenu"),
+  roomLobby: document.querySelector("#roomLobby"),
+  singlePlayerButton: document.querySelector("#singlePlayerButton"),
+  multiplayerButton: document.querySelector("#multiplayerButton"),
+  backToMainButton: document.querySelector("#backToMainButton"),
+  playerNameInput: document.querySelector("#playerNameInput"),
+  roomNameInput: document.querySelector("#roomNameInput"),
+  createRoomButton: document.querySelector("#createRoomButton"),
+  refreshRoomsButton: document.querySelector("#refreshRoomsButton"),
+  roomList: document.querySelector("#roomList"),
+  multiplayerStatus: document.querySelector("#multiplayerStatus"),
+  lobbyTitle: document.querySelector("#lobbyTitle"),
+  lobbyPlayers: document.querySelector("#lobbyPlayers"),
+  lobbyBossSelector: document.querySelector("#lobbyBossSelector"),
+  readyButton: document.querySelector("#readyButton"),
+  startRoomButton: document.querySelector("#startRoomButton"),
+  leaveRoomButton: document.querySelector("#leaveRoomButton"),
+  lobbyStatus: document.querySelector("#lobbyStatus"),
   armory: document.querySelector("#armory"),
   bossSelector: document.querySelector("#bossSelector"),
   floatText: document.querySelector("#floatText"),
@@ -19,6 +39,8 @@ const ui = {
   deathScreen: document.querySelector("#deathScreen"),
   deathResetButton: document.querySelector("#deathResetButton"),
 };
+
+const lockedBosses = new Set(["taco", "sushi"]);
 
 const world = {
   width: 1680,
@@ -143,10 +165,15 @@ let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
 const multiplayer = {
   socket: null,
   id: null,
+  mode: "menu",
   connected: false,
   everConnected: false,
   enabled: false,
   count: 1,
+  rooms: [],
+  room: null,
+  ready: false,
+  pendingStart: null,
   sendTimer: 0,
   reconnectTimer: 0,
   reconnectDelay: 3,
@@ -284,15 +311,45 @@ function createBoss(kind = "burger") {
       attackTimer: 1.1,
       swingTimer: 1.2,
     },
+    taco: {
+      kind: "taco",
+      name: "Taco Titan",
+      radius: 76,
+      maxHp: 1850,
+      color: "#d29a38",
+      enrageColor: "#f05b32",
+      attackTimer: 1.2,
+      swingTimer: 1.05,
+    },
+    donut: {
+      kind: "donut",
+      name: "Donut Donald",
+      radius: 70,
+      maxHp: 1650,
+      color: "#d88a55",
+      enrageColor: "#ff79aa",
+      attackTimer: 1.15,
+      swingTimer: 1.2,
+    },
+    sushi: {
+      kind: "sushi",
+      name: "Sushi Serpent",
+      radius: 58,
+      maxHp: 1900,
+      color: "#f1ead7",
+      enrageColor: "#7ac46d",
+      attackTimer: 1.25,
+      swingTimer: 1.2,
+    },
   };
   const template = bosses[kind];
-  return {
+  const createdBoss = {
     ...template,
     x: 1180,
     y: 450,
     hp: template.maxHp,
     phase: 1,
-    totalPhases: kind === "shake" || kind === "nacho" || kind === "pizza" ? 3 : 1,
+    totalPhases: kind === "donut" ? 6 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -324,7 +381,53 @@ function createBoss(kind = "burger") {
     deliveryGoalHp: 0,
     deliveryTextTimer: 0,
     deliveryUsed: false,
+    donutHoles: [],
+    donutMinions: [],
+    donutGauntletActive: false,
+    donutGauntletCompleted: false,
+    donutGauntletTimer: 0,
+    donutGauntletSpawnTimer: 0,
+    glazeRingLockTimer: 0,
+    napkinZone: null,
+    napkinCooldownTimer: 0,
+    napkinUses: 0,
+    serpentAngle: 0,
+    serpentHeading: 0,
+    serpentTrail: [],
+    serpentBody: [],
+    serpentWeakIndex: 2,
+    serpentWeakTimer: 3.2,
+    whirlpoolTimer: 0,
+    sugarRushTimer: 0,
+    napkinTimer: 0,
   };
+  if (kind === "sushi") initializeSushiTrail(createdBoss);
+  return createdBoss;
+}
+
+function initializeSushiTrail(targetBoss) {
+  targetBoss.serpentHeading = Math.PI;
+  targetBoss.serpentAngle = Math.PI;
+  const count = targetBoss.phase >= 3 ? 9 : targetBoss.phase >= 2 ? 7 : 6;
+  const spacing = sushiSegmentSpacing();
+  targetBoss.serpentBody = [];
+  for (let i = 0; i < count; i += 1) {
+    targetBoss.serpentBody.push({
+      x: targetBoss.x - Math.cos(targetBoss.serpentHeading) * i * spacing,
+      y: targetBoss.y - Math.sin(targetBoss.serpentHeading) * i * spacing + Math.sin(i * 0.75) * 10,
+      heading: targetBoss.serpentHeading,
+    });
+  }
+  const maxTrail = count * 12 + 20;
+  targetBoss.serpentTrail = [];
+  for (let i = 0; i < maxTrail; i += 1) {
+    const wiggle = Math.sin(i * 0.24) * 18;
+    targetBoss.serpentTrail.push({
+      x: targetBoss.x - i * 7,
+      y: targetBoss.y + wiggle,
+      heading: Math.PI,
+    });
+  }
 }
 
 function createCondimentBosses() {
@@ -397,7 +500,7 @@ function resizeCanvas() {
 
 function resetFight(keepPosition = false) {
   const gearState = { ...player.gear };
-  const bossKind = boss.kind;
+  const bossKind = lockedBosses.has(boss.kind) ? "cola" : boss.kind;
   player = createPlayer();
   player.gear = gearState;
   applyGear();
@@ -407,6 +510,7 @@ function resetFight(keepPosition = false) {
   }
   mouseWorld = { x: player.x + player.lastMoveX * 120, y: player.y + player.lastMoveY * 120 };
   boss = createBoss(bossKind);
+  if (boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi") boss.attackTimer = 2.4;
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
@@ -419,17 +523,53 @@ function resetFight(keepPosition = false) {
   showFloat("Fight reset");
 }
 
-function selectBoss(kind) {
+function startSinglePlayer() {
+  multiplayer.mode = "single";
+  multiplayer.enabled = false;
+  closeMultiplayerSocket();
+  multiplayer.peers.clear();
+  hideMenus();
+  setCoopStatus("Solo", 1);
+  ui.status.textContent = "Single player. Gear up, enter the arena, then click to shoot.";
+}
+
+function startMultiplayerFlow() {
+  multiplayer.mode = "multiplayer";
+  showMenuScreen("multiplayer");
+  setMenuStatus("Connecting...");
+  setupMultiplayer();
+}
+
+function startMultiplayerFight(bossKind, spawn) {
+  hideMenus();
+  selectBoss(lockedBosses.has(bossKind) ? "cola" : bossKind || "cola", { fromLobby: true, spawn });
+  player.room = "arena";
+  player.x = spawn?.x || world.arena.x + 130;
+  player.y = spawn?.y || world.arena.y + world.arena.h / 2;
+  mouseWorld = { x: player.x + 120, y: player.y };
+  player.gateCooldown = 1.2;
+  setCoopStatus("In Room", multiplayer.room?.players?.length || 1);
+  ui.status.textContent = "Co-op fight started.";
+  sendMultiplayerState(true);
+}
+
+function selectBoss(kind, options = {}) {
+  if (lockedBosses.has(kind)) {
+    ui.status.textContent = "That boss is locked for now.";
+    showFloat("Locked");
+    return;
+  }
   const gearState = { ...player.gear };
   player = createPlayer();
   player.gear = gearState;
   applyGear();
   player.room = "arena";
-  player.x = world.arena.x + 130;
-  player.y = world.arena.y + world.arena.h / 2;
+  player.x = options.spawn?.x || world.arena.x + 130;
+  player.y = options.spawn?.y || world.arena.y + world.arena.h / 2;
   mouseWorld = { x: player.x + 120, y: player.y };
   player.gateCooldown = 1.2;
   boss = createBoss(kind);
+  if (boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi") boss.attackTimer = 2.4;
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
@@ -440,7 +580,7 @@ function selectBoss(kind) {
   fightStartedAt = 0;
   ui.status.textContent = `${boss.name} selected for testing. WASD to dodge, click to shoot.`;
   showFloat(boss.name);
-  sendMultiplayerState(true);
+  if (!options.fromLobby) sendMultiplayerState(true);
 }
 
 function startFight() {
@@ -743,6 +883,18 @@ function updateCombat(dt) {
     updatePizzaPhantom(dt);
     return;
   }
+  if (boss.kind === "taco") {
+    updateTacoTitan(dt);
+    return;
+  }
+  if (boss.kind === "donut") {
+    updateDonutDonald(dt);
+    return;
+  }
+  if (boss.kind === "sushi") {
+    updateSushiSerpent(dt);
+    return;
+  }
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.swingTimer -= dt;
@@ -1009,6 +1161,805 @@ function updateBigCola(dt) {
     spawnBigColaPattern();
     boss.attackTimer = boss.enraged ? 1.0 : boss.phase === 2 ? 1.25 : 1.55;
   }
+}
+
+function updateTacoTitan(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  if (boss.napkinCooldownTimer > 0) {
+    boss.napkinCooldownTimer -= dt;
+  }
+  updateTacoPhase();
+  if (boss.napkinTimer > 0) {
+    boss.napkinTimer -= dt;
+    boss.attackTimer = Math.max(boss.attackTimer, 0.65);
+  } else {
+    boss.napkinZone = null;
+  }
+  if (boss.swingTimer <= 0 && distance(player, boss) < boss.radius + 42) {
+    addStuffedStack();
+    damagePlayer(boss.enraged ? 14 : 11, "Taco Titan crunch");
+    boss.swingTimer = boss.enraged ? 0.82 : 1.05;
+  }
+  boss.swingTimer -= dt;
+  if (boss.attackTimer <= 0) {
+    spawnTacoPattern();
+    boss.attackTimer = boss.enraged ? 1.15 : boss.phase === 3 ? 1.28 : boss.phase === 2 ? 1.45 : 1.75;
+  }
+}
+
+function updateTacoPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.66 && boss.phase === 1) {
+    boss.phase = 2;
+    boss.attackTimer = 0.35;
+    log("Phase 2: Taco Titan's shell cracks open.");
+    ui.status.textContent = "Taco Titan starts spilling ingredients.";
+  }
+  if (hpPercent <= 0.33 && boss.phase < 3) {
+    boss.phase = 3;
+    boss.enraged = true;
+    boss.attackTimer = 0.25;
+    log("Phase 3: Last Bite.");
+    showFloat("Last Bite");
+  }
+}
+
+function spawnTacoPattern() {
+  const roll = Math.random();
+  if (roll < 0.28) {
+    spawnTacoCrunchCharge();
+    if (boss.phase >= 3) spawnIngredientAvalanche(2);
+  } else if (roll < 0.52) {
+    spawnIngredientAvalanche(boss.phase >= 3 ? 5 : boss.phase >= 2 ? 4 : 3);
+  } else if (roll < 0.74) {
+    spawnTacoShellSlam();
+  } else {
+    spawnLettuceFan();
+    if (boss.phase >= 2) spawnTacoSalsaPools(2);
+  }
+}
+
+function spawnTacoCrunchCharge() {
+  const target = bossAimTarget(boss);
+  const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const length = 820;
+  const targetPoint = clampArenaPoint(boss.x + Math.cos(angle) * length, boss.y + Math.sin(angle) * length, boss.radius);
+  hazards.push({
+    type: "tacoCharge",
+    x: boss.x,
+    y: boss.y,
+    targetX: targetPoint.x,
+    targetY: targetPoint.y,
+    angle,
+    length,
+    width: boss.phase >= 3 ? 76 : 62,
+    warn: boss.enraged ? 0.72 : 0.92,
+    ttl: boss.enraged ? 1.08 : 1.32,
+    damage: boss.enraged ? 16 : 13,
+    hit: false,
+  });
+  if (canSpawnTacoNapkinFlood()) {
+    const size = tacoNapkinSize();
+    const safeX = clamp(targetPoint.x - Math.cos(angle) * 150, world.arena.x + size.w / 2 + 24, world.arena.x + world.arena.w - size.w / 2 - 24);
+    const safeY = clamp(targetPoint.y - Math.sin(angle) * 150, world.arena.y + size.h / 2 + 24, world.arena.y + world.arena.h - size.h / 2 - 24);
+    const delay = boss.enraged ? 3.35 : boss.phase >= 2 ? 3.75 : 4.1;
+    boss.napkinTimer = delay + 1.5;
+    boss.napkinCooldownTimer = boss.enraged ? 13.5 : boss.phase >= 2 ? 15.5 : 17.5;
+    boss.napkinUses += 1;
+    boss.napkinZone = { x: safeX, y: safeY, w: size.w, h: size.h };
+    hazards.push({
+      type: "tacoIngredientFlood",
+      x: world.arena.x + world.arena.w / 2,
+      y: world.arena.y + world.arena.h / 2,
+      warn: delay,
+      warningDuration: delay,
+      ttl: delay + 1.5,
+      safeX,
+      safeY,
+      safeW: size.w,
+      safeH: size.h,
+      cleared: false,
+      hit: false,
+    });
+    log("Napkin safe spot.");
+  }
+  log("Crunch Charge lane.");
+}
+
+function canSpawnTacoNapkinFlood() {
+  return boss.napkinTimer <= 0 && boss.napkinCooldownTimer <= 0 && !hazards.some((hazard) => hazard.type === "tacoIngredientFlood");
+}
+
+function tacoNapkinSize() {
+  const shrink = Math.max(0, boss.napkinUses || 0);
+  return {
+    w: Math.max(142, 216 - shrink * 24),
+    h: Math.max(96, 148 - shrink * 16),
+  };
+}
+
+function isPlayerOnTacoNapkin(zone) {
+  if (!zone) return false;
+  const halfW = (zone.w || zone.safeW || 120) / 2;
+  const halfH = (zone.h || zone.safeH || 80) / 2;
+  return Math.abs(player.x - (zone.x ?? zone.safeX)) <= halfW && Math.abs(player.y - (zone.y ?? zone.safeY)) <= halfH;
+}
+
+function clearTacoHazardsForNapkinFlood(floodHazard) {
+  const clearedTypes = new Set(["tacoCharge", "tacoShellShard", "ingredientDrop", "tacoSalsa", "tacoSlam", "lettuceLeaf"]);
+  hazards.forEach((hazard) => {
+    if (hazard === floodHazard || !clearedTypes.has(hazard.type)) return;
+    hazard.ttl = 0;
+    hazard.warn = 0;
+  });
+  particles.push({ x: floodHazard.safeX, y: floodHazard.safeY - 44, text: "clear", color: "#f5f5e6", ttl: 0.6 });
+}
+
+function spawnIngredientAvalanche(count) {
+  const ingredients = ["cheese", "lettuce", "beef", "salsa"];
+  for (let i = 0; i < count; i += 1) {
+    const point = randomArenaPointNearThreat(260, 70);
+    hazards.push({
+      type: "ingredientDrop",
+      ingredient: ingredients[(i + Math.floor(Math.random() * ingredients.length)) % ingredients.length],
+      x: point.x,
+      y: point.y,
+      r: 24 + Math.random() * 12,
+      warn: 0.78 + i * 0.1,
+      ttl: 1.32 + i * 0.1,
+      damage: 8,
+      hit: false,
+    });
+  }
+  log("Ingredient avalanche.");
+}
+
+function spawnTacoShellSlam() {
+  const target = bossAimTarget(boss);
+  hazards.push({
+    type: "tacoSlam",
+    x: target.x,
+    y: target.y,
+    r: boss.phase >= 3 ? 124 : 106,
+    inner: 44,
+    gapAngle: Math.atan2(player.y - boss.y, player.x - boss.x) + Math.PI,
+    warn: 0.95,
+    ttl: 1.35,
+    damage: boss.phase >= 2 ? 14 : 12,
+    hit: false,
+  });
+}
+
+function spawnLettuceFan() {
+  const target = bossAimTarget(boss);
+  const baseAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const count = boss.phase >= 3 ? 13 : boss.phase >= 2 ? 10 : 7;
+  for (let i = 0; i < count; i += 1) {
+    const spread = -0.72 + (1.44 * i) / Math.max(1, count - 1);
+    const angle = baseAngle + spread;
+    hazards.push({
+      type: "lettuceLeaf",
+      x: boss.x + Math.cos(angle) * 72,
+      y: boss.y + Math.sin(angle) * 72,
+      vx: Math.cos(angle) * 185,
+      vy: Math.sin(angle) * 185,
+      wobble: Math.random() * Math.PI * 2,
+      r: 13,
+      ttl: 3.1,
+      damage: 8,
+    });
+  }
+}
+
+function spawnTacoSalsaPools(count) {
+  for (let i = 0; i < count; i += 1) {
+    const point = randomArenaPointNearThreat(220, 80);
+    hazards.push({ type: "tacoSalsa", x: point.x, y: point.y, r: 48, warn: 0.55, ttl: 5.2, damage: 10, damageTimer: 0 });
+  }
+}
+
+function addStuffedStack() {
+  player.stuffedStacks = Math.min(7, (player.stuffedStacks || 0) + 1);
+  showFloat(`Stuffed ${player.stuffedStacks}/7`);
+  if (player.stuffedStacks >= 7) {
+    player.stuffedStacks = 0;
+    player.freezeTimer = Math.max(player.freezeTimer, 0.55);
+    damagePlayer(12, "Too stuffed", { fixed: true });
+  }
+}
+
+function updateDonutDonald(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  if (boss.glazeRingLockTimer > 0) {
+    boss.glazeRingLockTimer -= dt;
+  }
+  updateDonutPhase();
+  updateDonutGauntlet(dt);
+  updateDonutMinions(dt);
+  if (boss.donutGauntletActive) return;
+  updateDonutHoles(dt);
+  if (boss.sugarRushTimer > 0) {
+    boss.sugarRushTimer -= dt;
+    player.guardSpeedTimer = Math.max(player.guardSpeedTimer, 0.12);
+  }
+  if (boss.attackTimer <= 0) {
+    spawnDonutPattern();
+    boss.attackTimer = boss.enraged ? 1.05 : isDonutHolePhase() ? 1.34 : 1.62;
+  }
+}
+
+function updateDonutPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.84 && boss.phase === 1) {
+    boss.phase = 2;
+    boss.donutHoles = createDonutHoles(2);
+    boss.attackTimer = 0.25;
+    log("Phase 2: Donut Donald calls the donut holes.");
+  }
+  if (hpPercent <= 0.67 && boss.phase === 2 && !boss.donutGauntletCompleted) {
+    boss.phase = 3;
+    startDonutGauntlet();
+  }
+  if (hpPercent <= 0.42 && boss.phase === 4) {
+    boss.phase = 5;
+    boss.donutHoles = createDonutHoles(2);
+    boss.attackTimer = 0.25;
+    log("Phase 5: Donut Donald repeats the donut hole pressure.");
+    showFloat("Phase 5");
+  }
+  if (hpPercent <= 0.21 && boss.phase === 5) {
+    boss.phase = 6;
+    boss.enraged = true;
+    boss.donutHoles = createDonutHoles(4);
+    boss.attackTimer = 0.25;
+    log("Phase 6: Grand Finale.");
+    showFloat("Grand Finale");
+  }
+}
+
+function startDonutGauntlet() {
+  boss.donutGauntletActive = true;
+  boss.donutGauntletTimer = 30;
+  boss.donutGauntletSpawnTimer = 0.45;
+  boss.donutHoles = [];
+  boss.donutMinions = [];
+  boss.attackTimer = 99;
+  boss.glazeRingLockTimer = 0;
+  boss.x = world.arena.x + world.arena.w / 2;
+  boss.y = world.arena.y - 180;
+  boss.invulnerableTimer = 30.5;
+  log("Phase 3: Donut onslaught.");
+  ui.status.textContent = "Donut Donald leaps away. Survive the donut onslaught!";
+  showFloat("Survive 30 seconds");
+}
+
+function updateDonutGauntlet(dt) {
+  if (!boss.donutGauntletActive) return;
+  boss.donutGauntletTimer -= dt;
+  boss.donutGauntletSpawnTimer -= dt;
+  if (boss.donutGauntletSpawnTimer <= 0) {
+    spawnDonutMinionWave();
+    boss.donutGauntletSpawnTimer = boss.donutGauntletTimer > 15 ? 2.4 : 1.75;
+  }
+  if (boss.donutGauntletTimer <= 0) {
+    finishDonutGauntlet();
+  }
+}
+
+function finishDonutGauntlet() {
+  boss.donutGauntletActive = false;
+  boss.donutGauntletCompleted = true;
+  boss.phase = 4;
+  boss.enraged = false;
+  boss.invulnerableTimer = 0;
+  boss.donutMinions = [];
+  boss.donutHoles = [];
+  boss.x = world.arena.x + world.arena.w - 230;
+  boss.y = world.arena.y + world.arena.h / 2;
+  boss.attackTimer = 1.1;
+  hazards = hazards.filter((hazard) => !hazard.donutMinionHazard);
+  log("Phase 4: Donut Donald returns.");
+  showFloat("Donald returns");
+}
+
+function isDonutHolePhase() {
+  return boss.phase === 2 || boss.phase === 5 || boss.phase === 6;
+}
+
+function isDonutFinalPhase() {
+  return boss.phase === 6;
+}
+
+function createDonutHoles(count) {
+  return Array.from({ length: count }, (_, index) => ({
+    angle: (Math.PI * 2 * index) / count,
+    r: 18,
+    fireTimer: 0.95 + index * 0.22,
+    hp: isDonutFinalPhase() ? 58 : 78,
+    maxHp: isDonutFinalPhase() ? 58 : 78,
+  }));
+}
+
+function updateDonutHoles(dt) {
+  boss.donutHoles = boss.donutHoles.filter((hole) => hole.hp > 0);
+  boss.donutHoles.forEach((hole, index) => {
+    hole.angle += (boss.enraged ? 1.25 : 0.9) * dt;
+    const orbit = isDonutFinalPhase() ? 128 : 112;
+    hole.x = boss.x + Math.cos(hole.angle) * orbit;
+    hole.y = boss.y + Math.sin(hole.angle) * orbit * 0.72;
+    hole.fireTimer -= dt;
+    if (hole.fireTimer <= 0) {
+      spawnDonutHoleSprinkles(hole);
+      hole.fireTimer = boss.enraged ? 1.2 + index * 0.08 : 1.55 + index * 0.1;
+    }
+  });
+}
+
+function updateDonutMinions(dt) {
+  boss.donutMinions = (boss.donutMinions || []).filter((minion) => minion.hp > 0 && minion.ttl > 0);
+  boss.donutMinions.forEach((minion) => {
+    minion.ttl -= dt;
+    minion.fireTimer -= dt;
+    minion.animationTime = (minion.animationTime || 0) + dt;
+    const targetAngle = Math.atan2(player.y - minion.y, player.x - minion.x);
+    if (minion.kind === "crawler") {
+      minion.x += Math.cos(targetAngle) * minion.speed * dt;
+      minion.y += Math.sin(targetAngle) * minion.speed * dt;
+      if (distance(player, minion) < player.radius + minion.r) {
+        damagePlayer(13, "Donut crawler");
+        knockPlayerFrom(minion.x, minion.y, 190);
+        minion.ttl = 0;
+      }
+    } else if (minion.kind === "shooter") {
+      minion.x += Math.cos(minion.driftAngle) * minion.speed * dt;
+      minion.y += Math.sin(minion.driftAngle) * minion.speed * dt;
+      if (minion.fireTimer <= 0) {
+        spawnDonutMinionShot(minion, targetAngle);
+        minion.fireTimer = 1.1;
+      }
+    } else if (minion.kind === "glazer") {
+      minion.x += Math.cos(minion.driftAngle) * minion.speed * dt;
+      minion.y += Math.sin(minion.driftAngle) * minion.speed * dt;
+      if (minion.fireTimer <= 0) {
+        spawnMiniGlazeBurst(minion);
+        minion.fireTimer = 2.4;
+      }
+    }
+    minion.x = clamp(minion.x, world.arena.x + minion.r, world.arena.x + world.arena.w - minion.r);
+    minion.y = clamp(minion.y, world.arena.y + minion.r, world.arena.y + world.arena.h - minion.r);
+  });
+}
+
+function spawnDonutMinionWave() {
+  const elapsed = 30 - boss.donutGauntletTimer;
+  const count = elapsed > 20 ? 4 : elapsed > 10 ? 3 : 2;
+  for (let i = 0; i < count; i += 1) {
+    spawnDonutMinion(i, elapsed);
+  }
+  log("Donut onslaught wave.");
+}
+
+function spawnDonutMinion(index, elapsed) {
+  const spawn = randomArenaEdgePoint();
+  const types = elapsed > 16 ? ["crawler", "shooter", "glazer"] : elapsed > 8 ? ["crawler", "crawler", "shooter"] : ["crawler", "shooter"];
+  const kind = types[(index + Math.floor(Math.random() * types.length)) % types.length];
+  const stats = {
+    crawler: { r: 22, hp: 45, speed: 105, color: "#c7834f" },
+    shooter: { r: 20, hp: 38, speed: 42, color: "#f7b7d3" },
+    glazer: { r: 24, hp: 56, speed: 34, color: "#ffe36e" },
+  }[kind];
+  boss.donutMinions.push({
+    kind,
+    x: spawn.x,
+    y: spawn.y,
+    r: stats.r,
+    hp: stats.hp,
+    maxHp: stats.hp,
+    speed: stats.speed,
+    color: stats.color,
+    driftAngle: Math.random() * Math.PI * 2,
+    fireTimer: 0.45 + index * 0.28,
+    ttl: 18,
+    animationTime: 0,
+  });
+}
+
+function spawnDonutMinionShot(minion, angle) {
+  for (let i = -0.5; i <= 0.5; i += 1) {
+    const shotAngle = angle + i * 0.16;
+    hazards.push({
+      type: "sprinkle",
+      donutMinionHazard: true,
+      x: minion.x,
+      y: minion.y,
+      vx: Math.cos(shotAngle) * 205,
+      vy: Math.sin(shotAngle) * 205,
+      r: 6,
+      ttl: 2.6,
+      damage: 7,
+      color: "#ffb6d1",
+    });
+  }
+}
+
+function spawnMiniGlazeBurst(minion) {
+  const count = 8;
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count;
+    hazards.push({
+      type: "sprinkle",
+      donutMinionHazard: true,
+      x: minion.x,
+      y: minion.y,
+      vx: Math.cos(angle) * 165,
+      vy: Math.sin(angle) * 165,
+      r: 7,
+      ttl: 2.4,
+      damage: 8,
+      color: "#ffe36e",
+    });
+  }
+  particles.push({ x: minion.x, y: minion.y - 26, text: "glaze", color: "#ffe36e", ttl: 0.55 });
+}
+
+function spawnDonutPattern() {
+  const roll = Math.random();
+  if (roll < 0.3 && boss.glazeRingLockTimer <= 0) {
+    spawnGlazeRing(isDonutFinalPhase() ? 4 : 1);
+  } else if (roll < 0.55) {
+    spawnSprinkleSpiral();
+  } else if (roll < 0.76) {
+    spawnFrostingRibbon();
+  } else {
+    spawnRoyalRoll();
+    if (isDonutHolePhase()) spawnSugarRushZone();
+  }
+}
+
+function spawnGlazeRing(count) {
+  if (boss.glazeRingLockTimer > 0) return;
+  const playerAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const baseOffset = (Math.random() > 0.5 ? 1 : -1) * (isDonutFinalPhase() ? 0.72 : 0.62);
+  const stagger = isDonutFinalPhase() ? 0.9 : 0.5;
+  boss.glazeRingLockTimer = 0.36 + (count - 1) * stagger + 0.35;
+  for (let i = 0; i < count; i += 1) {
+    const alternatingOffset = baseOffset * (i % 2 === 0 ? 1 : -1);
+    const drift = (i - (count - 1) / 2) * 0.16;
+    hazards.push({
+      type: "glazeRing",
+      x: boss.x,
+      y: boss.y,
+      radiusNow: 34,
+      maxRadius: 520,
+      gapAngle: playerAngle + alternatingOffset + drift,
+      gapWidth: isDonutFinalPhase() ? 0.82 : 1.02,
+      speed: boss.enraged ? 230 : 195,
+      spinSpeed: boss.enraged ? 0.58 : 0.36,
+      delay: i * stagger,
+      warn: 0.36 + i * stagger,
+      ttl: 3.15 + i * stagger,
+      damage: boss.enraged ? 26 : 20,
+      hit: false,
+    });
+  }
+  log("Glaze rings expanding.");
+}
+
+function spawnSprinkleSpiral() {
+  const count = boss.enraged ? 18 : isDonutHolePhase() ? 15 : 12;
+  const twist = Math.random() > 0.5 ? 1 : -1;
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count + boss.animationTime * 0.8;
+    hazards.push({
+      type: "sprinkle",
+      x: boss.x,
+      y: boss.y,
+      vx: Math.cos(angle) * 190,
+      vy: Math.sin(angle) * 190,
+      turn: twist * 0.24,
+      r: 7,
+      ttl: 3.2,
+      damage: 8,
+      color: i % 3 === 0 ? "#ff79aa" : i % 3 === 1 ? "#8ec7ff" : "#ffe36e",
+    });
+  }
+}
+
+function spawnDonutHoleSprinkles(hole) {
+  const target = bossAimTarget(hole);
+  const angle = Math.atan2(target.y - hole.y, target.x - hole.x);
+  for (let i = -0.5; i <= 0.5; i += 1) {
+    const shotAngle = angle + i * 0.18;
+    hazards.push({
+      type: "sprinkle",
+      x: hole.x,
+      y: hole.y,
+      vx: Math.cos(shotAngle) * 225,
+      vy: Math.sin(shotAngle) * 225,
+      r: 6,
+      ttl: 2.3,
+      damage: 7,
+      color: "#ffb6d1",
+    });
+  }
+}
+
+function spawnFrostingRibbon() {
+  const target = bossAimTarget(boss);
+  const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  hazards.push({
+    type: "frostingRibbon",
+    x: boss.x,
+    y: boss.y,
+    angle,
+    length: 740,
+    width: isDonutFinalPhase() ? 54 : 42,
+    warn: 0.6,
+    ttl: 3.2,
+    damageTimer: 0,
+    damage: 12,
+  });
+}
+
+function spawnRoyalRoll() {
+  const target = bossAimTarget(boss);
+  const startX = boss.x;
+  const startY = boss.y;
+  const angle = Math.atan2(target.y - startY, target.x - startX);
+  const rollDistance = isDonutFinalPhase() ? 680 : 600;
+  const end = clampArenaPoint(startX + Math.cos(angle) * rollDistance, startY + Math.sin(angle) * rollDistance, boss.radius);
+  const actualLength = Math.hypot(end.x - startX, end.y - startY);
+  hazards.push({
+    type: "royalRoll",
+    x: startX,
+    y: startY,
+    startX,
+    startY,
+    endX: end.x,
+    endY: end.y,
+    prevX: startX,
+    prevY: startY,
+    angle,
+    length: actualLength,
+    width: isDonutFinalPhase() ? 92 : 74,
+    warn: boss.enraged ? 0.78 : 0.95,
+    ttl: boss.enraged ? 1.68 : 1.92,
+    rollAge: 0,
+    rollDuration: boss.enraged ? 0.72 : 0.86,
+    damage: boss.enraged ? 28 : 23,
+    hit: false,
+  });
+  boss.animation = "royalRollWindup";
+  log("Royal Roll windup.");
+}
+
+function spawnSugarRushZone() {
+  const point = randomArenaPointNearThreat(260, 120);
+  hazards.push({ type: "sugarZone", x: point.x, y: point.y, r: 42, warn: 0, ttl: 4.4, damage: 0 });
+}
+
+function randomArenaEdgePoint() {
+  const side = Math.floor(Math.random() * 4);
+  if (side === 0) return { x: world.arena.x + 40, y: world.arena.y + Math.random() * world.arena.h };
+  if (side === 1) return { x: world.arena.x + world.arena.w - 40, y: world.arena.y + Math.random() * world.arena.h };
+  if (side === 2) return { x: world.arena.x + Math.random() * world.arena.w, y: world.arena.y + 40 };
+  return { x: world.arena.x + Math.random() * world.arena.w, y: world.arena.y + world.arena.h - 40 };
+}
+
+function updateSushiSerpent(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.attackTimer -= dt;
+  boss.serpentAngle += dt * (boss.enraged ? 1.25 : 0.86);
+  boss.serpentWeakTimer -= dt;
+  updateSushiPhase();
+  updateSushiMovement(dt);
+  if (boss.serpentWeakTimer <= 0) {
+    boss.serpentWeakIndex = 1 + Math.floor(Math.random() * (sushiSegmentCount() - 2));
+    boss.serpentWeakTimer = boss.enraged ? 1.9 : 2.7;
+  }
+  if (boss.whirlpoolTimer > 0) {
+    boss.whirlpoolTimer -= dt;
+    pullPlayerToward(world.arena.x + world.arena.w / 2, world.arena.y + world.arena.h / 2, 34 * dt);
+  }
+  if (boss.attackTimer <= 0) {
+    spawnSushiPattern();
+    boss.attackTimer = boss.enraged ? 1.18 : boss.phase === 3 ? 1.34 : boss.phase === 2 ? 1.56 : 1.85;
+  }
+}
+
+function updateSushiPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.66 && boss.phase === 1) {
+    boss.phase = 2;
+    boss.attackTimer = 0.35;
+    log("Phase 2: Split Roll.");
+    ui.status.textContent = "Sushi Serpent splits into faster patterns.";
+  }
+  if (hpPercent <= 0.33 && boss.phase < 3) {
+    boss.phase = 3;
+    boss.enraged = true;
+    boss.attackTimer = 0.25;
+    log("Phase 3: Dragon Roll.");
+    showFloat("Dragon Roll");
+  }
+}
+
+function updateSushiMovement(dt) {
+  const target = bossAimTarget(boss);
+  const orbit = 210 + Math.sin(boss.animationTime * 1.25) * 70;
+  const preferred = pointFromAngle(target.x, target.y, boss.serpentAngle, orbit);
+  const point = clampArenaPoint(preferred.x, preferred.y, boss.radius);
+  const dx = point.x - boss.x;
+  const dy = point.y - boss.y;
+  const desiredHeading = Math.atan2(dy, dx);
+  boss.serpentHeading += angleDifference(desiredHeading, boss.serpentHeading) * Math.min(1, dt * 3.2);
+  const speed = boss.enraged ? 185 : boss.phase >= 2 ? 160 : 140;
+  const distanceToTarget = Math.hypot(dx, dy);
+  const step = Math.min(distanceToTarget, speed * dt);
+  boss.x += Math.cos(boss.serpentHeading) * step;
+  boss.y += Math.sin(boss.serpentHeading) * step;
+  const clamped = clampArenaPoint(boss.x, boss.y, boss.radius);
+  boss.x = clamped.x;
+  boss.y = clamped.y;
+  updateSushiBodyChain();
+}
+
+function sushiSegmentCount() {
+  return boss.phase >= 3 ? 9 : boss.phase >= 2 ? 7 : 6;
+}
+
+function sushiSegmentSpacing() {
+  return 58;
+}
+
+function updateSushiBodyChain() {
+  const count = sushiSegmentCount();
+  const spacing = sushiSegmentSpacing();
+  if (!boss.serpentBody || boss.serpentBody.length !== count) {
+    initializeSushiTrail(boss);
+  }
+
+  const body = boss.serpentBody;
+  body[0].x = boss.x;
+  body[0].y = boss.y;
+  body[0].heading = boss.serpentHeading;
+
+  for (let i = 1; i < body.length; i += 1) {
+    const leader = body[i - 1];
+    const segment = body[i];
+    const dx = segment.x - leader.x;
+    const dy = segment.y - leader.y;
+    const dist = Math.hypot(dx, dy) || spacing;
+    const angleFromLeader = Math.atan2(dy, dx);
+    const targetX = leader.x + Math.cos(angleFromLeader) * spacing;
+    const targetY = leader.y + Math.sin(angleFromLeader) * spacing;
+    const follow = 0.36;
+    segment.x += (targetX - segment.x) * follow;
+    segment.y += (targetY - segment.y) * follow;
+    segment.heading = Math.atan2(leader.y - segment.y, leader.x - segment.x);
+    if (dist > spacing * 1.45) {
+      segment.x = targetX;
+      segment.y = targetY;
+    }
+  }
+}
+
+function sushiSegments() {
+  const count = sushiSegmentCount();
+  if (!boss.serpentBody || boss.serpentBody.length !== count) initializeSushiTrail(boss);
+  updateSushiBodyChain();
+  const segments = [];
+  for (let i = 0; i < count; i += 1) {
+    const bodySegment = boss.serpentBody[i];
+    const angle = bodySegment.heading ?? boss.serpentHeading;
+    const wave = Math.sin(boss.animationTime * 4.2 - i * 0.68) * (i === 0 ? 0 : 8);
+    const sway = Math.min(1, i / 3);
+    const baseX = bodySegment.x;
+    const baseY = bodySegment.y;
+    segments.push({
+      x: baseX + Math.cos(angle + Math.PI / 2) * wave * sway,
+      y: baseY + Math.sin(angle + Math.PI / 2) * wave * sway,
+      heading: angle,
+      r: Math.max(24, 52 - i * 2.15),
+      index: i,
+      weak: i === boss.serpentWeakIndex || (boss.phase >= 3 && i === boss.serpentWeakIndex + 2),
+    });
+  }
+  return segments;
+}
+
+function spawnSushiPattern() {
+  const roll = Math.random();
+  if (roll < 0.28) {
+    spawnWasabiWave();
+  } else if (roll < 0.5) {
+    spawnChopstickPins(boss.phase >= 3 ? 3 : boss.phase >= 2 ? 2 : 1);
+  } else if (roll < 0.72) {
+    spawnSoySplash(boss.phase >= 3 ? 3 : 2);
+  } else {
+    spawnSerpentSweep();
+    if (boss.phase >= 3 && Math.random() < 0.45) startSoyWhirlpool();
+  }
+}
+
+function spawnWasabiWave() {
+  const vertical = Math.random() > 0.5;
+  const fromHighSide = Math.random() > 0.5;
+  const width = boss.phase >= 3 ? 32 : 28;
+  hazards.push({
+    type: "wasabiWave",
+    x: vertical ? (fromHighSide ? world.arena.x + world.arena.w + width : world.arena.x - width) : world.arena.x,
+    y: vertical ? world.arena.y : (fromHighSide ? world.arena.y + world.arena.h + width : world.arena.y - width),
+    axis: vertical ? "vertical" : "horizontal",
+    direction: fromHighSide ? -1 : 1,
+    warn: boss.enraged ? 0.9 : 1.08,
+    ttl: boss.enraged ? 3.65 : 4.25,
+    speed: boss.enraged ? 235 : 195,
+    width,
+    damage: boss.enraged ? 7 : 5,
+    hit: false,
+  });
+}
+
+function spawnChopstickPins(count) {
+  for (let i = 0; i < count; i += 1) {
+    const target = bossAimTarget(boss);
+    const vertical = i % 2 === 0;
+    hazards.push({
+      type: "chopstickPin",
+      x: clamp(target.x + (Math.random() - 0.5) * 260, world.arena.x + 70, world.arena.x + world.arena.w - 70),
+      y: clamp(target.y + (Math.random() - 0.5) * 220, world.arena.y + 70, world.arena.y + world.arena.h - 70),
+      vertical,
+      warn: 0.9 + i * 0.12,
+      ttl: 1.68 + i * 0.12,
+      damage: 6,
+      hit: false,
+    });
+  }
+}
+
+function spawnSoySplash(count) {
+  for (let i = 0; i < count; i += 1) {
+    const point = randomArenaPointNearThreat(260, 90);
+    hazards.push({ type: "soyPuddle", x: point.x, y: point.y, r: 38, warn: 0.58 + i * 0.08, ttl: 3.4, damage: 3, damageTimer: 0 });
+  }
+}
+
+function spawnSerpentSweep() {
+  const target = bossAimTarget(boss);
+  const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  hazards.push({
+    type: "serpentSweep",
+    x: boss.x,
+    y: boss.y,
+    angle,
+    length: 560,
+    width: boss.phase >= 3 ? 68 : 56,
+    warn: 0.95,
+    ttl: 1.55,
+    damage: 8,
+    hit: false,
+  });
+}
+
+function startSoyWhirlpool() {
+  boss.whirlpoolTimer = boss.phase >= 3 ? 1.9 : 1.4;
+  particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + world.arena.h / 2 - 40, text: "whirlpool", color: "#5a3a2f", ttl: 0.9 });
+}
+
+function pullPlayerToward(x, y, amount) {
+  if (player.dead || player.won) return;
+  const angle = Math.atan2(y - player.y, x - player.x);
+  player.x += Math.cos(angle) * amount;
+  player.y += Math.sin(angle) * amount;
+  const point = constrainToRoom(player.x, player.y);
+  player.x = point.x;
+  player.y = point.y;
 }
 
 function updateSpecialSauce(dt) {
@@ -1540,6 +2491,17 @@ function damageTargetsInRadius(x, y, radius, amount, source, hitTargets = []) {
     const hit = damageBossTarget(target, amount, source);
     if (hit) hitTargets.push(target);
     return hit;
+  });
+}
+
+function damageDonutMinionsInRadius(x, y, radius, amount, source, hitTargets = []) {
+  if (boss.kind !== "donut" || !boss.donutMinions?.length) return [];
+  return boss.donutMinions.filter((minion) => {
+    if (minion.hp <= 0 || hitTargets.includes(minion)) return false;
+    if (distance({ x, y }, minion) > radius + minion.r) return false;
+    damageDonutMinion(minion, amount, source);
+    hitTargets.push(minion);
+    return true;
   });
 }
 
@@ -2773,6 +3735,216 @@ function updateHazards(dt) {
         }
         if (hazard.burstShots <= 0 && hazard.burstTimer <= 0) hazard.ttl = 0;
       }
+    } else if (hazard.type === "tacoCharge") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+          addStuffedStack();
+          damagePlayer(hazard.damage, "Crunch Charge");
+          knockPlayerFrom(hazard.x, hazard.y, 260);
+        }
+        boss.x = hazard.targetX;
+        boss.y = hazard.targetY;
+        spawnTacoShellShards(hazard, spawnedHazards);
+      }
+    } else if (hazard.type === "tacoShellShard") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Shell shard");
+          hazard.damageTimer = 0.55;
+        }
+      }
+    } else if (hazard.type === "ingredientDrop") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (distance(player, hazard) < player.radius + hazard.r) {
+          if (hazard.ingredient === "cheese") player.freezeTimer = Math.max(player.freezeTimer, 0.35);
+          if (hazard.ingredient === "lettuce") knockPlayerFrom(hazard.x, hazard.y, 220);
+          addStuffedStack();
+          damagePlayer(hazard.ingredient === "beef" ? 18 : 12, `${hazard.ingredient} drop`);
+        }
+        if (hazard.ingredient === "salsa") {
+          hazard.type = "tacoSalsa";
+          hazard.r = 48;
+          hazard.ttl = 4.8;
+          hazard.damageTimer = 0;
+        }
+      }
+    } else if (hazard.type === "tacoSalsa") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          addStuffedStack();
+          damagePlayer(hazard.damage, "Salsa pool");
+          hazard.damageTimer = 0.45;
+        }
+      }
+    } else if (hazard.type === "tacoSlam") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        const dist = distance(player, hazard);
+        const angleToPlayer = Math.atan2(player.y - hazard.y, player.x - hazard.x);
+        const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < 0.42;
+        if (dist < hazard.r && dist > hazard.inner && !inGap) {
+          addStuffedStack();
+          damagePlayer(hazard.damage, "Shell Slam");
+        }
+      }
+    } else if (hazard.type === "lettuceLeaf") {
+      hazard.ttl -= dt;
+      hazard.wobble += dt * 6;
+      const side = Math.sin(hazard.wobble) * 72;
+      const angle = Math.atan2(hazard.vy, hazard.vx) + Math.PI / 2;
+      hazard.x += (hazard.vx + Math.cos(angle) * side) * dt;
+      hazard.y += (hazard.vy + Math.sin(angle) * side) * dt;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        addStuffedStack();
+        damagePlayer(hazard.damage, "Lettuce fan");
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "tacoIngredientFlood") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      const safeZone = { x: hazard.safeX, y: hazard.safeY, w: hazard.safeW, h: hazard.safeH };
+      if (hazard.warn <= 0.65 && !hazard.cleared) {
+        hazard.cleared = true;
+        clearTacoHazardsForNapkinFlood(hazard);
+        boss.attackTimer = Math.max(boss.attackTimer, 0.9);
+        boss.swingTimer = Math.max(boss.swingTimer, 0.9);
+      }
+      if (hazard.warn <= 0) {
+        if (!isPlayerOnTacoNapkin(safeZone) && !player.dead) {
+          enterDeathState("Ingredient flood");
+        } else if (!hazard.hit) {
+          hazard.hit = true;
+          player.stuffedStacks = 0;
+          showFloat("Napkin saved you");
+        }
+      }
+    } else if (hazard.type === "glazeRing") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0) {
+        hazard.radiusNow += hazard.speed * dt;
+        const radiusProgress = clamp((hazard.radiusNow - 34) / Math.max(1, hazard.maxRadius - 34), 0, 1);
+        const spinFalloff = 1 - radiusProgress * 0.55;
+        hazard.gapAngle += (hazard.spinSpeed || (boss.enraged ? 0.58 : 0.36)) * spinFalloff * dt;
+        const dist = distance(player, hazard);
+        const inBand = Math.abs(dist - hazard.radiusNow) < 15 + player.radius;
+        const angleToPlayer = Math.atan2(player.y - hazard.y, player.x - hazard.x);
+        const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < hazard.gapWidth;
+        if (inBand && !inGap && !hazard.hit) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, "Glaze ring");
+        }
+      }
+    } else if (hazard.type === "frostingRibbon") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          player.freezeTimer = Math.max(player.freezeTimer, 0.18);
+          damagePlayer(hazard.damage, "Frosting ribbon");
+          hazard.damageTimer = 0.55;
+        }
+      }
+    } else if (hazard.type === "royalRoll") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      boss.attackTimer = Math.max(boss.attackTimer, 0.35);
+      if (hazard.warn <= 0) {
+        boss.animation = "royalRoll";
+        hazard.rollAge += dt;
+        const progress = clamp(hazard.rollAge / hazard.rollDuration, 0, 1);
+        const eased = 1 - Math.pow(1 - progress, 2);
+        hazard.prevX = hazard.x;
+        hazard.prevY = hazard.y;
+        hazard.x = hazard.startX + (hazard.endX - hazard.startX) * eased;
+        hazard.y = hazard.startY + (hazard.endY - hazard.startY) * eased;
+        boss.x = hazard.x;
+        boss.y = hazard.y;
+        const traveled = Math.hypot(hazard.x - hazard.prevX, hazard.y - hazard.prevY);
+        const sweptHit = traveled > 1 && isPlayerInLine(hazard.prevX, hazard.prevY, Math.atan2(hazard.y - hazard.prevY, hazard.x - hazard.prevX), traveled, hazard.width / 2 + player.radius);
+        if (!hazard.hit && (distance(player, boss) < hazard.width / 2 + player.radius || sweptHit)) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, "Royal Roll");
+          knockPlayerFrom(hazard.prevX, hazard.prevY, 320);
+        }
+        if (progress >= 1) {
+          boss.animation = "idle";
+          hazard.ttl = Math.min(hazard.ttl, 0.12);
+        }
+      }
+    } else if (hazard.type === "sugarZone") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        boss.sugarRushTimer = 1.15;
+        hazard.ttl = 0;
+        showFloat("Sugar Rush");
+      }
+    } else if (hazard.type === "wasabiWave") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0) {
+        if (hazard.axis === "vertical") {
+          hazard.x += hazard.speed * hazard.direction * dt;
+          hazard.lane = hazard.x;
+          if (!hazard.hit && Math.abs(player.x - hazard.x) < hazard.width + player.radius) {
+            hazard.hit = true;
+            damagePlayer(hazard.damage, "Wasabi wave");
+          }
+        } else {
+          hazard.y += hazard.speed * hazard.direction * dt;
+          hazard.lane = hazard.y;
+          if (!hazard.hit && Math.abs(player.y - hazard.y) < hazard.width + player.radius) {
+            hazard.hit = true;
+            damagePlayer(hazard.damage, "Wasabi wave");
+          }
+        }
+      }
+    } else if (hazard.type === "soyPuddle") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        player.freezeTimer = Math.max(player.freezeTimer, 0.07);
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Soy splash");
+          hazard.damageTimer = 0.58;
+        }
+      }
+    } else if (hazard.type === "chopstickPin") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        const hit = hazard.vertical
+          ? Math.abs(player.x - hazard.x) < 18 + player.radius
+          : Math.abs(player.y - hazard.y) < 18 + player.radius;
+        if (hit) damagePlayer(hazard.damage, "Chopstick pin");
+      }
+    } else if (hazard.type === "serpentSweep") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+          damagePlayer(hazard.damage, "Segment sweep");
+          knockPlayerFrom(hazard.x, hazard.y, 280);
+        }
+      }
     } else if (hazard.type === "ketchupMortar") {
       hazard.age += dt;
       const progress = clamp(hazard.age / hazard.flightTime, 0, 1);
@@ -2796,7 +3968,7 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
-    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt") {
+    } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt" || hazard.type === "sprinkle") {
       hazard.ttl -= dt;
       if (hazard.turn) {
         const speed = Math.hypot(hazard.vx, hazard.vy);
@@ -2810,7 +3982,7 @@ function updateHazards(dt) {
         bounceProjectileInArena(hazard);
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : hazard.type === "pepperoni" ? "Pepperoni" : hazard.type === "cheeseBolt" ? "Ghost cheese" : "Arc bolt";
+        const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : hazard.type === "pepperoni" ? "Pepperoni" : hazard.type === "cheeseBolt" ? "Ghost cheese" : hazard.type === "sprinkle" ? "Sprinkle barrage" : "Arc bolt";
         damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         hazard.ttl = 0;
@@ -2824,6 +3996,8 @@ function updateHazards(dt) {
       }
     }
     if (hazard.type === "chocolateBar") return hazard.ttl > 0 && (hazard.warn > 0 || chocolateBarTouchesArena(hazard));
+    if (hazard.type === "wasabiWave") return hazard.ttl > 0 && wasabiWaveTouchesArena(hazard);
+    if (hazard.type === "tacoIngredientFlood") return hazard.ttl > 0;
     return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
   });
   hazards.push(...spawnedHazards);
@@ -2850,6 +4024,15 @@ function chocolateBarTouchesArena(hazard) {
     return hazard.y + hazard.length / 2 > world.arena.y && hazard.y - hazard.length / 2 < world.arena.y + world.arena.h;
   }
   return hazard.x + hazard.length / 2 > world.arena.x && hazard.x - hazard.length / 2 < world.arena.x + world.arena.w;
+}
+
+function wasabiWaveTouchesArena(hazard) {
+  if (hazard.warn > 0) return true;
+  const margin = hazard.width + 20;
+  if (hazard.axis === "vertical") {
+    return hazard.x > world.arena.x - margin && hazard.x < world.arena.x + world.arena.w + margin;
+  }
+  return hazard.y > world.arena.y - margin && hazard.y < world.arena.y + world.arena.h + margin;
 }
 
 function isPlayerInCherryCross(hazard) {
@@ -3001,6 +4184,69 @@ function spawnCherryBurst(source, targetList = hazards) {
   }
 }
 
+function spawnTacoShellShards(source, targetList = hazards) {
+  const count = boss.phase >= 3 ? 5 : 3;
+  for (let i = 0; i < count; i += 1) {
+    const t = (i + 1) / (count + 1);
+    targetList.push({
+      type: "tacoShellShard",
+      x: source.x + Math.cos(source.angle) * source.length * t,
+      y: source.y + Math.sin(source.angle) * source.length * t,
+      r: 20,
+      warn: 0.18,
+      ttl: boss.phase >= 2 ? 3.2 : 2.6,
+      damage: 8,
+      damageTimer: 0,
+    });
+  }
+}
+
+function hitDonutHole(projectile) {
+  const hole = boss.donutHoles?.find((candidate) => candidate.hp > 0 && distance(projectile, candidate) < candidate.r + projectile.r);
+  if (!hole) return false;
+  const damage = Math.ceil(projectile.damage * 0.9);
+  hole.hp = Math.max(0, hole.hp - damage);
+  particles.push({ x: hole.x, y: hole.y - 24, text: `-${damage}`, color: "#ffb6d1", ttl: 0.65 });
+  if (hole.hp <= 0) {
+    boss.shieldTimer = 0;
+    damageBossTarget(boss, Math.round(player.stats.damage * 1.4), "Donut hole pop");
+    particles.push({ x: hole.x, y: hole.y - 36, text: "pop", color: "#ffd7e8", ttl: 0.8 });
+  }
+  return true;
+}
+
+function hitDonutMinion(projectile) {
+  const minion = boss.donutMinions?.find((candidate) => candidate.hp > 0 && distance(projectile, candidate) < candidate.r + projectile.r);
+  if (!minion) return false;
+  damageDonutMinion(minion, projectile.damage, "Shot");
+  return true;
+}
+
+function damageDonutMinion(minion, amount, source) {
+  if (!minion || minion.hp <= 0) return false;
+  const damage = Math.ceil(amount);
+  minion.hp = Math.max(0, minion.hp - damage);
+  particles.push({ x: minion.x, y: minion.y - 24, text: `-${damage}`, color: "#ffd7e8", ttl: 0.65 });
+  if (minion.hp <= 0) {
+    particles.push({ x: minion.x, y: minion.y - 34, text: "pop", color: "#ffb6d1", ttl: 0.75 });
+    if (minion.kind === "glazer") spawnMiniGlazeBurst(minion);
+  }
+  return true;
+}
+
+function hitSushiSegment(projectile) {
+  const segment = sushiSegments().find((candidate) => distance(projectile, candidate) < candidate.r + projectile.r);
+  if (!segment) return false;
+  const damage = segment.weak ? Math.ceil(projectile.damage * 1.8) : Math.ceil(projectile.damage * 0.82);
+  damageBossTarget(boss, damage, segment.weak ? "Weak segment" : "Sushi segment");
+  if (segment.weak) {
+    boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
+    boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
+    particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
+  }
+  return true;
+}
+
 function damagePlayer(amount, source, options = {}) {
   if (player.invulnerableTimer > 0) {
     particles.push({ x: player.x, y: player.y - 35, text: "evade", color: "#ffd782", ttl: 0.55 });
@@ -3141,9 +4387,21 @@ function winFight() {
     showFloat("Next boss: Pizza Phantom");
     return;
   }
+  if (boss.kind === "pizza") {
+    boss = createBoss("donut");
+    condimentBosses = [];
+    fightStartedAt = 0;
+    player.hp = player.maxHp;
+    player.potions = 3;
+    player.destination = null;
+    player.slide = null;
+    ui.status.textContent = "Pizza Phantom defeated. Donut Donald enters next.";
+    showFloat("Next boss: Donut Donald");
+    return;
+  }
   player.won = true;
   ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat(boss.kind === "pizza" ? "Pizza Phantom defeated" : "Boss defeated");
+  showFloat("Boss defeated");
 }
 
 function updateAbilities(dt) {
@@ -3347,6 +4605,19 @@ function updatePlayerProjectiles(dt) {
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
     projectile.hitTargets = projectile.hitTargets || [];
+    if (boss.kind === "donut" && hitDonutMinion(projectile)) {
+      if (projectile.fireBlast) {
+        explodeFireBlast(projectile);
+        return false;
+      }
+      return projectile.piercing && projectile.ttl > 0;
+    }
+    if (boss.kind === "donut" && hitDonutHole(projectile)) {
+      return projectile.piercing && projectile.ttl > 0;
+    }
+    if (boss.kind === "sushi" && hitSushiSegment(projectile)) {
+      return projectile.piercing && projectile.ttl > 0;
+    }
     const hitBoss = livingBosses().find((target) => !projectile.hitTargets.includes(target) && distance(projectile, target) < target.radius + projectile.r);
     if (hitBoss) {
       projectile.hitTargets.push(hitBoss);
@@ -3378,7 +4649,9 @@ function updatePlayerProjectiles(dt) {
 
 function explodeFireBlast(projectile) {
   const radius = projectile.explosionRadius || 132;
-  damageTargetsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast");
+  const hitTargets = projectile.hitTargets || [];
+  damageTargetsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast", hitTargets);
+  damageDonutMinionsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast", hitTargets);
   abilityEffects.push({ type: "fireBlastExplosion", x: projectile.x, y: projectile.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
   particles.push({ x: projectile.x, y: projectile.y - 24, text: "boom", color: "#ffb14a", ttl: 0.55 });
 }
@@ -3392,6 +4665,10 @@ function markBossTarget(target) {
 
 function damageBossTarget(target, amount, source, options = {}) {
   if (!target || target.hp <= 0) return false;
+  if (target.kind === "donut" && target.donutGauntletActive) {
+    particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + 70, text: "offscreen", color: "#ffd7e8", ttl: 0.7 });
+    return false;
+  }
   if (target.kind === "nacho" && target.invulnerableTimer > 0) {
     particles.push({ x: target.x, y: target.y - 44, text: "immune", color: "#fff2c6", ttl: 0.75 });
     return false;
@@ -3586,6 +4863,12 @@ function drawBoss() {
     drawNachoLibreBoss();
   } else if (boss.kind === "pizza") {
     drawPizzaPhantomBoss();
+  } else if (boss.kind === "taco") {
+    drawTacoTitanBoss();
+  } else if (boss.kind === "donut") {
+    drawDonutDonaldBoss();
+  } else if (boss.kind === "sushi") {
+    drawSushiSerpentBoss();
   } else {
     drawBurgerBoss();
   }
@@ -3594,7 +4877,7 @@ function drawBoss() {
   ctx.fillStyle = "#fff2c6";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" || boss.kind === "pizza" ? ` Phase ${boss.phase}` : "";
+  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" || boss.kind === "pizza" || boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi" ? ` Phase ${boss.phase}` : "";
   ctx.fillText(`${boss.name}${phaseText}`, boss.x, boss.y - boss.radius - 38);
   if (boss.kind === "nacho" && boss.enrageTextTimer > 0) {
     ctx.fillStyle = "#ffda6b";
@@ -3640,6 +4923,320 @@ function drawBurgerBoss() {
   ctx.fill();
   ctx.fillStyle = "#312923";
   ctx.fillRect(boss.x - 42, boss.y - 20, 84, 60);
+}
+
+function drawTacoTitanBoss() {
+  const crack = boss.phase >= 2 ? Math.sin(boss.animationTime * 12) * 3 : 0;
+  ctx.save();
+  ctx.translate(boss.x, boss.y);
+  ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.strokeStyle = "#4f2d16";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, boss.radius, Math.PI * 1.05, Math.PI * 1.95);
+  ctx.quadraticCurveTo(0, -boss.radius * 1.2, boss.radius * 0.92, 0);
+  ctx.quadraticCurveTo(0, boss.radius * 0.56, -boss.radius * 0.92, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#6d3a1f";
+  ctx.fillRect(-44, -10, 88, 22);
+  ctx.fillStyle = "#6fbf55";
+  for (let i = -3; i <= 3; i += 1) {
+    ctx.beginPath();
+    ctx.ellipse(i * 16, -34 + Math.sin(boss.animationTime * 4 + i) * 4, 14, 7, i * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "#fff1a8";
+  ctx.lineWidth = 4;
+  if (boss.phase >= 2) {
+    ctx.beginPath();
+    ctx.moveTo(-14 + crack, -66);
+    ctx.lineTo(4 - crack, -30);
+    ctx.lineTo(-8 + crack, 6);
+    ctx.lineTo(18 - crack, 42);
+    ctx.stroke();
+  }
+  if (boss.napkinTimer > 0 && boss.napkinZone) {
+    ctx.restore();
+    const napkinW = boss.napkinZone.w || 136;
+    const napkinH = boss.napkinZone.h || 92;
+    ctx.fillStyle = "rgba(245, 245, 230, 0.26)";
+    ctx.strokeStyle = "#f5f5e6";
+    ctx.lineWidth = 4;
+    ctx.fillRect(boss.napkinZone.x - napkinW / 2, boss.napkinZone.y - napkinH / 2, napkinW, napkinH);
+    ctx.strokeRect(boss.napkinZone.x - napkinW / 2, boss.napkinZone.y - napkinH / 2, napkinW, napkinH);
+    ctx.strokeStyle = "rgba(255, 244, 196, 0.7)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boss.napkinZone.x - napkinW / 2 + 10, boss.napkinZone.y - napkinH / 2 + 10, napkinW - 20, napkinH - 20);
+    ctx.fillStyle = "#f5f5e6";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("STAND ON NAPKIN", boss.napkinZone.x, boss.napkinZone.y + 4);
+    ctx.textAlign = "left";
+    return;
+  }
+  ctx.restore();
+}
+
+function drawDonutDonaldBoss() {
+  if (boss.donutGauntletActive) {
+    drawDonutGauntletBanner();
+    boss.donutMinions?.forEach(drawDonutMinion);
+    return;
+  }
+  ctx.save();
+  ctx.translate(boss.x, boss.y);
+  const rolling = boss.animation === "royalRoll" || boss.animation === "royalRollWindup";
+  const pulse = rolling ? Math.sin(boss.animationTime * 16) * 7 : Math.sin(boss.animationTime * 5) * 4;
+  if (rolling) {
+    ctx.rotate(boss.animationTime * (boss.enraged ? 13 : 10));
+  }
+  ctx.fillStyle = boss.enraged ? "#ff79aa" : "#c7834f";
+  ctx.beginPath();
+  ctx.arc(0, 0, boss.radius + pulse, 0, Math.PI * 2);
+  ctx.fill();
+  if (rolling) {
+    ctx.strokeStyle = "rgba(255, 244, 196, 0.72)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, boss.radius + 12, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#f7b7d3";
+  ctx.beginPath();
+  ctx.arc(0, 0, boss.radius * 0.76 + pulse * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#181817";
+  ctx.beginPath();
+  ctx.arc(0, 0, boss.radius * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+  const sprinkleColors = ["#fff08a", "#8ec7ff", "#ff5d73", "#9be06f"];
+  for (let i = 0; i < 14; i += 1) {
+    const angle = i * 1.7 + boss.animationTime;
+    const r = boss.radius * (0.48 + (i % 3) * 0.1);
+    ctx.strokeStyle = sprinkleColors[i % sprinkleColors.length];
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * r - 5, Math.sin(angle) * r);
+    ctx.lineTo(Math.cos(angle) * r + 5, Math.sin(angle) * r + 3);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#ffd66b";
+  ctx.fillRect(-34, -boss.radius - 20, 68, 16);
+  ctx.restore();
+  boss.donutHoles?.forEach(drawDonutHole);
+  boss.donutMinions?.forEach(drawDonutMinion);
+}
+
+function drawDonutGauntletBanner() {
+  const centerX = world.arena.x + world.arena.w / 2;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 121, 170, 0.16)";
+  ctx.strokeStyle = "#ff79aa";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(centerX - 170, world.arena.y + 18, 340, 54, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffd7e8";
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`DONUT ONSLAUGHT ${Math.ceil(Math.max(0, boss.donutGauntletTimer))}s`, centerX, world.arena.y + 52);
+  ctx.restore();
+}
+
+function drawDonutMinion(minion) {
+  if (minion.hp <= 0) return;
+  const pulse = Math.sin((minion.animationTime || 0) * 8) * 2;
+  ctx.save();
+  ctx.translate(minion.x, minion.y);
+  ctx.rotate((minion.animationTime || 0) * (minion.kind === "crawler" ? 5 : 2));
+  ctx.fillStyle = minion.color;
+  ctx.strokeStyle = minion.kind === "glazer" ? "#fff08a" : "#5a2d21";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, minion.r + pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = minion.kind === "shooter" ? "#8ec7ff" : "#f7b7d3";
+  ctx.beginPath();
+  ctx.arc(0, 0, minion.r * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#181817";
+  ctx.beginPath();
+  ctx.arc(0, 0, minion.r * 0.24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = "#ffd7e8";
+  ctx.fillRect(minion.x - 22, minion.y - minion.r - 14, 44 * (minion.hp / minion.maxHp), 5);
+}
+
+function drawDonutHole(hole) {
+  if (hole.hp <= 0) return;
+  ctx.fillStyle = "#b96f42";
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, hole.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f7b7d3";
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, hole.r * 0.68, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#181817";
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, hole.r * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffd7e8";
+  ctx.fillRect(hole.x - 20, hole.y - hole.r - 14, 40 * (hole.hp / hole.maxHp), 5);
+}
+
+function drawWasabiArrow(x, y, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = "rgba(217, 255, 209, 0.78)";
+  ctx.strokeStyle = "rgba(31, 80, 38, 0.72)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(26, 0);
+  ctx.lineTo(-12, -16);
+  ctx.lineTo(-4, 0);
+  ctx.lineTo(-12, 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSushiSerpentBoss() {
+  const segments = sushiSegments();
+  if (segments.length < 2) return;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  ctx.strokeStyle = "rgba(26, 49, 38, 0.94)";
+  ctx.lineWidth = 58;
+  strokeSmoothSushiPath(segments);
+
+  ctx.strokeStyle = boss.enraged ? "rgba(122, 196, 109, 0.96)" : "rgba(241, 234, 215, 0.96)";
+  ctx.lineWidth = 42;
+  strokeSmoothSushiPath(segments);
+
+  ctx.strokeStyle = "rgba(36, 55, 41, 0.9)";
+  ctx.lineWidth = 15;
+  strokeSmoothSushiPath(segments);
+
+  for (let i = segments.length - 1; i >= 1; i -= 1) {
+    const segment = segments[i];
+    const side = i % 2 === 0 ? 1 : -1;
+    const finAngle = segment.heading + side * Math.PI * 0.72;
+    ctx.fillStyle = segment.weak ? "rgba(159, 240, 137, 0.9)" : "rgba(240, 154, 130, 0.76)";
+    ctx.strokeStyle = segment.weak ? "#eaff9f" : "rgba(54, 32, 28, 0.75)";
+    ctx.lineWidth = segment.weak ? 3 : 2;
+    ctx.beginPath();
+    ctx.moveTo(segment.x + Math.cos(segment.heading + Math.PI / 2) * side * 18, segment.y + Math.sin(segment.heading + Math.PI / 2) * side * 18);
+    ctx.lineTo(segment.x + Math.cos(finAngle) * 42, segment.y + Math.sin(finAngle) * 42);
+    ctx.lineTo(segment.x + Math.cos(segment.heading - Math.PI / 2) * side * 10, segment.y + Math.sin(segment.heading - Math.PI / 2) * side * 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    if (segment.weak) {
+      ctx.shadowColor = "#9ff089";
+      ctx.shadowBlur = 18;
+      ctx.strokeStyle = "#eaff9f";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(segment.x, segment.y, segment.r * 0.82, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.save();
+    ctx.translate(segment.x, segment.y);
+    ctx.rotate(segment.heading);
+    ctx.fillStyle = i % 2 === 0 ? "rgba(240, 154, 130, 0.82)" : "rgba(255, 244, 230, 0.78)";
+    ctx.beginPath();
+    ctx.roundRect(-segment.r * 0.7, -7, segment.r * 1.4, 14, 6);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const head = segments[0];
+  const neck = segments[1];
+  const headAngle = neck ? Math.atan2(head.y - neck.y, head.x - neck.x) : head.heading ?? boss.serpentHeading;
+  ctx.translate(head.x, head.y);
+  ctx.rotate(headAngle);
+  ctx.fillStyle = "#1a3126";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, boss.radius * 1.22, boss.radius * 0.82, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = boss.enraged ? "#8fe070" : "#fff4db";
+  ctx.beginPath();
+  ctx.ellipse(10, 0, boss.radius * 1.0, boss.radius * 0.68, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f09a82";
+  ctx.beginPath();
+  ctx.ellipse(8, 0, boss.radius * 0.58, boss.radius * 0.32, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#eaff9f";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(42, -8);
+  ctx.lineTo(70, -22);
+  ctx.moveTo(42, 8);
+  ctx.lineTo(70, 22);
+  ctx.stroke();
+  ctx.fillStyle = "#10120f";
+  ctx.beginPath();
+  ctx.arc(38, -20, 6, 0, Math.PI * 2);
+  ctx.arc(38, 20, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#eaff9f";
+  ctx.beginPath();
+  ctx.arc(40, -22, 2, 0, Math.PI * 2);
+  ctx.arc(40, 18, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(234, 255, 159, 0.9)";
+  ctx.lineWidth = 2;
+  for (let side = -1; side <= 1; side += 2) {
+    ctx.beginPath();
+    ctx.moveTo(62, side * 12);
+    ctx.quadraticCurveTo(94, side * (18 + Math.sin(boss.animationTime * 5) * 8), 118, side * 5);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  if (boss.whirlpoolTimer > 0) {
+    const cx = world.arena.x + world.arena.w / 2;
+    const cy = world.arena.y + world.arena.h / 2;
+    ctx.strokeStyle = "rgba(80, 48, 38, 0.72)";
+    ctx.lineWidth = 5;
+    for (let i = 0; i < 4; i += 1) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 38 + i * 34 + Math.sin(boss.animationTime * 6) * 4, boss.animationTime + i, boss.animationTime + i + Math.PI * 1.3);
+      ctx.stroke();
+    }
+  }
+}
+
+function strokeSmoothSushiPath(points) {
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const current = points[i];
+    const next = points[i + 1];
+    const previous = points[i - 1] || current;
+    const after = points[i + 2] || next;
+    const tension = 0.32;
+    const cp1x = current.x + (next.x - previous.x) * tension;
+    const cp1y = current.y + (next.y - previous.y) * tension;
+    const cp2x = next.x - (after.x - current.x) * tension;
+    const cp2y = next.y - (after.y - current.y) * tension;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+  }
+  ctx.stroke();
 }
 
 function drawSpecialSauceBoss() {
@@ -4262,6 +5859,238 @@ function drawHazards() {
       }
       return;
     }
+    if (hazard.type === "royalRoll") {
+      const active = hazard.warn <= 0;
+      const pulse = Math.sin(boss.animationTime * 12) * 0.5 + 0.5;
+      ctx.save();
+      ctx.strokeStyle = active ? "rgba(255, 121, 170, 0.76)" : `rgba(255, 244, 196, ${0.38 + pulse * 0.26})`;
+      ctx.lineWidth = active ? hazard.width : 10;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(hazard.startX, hazard.startY);
+      ctx.lineTo(hazard.endX, hazard.endY);
+      ctx.stroke();
+      ctx.strokeStyle = active ? "rgba(255, 255, 255, 0.72)" : "rgba(255, 121, 170, 0.72)";
+      ctx.lineWidth = active ? 4 : 3;
+      ctx.setLineDash(active ? [] : [18, 12]);
+      ctx.beginPath();
+      ctx.moveTo(hazard.startX, hazard.startY);
+      ctx.lineTo(hazard.endX, hazard.endY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      for (let i = 0.25; i < 1; i += 0.25) {
+        const arrowX = hazard.startX + (hazard.endX - hazard.startX) * i;
+        const arrowY = hazard.startY + (hazard.endY - hazard.startY) * i;
+        drawWasabiArrow(arrowX, arrowY, hazard.angle);
+      }
+      if (!active) {
+        ctx.fillStyle = "rgba(255, 121, 170, 0.22)";
+        ctx.strokeStyle = "#ff79aa";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(hazard.startX, hazard.startY, boss.radius + 12 + pulse * 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "tacoCharge" || hazard.type === "serpentSweep") {
+      const active = hazard.warn <= 0;
+      const color = hazard.type === "serpentSweep" ? "122, 196, 109" : "240, 91, 50";
+      ctx.strokeStyle = active ? `rgba(${color}, 0.72)` : "rgba(255, 244, 196, 0.48)";
+      ctx.lineWidth = active ? hazard.width : 6;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.x + Math.cos(hazard.angle) * hazard.length, hazard.y + Math.sin(hazard.angle) * hazard.length);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "tacoShellShard") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 228, 154, 0.16)" : "rgba(210, 154, 56, 0.6)";
+      ctx.strokeStyle = warning ? "#fff4c4" : "#6f3d18";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y - hazard.r);
+      ctx.lineTo(hazard.x + hazard.r * 0.85, hazard.y + hazard.r * 0.55);
+      ctx.lineTo(hazard.x - hazard.r * 0.85, hazard.y + hazard.r * 0.55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "tacoIngredientFlood") {
+      const warning = hazard.warn > 0;
+      const progress = warning ? clamp(1 - hazard.warn / Math.max(0.1, hazard.warningDuration || 3.25), 0, 1) : 1;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(world.arena.x, world.arena.y, world.arena.w, world.arena.h);
+      ctx.clip();
+      ctx.fillStyle = warning ? `rgba(240, 91, 50, ${0.08 + progress * 0.18})` : "rgba(207, 59, 47, 0.5)";
+      ctx.fillRect(world.arena.x, world.arena.y, world.arena.w, world.arena.h);
+      const bits = [
+        ["#ffd85a", 0.2, 0.22],
+        ["#6fbf55", 0.44, 0.38],
+        ["#7a3f24", 0.68, 0.28],
+        ["#cf3b2f", 0.82, 0.62],
+        ["#f7e28b", 0.28, 0.72],
+        ["#6fbf55", 0.58, 0.78],
+      ];
+      bits.forEach(([color, px, py], index) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(
+          world.arena.x + world.arena.w * px + Math.sin(boss.animationTime * 2 + index) * 34,
+          world.arena.y + world.arena.h * py + Math.cos(boss.animationTime * 2.4 + index) * 24,
+          warning ? 18 + progress * 18 : 34,
+          warning ? 10 + progress * 10 : 20,
+          index * 0.6,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      });
+      ctx.fillStyle = "rgba(245, 245, 230, 0.9)";
+      ctx.fillRect(hazard.safeX - hazard.safeW / 2, hazard.safeY - hazard.safeH / 2, hazard.safeW, hazard.safeH);
+      ctx.strokeStyle = warning ? "#fff4c4" : "#f5f5e6";
+      ctx.lineWidth = warning ? 4 : 6;
+      ctx.strokeRect(hazard.safeX - hazard.safeW / 2, hazard.safeY - hazard.safeH / 2, hazard.safeW, hazard.safeH);
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "ingredientDrop") {
+      const colors = { cheese: "#ffd85a", lettuce: "#6fbf55", beef: "#7a3f24", salsa: "#cf3b2f" };
+      const progress = clamp(1 - hazard.warn / 0.8, 0, 1);
+      ctx.fillStyle = hazard.warn > 0 ? "rgba(255, 244, 196, 0.12)" : `${colors[hazard.ingredient]}88`;
+      ctx.strokeStyle = colors[hazard.ingredient] || "#fff4c4";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors[hazard.ingredient] || "#fff4c4";
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y - 115 + progress * 115, hazard.r * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    if (hazard.type === "tacoSalsa") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(207, 59, 47, 0.13)" : "rgba(207, 59, 47, 0.36)";
+      ctx.strokeStyle = warning ? "#ffb0a4" : "#cf3b2f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.68, Math.sin(hazard.x) * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "tacoSlam") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(255, 218, 107, 0.1)" : "rgba(240, 91, 50, 0.25)";
+      ctx.strokeStyle = warning ? "#ffda6b" : "#f05b32";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, hazard.gapAngle + 0.42, hazard.gapAngle + Math.PI * 2 - 0.42);
+      ctx.arc(hazard.x, hazard.y, hazard.inner, hazard.gapAngle + Math.PI * 2 - 0.42, hazard.gapAngle + 0.42, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "lettuceLeaf") {
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(Math.atan2(hazard.vy, hazard.vx) + Math.sin(hazard.wobble) * 0.8);
+      ctx.fillStyle = "#6fbf55";
+      ctx.strokeStyle = "#d8ffd0";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, hazard.r * 1.45, hazard.r * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "glazeRing") {
+      if (hazard.warn > 0) return;
+      ctx.strokeStyle = "rgba(255, 182, 209, 0.72)";
+      ctx.lineWidth = 18;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.radiusNow, hazard.gapAngle + hazard.gapWidth, hazard.gapAngle + Math.PI * 2 - hazard.gapWidth);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.66)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.radiusNow, hazard.gapAngle + hazard.gapWidth, hazard.gapAngle + Math.PI * 2 - hazard.gapWidth);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "frostingRibbon") {
+      const active = hazard.warn <= 0;
+      ctx.strokeStyle = active ? "rgba(255, 182, 209, 0.58)" : "rgba(255, 244, 196, 0.42)";
+      ctx.lineWidth = active ? hazard.width : 5;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.x + Math.cos(hazard.angle) * hazard.length, hazard.y + Math.sin(hazard.angle) * hazard.length);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "sugarZone") {
+      ctx.fillStyle = "rgba(255, 121, 170, 0.2)";
+      ctx.strokeStyle = "#ff79aa";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r + Math.sin(boss.animationTime * 8) * 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "wasabiWave") {
+      const active = hazard.warn <= 0;
+      ctx.fillStyle = active ? "rgba(122, 196, 109, 0.38)" : "rgba(122, 196, 109, 0.12)";
+      ctx.strokeStyle = active ? "#9ff089" : "#d9ffd1";
+      ctx.lineWidth = 3;
+      if (hazard.axis === "vertical") {
+        const drawX = active ? hazard.x : hazard.direction > 0 ? world.arena.x + 18 : world.arena.x + world.arena.w - 18;
+        ctx.fillRect(drawX - hazard.width / 2, world.arena.y + 36, hazard.width, world.arena.h - 72);
+        ctx.strokeRect(drawX - hazard.width / 2, world.arena.y + 36, hazard.width, world.arena.h - 72);
+        drawWasabiArrow(drawX, world.arena.y + world.arena.h / 2, hazard.direction > 0 ? 0 : Math.PI);
+      } else {
+        const drawY = active ? hazard.y : hazard.direction > 0 ? world.arena.y + 18 : world.arena.y + world.arena.h - 18;
+        ctx.fillRect(world.arena.x + 36, drawY - hazard.width / 2, world.arena.w - 72, hazard.width);
+        ctx.strokeRect(world.arena.x + 36, drawY - hazard.width / 2, world.arena.w - 72, hazard.width);
+        drawWasabiArrow(world.arena.x + world.arena.w / 2, drawY, hazard.direction > 0 ? Math.PI / 2 : -Math.PI / 2);
+      }
+      return;
+    }
+    if (hazard.type === "soyPuddle") {
+      const warning = hazard.warn > 0;
+      ctx.fillStyle = warning ? "rgba(52, 35, 28, 0.14)" : "rgba(52, 35, 28, 0.44)";
+      ctx.strokeStyle = warning ? "#a98268" : "#563a2f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.12, hazard.r * 0.68, Math.sin(hazard.y) * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "chopstickPin") {
+      const active = hazard.warn <= 0;
+      ctx.strokeStyle = active ? "#e7d5a3" : "rgba(231, 213, 163, 0.42)";
+      ctx.lineWidth = active ? 14 : 4;
+      ctx.beginPath();
+      if (hazard.vertical) {
+        ctx.moveTo(hazard.x, world.arena.y + 36);
+        ctx.lineTo(hazard.x, world.arena.y + world.arena.h - 36);
+      } else {
+        ctx.moveTo(world.arena.x + 36, hazard.y);
+        ctx.lineTo(world.arena.x + world.arena.w - 36, hazard.y);
+      }
+      ctx.stroke();
+      return;
+    }
     if (hazard.type === "ketchupPuddle") {
       const warning = hazard.warn > 0;
       ctx.fillStyle = warning ? "rgba(210, 55, 45, 0.14)" : "rgba(210, 55, 45, 0.34)";
@@ -4300,8 +6129,8 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
-    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt") {
-      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : hazard.type === "nachoCrumb" ? "#e8bd50" : hazard.type === "pepperoni" ? "#b93a2f" : hazard.type === "cheeseBolt" ? "#f4d36b" : "#8ad8ff");
+    if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt" || hazard.type === "sprinkle") {
+      ctx.fillStyle = hazard.color || (hazard.type === "fry" ? "#f1c15d" : hazard.type === "mustardSeed" ? "#e3bf34" : hazard.type === "peanut" ? "#8b552f" : hazard.type === "cherryShot" ? "#ff3f5f" : hazard.type === "nachoCrumb" ? "#e8bd50" : hazard.type === "pepperoni" ? "#b93a2f" : hazard.type === "cheeseBolt" ? "#f4d36b" : hazard.type === "sprinkle" ? "#ff79aa" : "#8ad8ff");
       ctx.beginPath();
       if (hazard.type === "fry") {
         ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.8, hazard.r * 0.75, Math.atan2(hazard.vy, hazard.vx), 0, Math.PI * 2);
@@ -4316,6 +6145,14 @@ function drawHazards() {
         ctx.beginPath();
         ctx.arc(hazard.x - 3, hazard.y - 3, 3, 0, Math.PI * 2);
         ctx.arc(hazard.x + 4, hazard.y + 2, 2, 0, Math.PI * 2);
+      } else if (hazard.type === "sprinkle") {
+        ctx.save();
+        ctx.translate(hazard.x, hazard.y);
+        ctx.rotate(Math.atan2(hazard.vy, hazard.vx));
+        ctx.roundRect(-hazard.r * 1.6, -hazard.r * 0.45, hazard.r * 3.2, hazard.r * 0.9, 3);
+        ctx.fill();
+        ctx.restore();
+        return;
       } else {
         ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       }
@@ -4815,43 +6652,67 @@ function drawPlayer() {
 
 function drawRemotePlayers() {
   multiplayer.peers.forEach((peer, id) => {
-    if (!Number.isFinite(peer.x) || !Number.isFinite(peer.y)) return;
-    const alpha = peer.dead ? 0.36 : 0.78;
-    const color = remotePlayerColor(peer.weaponTag);
+    const renderPeer = smoothedPeer(peer);
+    if (!Number.isFinite(renderPeer.x) || !Number.isFinite(renderPeer.y)) return;
+    const alpha = renderPeer.dead ? 0.36 : 0.78;
+    const color = remotePlayerColor(renderPeer.weaponTag);
     ctx.save();
     ctx.globalAlpha = alpha;
-    drawRing(peer.x, peer.y, 25, color);
-    const outfit = outfitSpriteForGear(peer.weapon, peer.armor);
+    drawRing(renderPeer.x, renderPeer.y, 25, color);
+    const outfit = outfitSpriteForGear(renderPeer.weapon, renderPeer.armor);
     const sprite = outfit?.sprite || cleanedPlayerSprite || playerSprite;
     if (outfit || (sprite.complete && sprite.naturalWidth > 0)) {
       drawCharacterSprite({
-        x: peer.x,
-        y: peer.y,
-        facing: peer.facing || "down",
-        moving: peer.moving,
-        animationTime: peer.animationTime || performance.now() / 1000,
+        x: renderPeer.x,
+        y: renderPeer.y,
+        facing: renderPeer.facing || "down",
+        moving: renderPeer.moving,
+        animationTime: renderPeer.animationTime || performance.now() / 1000,
         rangerAttackTimer: 0,
         rangerAttackAngle: 0,
         meleeAttackTimer: 0,
         meleeAttackAngle: 0,
         rogueAttackTimer: 0,
         rogueAttackAngle: 0,
-        weapon: peer.weapon,
+        weapon: renderPeer.weapon,
       }, outfit, sprite);
     } else {
-      drawRemoteFallbackPlayer(peer, color);
+      drawRemoteFallbackPlayer(renderPeer, color);
     }
-    const hpPercent = clamp((peer.hp || 0) / Math.max(1, peer.maxHp || 1), 0, 1);
+    const hpPercent = clamp((renderPeer.hp || 0) / Math.max(1, renderPeer.maxHp || 1), 0, 1);
     ctx.fillStyle = "rgba(15, 12, 10, 0.82)";
-    ctx.fillRect(peer.x - 25, peer.y - 47, 50, 6);
-    ctx.fillStyle = peer.dead ? "#5f5f5f" : "#67d987";
-    ctx.fillRect(peer.x - 24, peer.y - 46, 48 * hpPercent, 4);
+    ctx.fillRect(renderPeer.x - 25, renderPeer.y - 47, 50, 6);
+    ctx.fillStyle = renderPeer.dead ? "#5f5f5f" : "#67d987";
+    ctx.fillRect(renderPeer.x - 24, renderPeer.y - 46, 48 * hpPercent, 4);
     ctx.fillStyle = "#f5ebd5";
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(id.slice(0, 4).toUpperCase(), peer.x, peer.y - 54);
+    ctx.fillText(id.slice(0, 4).toUpperCase(), renderPeer.x, renderPeer.y - 54);
     ctx.restore();
   });
+}
+
+function smoothedPeer(peer) {
+  const snapshots = peer.snapshots || [];
+  if (snapshots.length < 2) return peer;
+  const renderAt = performance.now() - 130;
+  let older = snapshots[0];
+  let newer = snapshots[snapshots.length - 1];
+  for (let i = 0; i < snapshots.length - 1; i += 1) {
+    if (snapshots[i].receivedAt <= renderAt && snapshots[i + 1].receivedAt >= renderAt) {
+      older = snapshots[i];
+      newer = snapshots[i + 1];
+      break;
+    }
+  }
+  const span = Math.max(1, newer.receivedAt - older.receivedAt);
+  const t = clamp((renderAt - older.receivedAt) / span, 0, 1);
+  return {
+    ...newer,
+    x: older.x + (newer.x - older.x) * t,
+    y: older.y + (newer.y - older.y) * t,
+    hp: older.hp + ((newer.hp || older.hp) - older.hp) * t,
+  };
 }
 
 function drawRemoteFallbackPlayer(peer, color) {
@@ -5484,7 +7345,7 @@ function drawAbilityBar() {
   abilities.forEach((ability, index) => {
     const x = startX + index * (slotW + gap);
     const cooldown = player.abilityCooldowns[index] || 0;
-    const ready = cooldown <= 0 && player.room === "arena" && !player.dead && !player.won;
+    const ready = cooldown <= 0 && player.room === "arena" && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
     ctx.fillStyle = ready ? "rgba(25, 24, 22, 0.88)" : "rgba(15, 15, 14, 0.82)";
     ctx.strokeStyle = ready ? "rgba(226, 189, 114, 0.82)" : "rgba(244, 232, 203, 0.22)";
     ctx.lineWidth = 2;
@@ -5539,7 +7400,9 @@ function renderUi() {
   const bossHp = bossHealthSummary();
   ui.bossHpText.textContent = boss.kind === "shake"
     ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
-    : boss.kind === "nacho" || boss.kind === "pizza"
+    : boss.kind === "donut"
+      ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/6`
+    : boss.kind === "nacho" || boss.kind === "pizza" || boss.kind === "taco" || boss.kind === "sushi"
       ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/3`
       : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
   ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
@@ -5562,6 +7425,10 @@ function renderUi() {
   }
   ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.boss === boss.kind);
+    const locked = lockedBosses.has(button.dataset.boss);
+    button.disabled = locked;
+    button.classList.toggle("locked", locked);
+    button.setAttribute("aria-disabled", String(locked));
   });
   if (ui.deathScreen) {
     ui.deathScreen.hidden = !player.dead;
@@ -5579,8 +7446,10 @@ function bossHealthSummary() {
 function setupMultiplayer() {
   if (!("WebSocket" in window) || location.protocol === "file:") {
     setCoopStatus(location.protocol === "file:" ? "Start server for co-op" : "Solo", 1);
+    setMenuStatus("Start the Node server to use multiplayer.");
     return;
   }
+  if (multiplayer.socket) return;
   multiplayer.enabled = true;
   connectMultiplayer();
 }
@@ -5591,6 +7460,7 @@ function connectMultiplayer() {
   const socket = new WebSocket(`${protocol}://${location.host}/coop`);
   multiplayer.socket = socket;
   setCoopStatus("Connecting", multiplayer.count);
+  setMenuStatus("Connecting to server...");
 
   socket.addEventListener("open", () => {
     multiplayer.connected = true;
@@ -5598,7 +7468,9 @@ function connectMultiplayer() {
     multiplayer.reconnectAttempts = 0;
     multiplayer.reconnectTimer = 0;
     setCoopStatus("Online", multiplayer.count);
-    sendMultiplayerState(true);
+    setMenuStatus("Connected.");
+    sendServer({ type: "set-name", name: playerName() });
+    sendServer({ type: "list-rooms" });
   });
 
   socket.addEventListener("message", (event) => {
@@ -5616,12 +7488,14 @@ function connectMultiplayer() {
     if (!multiplayer.everConnected) {
       multiplayer.enabled = false;
       setCoopStatus("Co-op offline", 1);
+      setMenuStatus("Could not connect. Run npm start or use the hosted server.");
       return;
     }
     multiplayer.reconnectAttempts += 1;
     if (multiplayer.reconnectAttempts > multiplayer.maxReconnectAttempts) {
       multiplayer.enabled = false;
       setCoopStatus("Co-op offline", 1);
+      setMenuStatus("Connection lost.");
       return;
     }
     multiplayer.reconnectTimer = multiplayer.reconnectDelay;
@@ -5636,35 +7510,50 @@ function connectMultiplayer() {
 function handleMultiplayerMessage(message) {
   if (message.type === "welcome") {
     multiplayer.id = message.id;
-    multiplayer.peers.clear();
-    (message.peers || []).forEach((peer) => {
-      if (peer.state) multiplayer.peers.set(peer.id, peer.state);
-    });
-    multiplayer.count = multiplayer.peers.size + 1;
+    multiplayer.rooms = message.rooms || [];
+    renderRoomList();
     setCoopStatus("Online", multiplayer.count);
-    sendMultiplayerState(true);
+    sendServer({ type: "set-name", name: playerName() });
+    setMenuStatus("Connected.");
+    return;
+  }
+  if (message.type === "room-list") {
+    multiplayer.rooms = message.rooms || [];
+    renderRoomList();
+    return;
+  }
+  if (message.type === "joined-room" || message.type === "room-update") {
+    multiplayer.room = message.room;
+    multiplayer.ready = Boolean(message.room?.players?.find((peer) => peer.id === multiplayer.id)?.ready);
+    multiplayer.count = message.room?.players?.length || 1;
+    setCoopStatus(message.room?.state === "inGame" ? "In Room" : "Lobby", multiplayer.count);
+    renderLobby();
+    if (message.type === "joined-room") showMenuScreen("lobby");
+    return;
+  }
+  if (message.type === "game-start") {
+    multiplayer.room = message.room;
+    multiplayer.peers.clear();
+    const spawn = (message.spawns || []).find((item) => item.id === multiplayer.id);
+    startMultiplayerFight(message.bossKind, spawn);
+    setTimeout(() => startFight(), Math.max(0, (message.startAt || Date.now()) - Date.now()));
+    return;
+  }
+  if (message.type === "error") {
+    setMenuStatus(message.message || "Server error.");
+    setLobbyStatus(message.message || "Server error.");
     return;
   }
   if (message.type === "peer-state" && message.id && message.state) {
-    multiplayer.peers.set(message.id, message.state);
+    recordPeerSnapshot(message.id, message.state);
     multiplayer.count = multiplayer.peers.size + 1;
-    setCoopStatus("Online", multiplayer.count);
+    setCoopStatus("In Room", multiplayer.room?.players?.length || multiplayer.count);
     applyRemoteBossProgress(message.state);
     return;
   }
   if (message.type === "peer-event" && message.id && message.event) {
     handleMultiplayerEvent(message.id, message.event);
     return;
-  }
-  if (message.type === "peer-left" && message.id) {
-    multiplayer.peers.delete(message.id);
-    multiplayer.count = multiplayer.peers.size + 1;
-    setCoopStatus(multiplayer.connected ? "Online" : "Solo", multiplayer.count);
-    return;
-  }
-  if (message.type === "peer-count") {
-    multiplayer.count = Math.max(1, Number(message.count) || 1);
-    setCoopStatus(multiplayer.connected ? "Online" : "Solo", multiplayer.count);
   }
 }
 
@@ -5687,13 +7576,20 @@ function updateMultiplayer(dt) {
 
 function sendMultiplayerState(force) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
+  if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
   if (!force && document.hidden) return;
-  multiplayer.socket.send(JSON.stringify({ type: "state", state: multiplayerSnapshot() }));
+  sendServer({ type: "state", state: multiplayerSnapshot() });
 }
 
 function sendMultiplayerEvent(event) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
-  multiplayer.socket.send(JSON.stringify({ type: "event", event }));
+  if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
+  sendServer({ type: "event", event });
+}
+
+function sendServer(payload) {
+  if (!multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
+  multiplayer.socket.send(JSON.stringify(payload));
 }
 
 function handleMultiplayerEvent(peerId, event) {
@@ -5713,8 +7609,8 @@ function spawnRemoteAttackVisual(peerId, event) {
   const speed = projectileSpeedForWeapon(tag) * 0.94;
   remoteProjectiles.push({
     peerId,
-    x: event.x + Math.cos(angle) * 24,
-    y: event.y + Math.sin(angle) * 24,
+    x: event.x + Math.cos(angle) * (24 + remoteProjectileLagDistance(event, speed)),
+    y: event.y + Math.sin(angle) * (24 + remoteProjectileLagDistance(event, speed)),
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     r: tag === "Magic" ? 11 : isWarriorTag(tag) ? 12 : tag === "Rogue" ? 8 : 6,
@@ -5726,12 +7622,25 @@ function spawnRemoteAttackVisual(peerId, event) {
   });
 }
 
+function remoteProjectileLagDistance(event, speed) {
+  if (!event.serverTime) return 0;
+  const lagSeconds = clamp((Date.now() - event.serverTime) / 1000, 0, 0.28);
+  return speed * lagSeconds;
+}
+
 function applyRemoteDamage(event) {
   if (event.bossKind !== boss.kind || player.room !== "arena") return;
   const amount = Math.max(0, Number(event.amount) || 0);
   if (!amount) return;
   const target = activeBosses().find((candidate) => candidate.kind === event.targetKind && candidate.hp > 0);
   if (target) damageBossTarget(target, amount, "Co-op", { remote: true });
+}
+
+function recordPeerSnapshot(peerId, state) {
+  const now = performance.now();
+  const previous = multiplayer.peers.get(peerId) || { snapshots: [] };
+  const snapshots = (previous.snapshots || []).concat([{ ...state, receivedAt: now }]).slice(-8);
+  multiplayer.peers.set(peerId, { ...state, snapshots, updatedAt: Date.now() });
 }
 
 function multiplayerSnapshot() {
@@ -5790,6 +7699,104 @@ function setCoopStatus(text, count) {
   if (ui.coopCount) ui.coopCount.textContent = String(count);
 }
 
+function showMenuScreen(screen) {
+  ui.menuOverlay?.classList.remove("hidden");
+  [ui.mainMenu, ui.multiplayerMenu, ui.roomLobby].forEach((panel) => panel?.classList.remove("active"));
+  if (screen === "main") ui.mainMenu?.classList.add("active");
+  if (screen === "multiplayer") ui.multiplayerMenu?.classList.add("active");
+  if (screen === "lobby") ui.roomLobby?.classList.add("active");
+}
+
+function hideMenus() {
+  ui.menuOverlay?.classList.add("hidden");
+}
+
+function playerName() {
+  return (ui.playerNameInput?.value || "Player").trim().slice(0, 18) || "Player";
+}
+
+function roomName() {
+  return (ui.roomNameInput?.value || "Boss Room").trim().slice(0, 26) || "Boss Room";
+}
+
+function setMenuStatus(text) {
+  if (ui.multiplayerStatus) ui.multiplayerStatus.textContent = text;
+}
+
+function setLobbyStatus(text) {
+  if (ui.lobbyStatus) ui.lobbyStatus.textContent = text;
+}
+
+function renderRoomList() {
+  if (!ui.roomList) return;
+  if (!multiplayer.rooms.length) {
+    ui.roomList.innerHTML = `<div class="room-card"><div><strong>No Rooms</strong><span>Create one to start co-op.</span></div></div>`;
+    return;
+  }
+  ui.roomList.innerHTML = multiplayer.rooms.map((room) => `
+    <button class="room-card" type="button" data-room="${room.id}">
+      <div>
+        <strong>${escapeHtml(room.name)}</strong>
+        <span>${escapeHtml(room.bossName)} - ${room.playerCount}/${room.maxPlayers} - ${room.state}</span>
+      </div>
+      <span>${room.id}</span>
+    </button>
+  `).join("");
+}
+
+function renderLobby() {
+  const room = multiplayer.room;
+  if (!room) return;
+  const isHost = room.hostId === multiplayer.id;
+  if (ui.lobbyTitle) ui.lobbyTitle.textContent = `${room.name} (${room.id})`;
+  if (ui.lobbyPlayers) {
+    ui.lobbyPlayers.innerHTML = room.players.map((peer) => `
+      <div class="lobby-player">
+        <div>
+          <strong>${escapeHtml(peer.name)}${peer.host ? " - Host" : ""}</strong>
+          <span>${peer.ready ? "Ready" : peer.host ? "Picking boss" : "Not ready"}</span>
+        </div>
+        <span>${peer.id === multiplayer.id ? "You" : ""}</span>
+      </div>
+    `).join("");
+  }
+  ui.lobbyBossSelector?.querySelectorAll("[data-boss]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.boss === room.bossKind);
+    const locked = lockedBosses.has(button.dataset.boss);
+    button.disabled = !isHost || locked;
+    button.classList.toggle("locked", locked);
+    button.setAttribute("aria-disabled", String(locked));
+  });
+  if (ui.readyButton) {
+    ui.readyButton.disabled = isHost;
+    ui.readyButton.textContent = multiplayer.ready ? "Unready" : "Ready";
+  }
+  if (ui.startRoomButton) {
+    ui.startRoomButton.disabled = !isHost;
+  }
+  setLobbyStatus(isHost ? "Choose a boss, then start when everyone is ready." : "Ready up when your build is set.");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function closeMultiplayerSocket() {
+  multiplayer.enabled = false;
+  multiplayer.connected = false;
+  multiplayer.room = null;
+  multiplayer.rooms = [];
+  multiplayer.ready = false;
+  if (multiplayer.socket) {
+    multiplayer.socket.close();
+    multiplayer.socket = null;
+  }
+}
+
 function showFloat(text) {
   ui.floatText.textContent = text;
   floatTimer = 1.7;
@@ -5826,9 +7833,46 @@ if (ui.armory) {
   });
 }
 
+ui.singlePlayerButton?.addEventListener("click", startSinglePlayer);
+ui.multiplayerButton?.addEventListener("click", startMultiplayerFlow);
+ui.backToMainButton?.addEventListener("click", () => {
+  closeMultiplayerSocket();
+  showMenuScreen("main");
+  setCoopStatus("Solo", 1);
+});
+ui.createRoomButton?.addEventListener("click", () => {
+  sendServer({ type: "set-name", name: playerName() });
+  sendServer({ type: "create-room", name: roomName(), bossKind: boss.kind });
+});
+ui.refreshRoomsButton?.addEventListener("click", () => sendServer({ type: "list-rooms" }));
+ui.roomList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-room]");
+  if (!button) return;
+  sendServer({ type: "set-name", name: playerName() });
+  sendServer({ type: "join-room", roomId: button.dataset.room });
+});
+ui.leaveRoomButton?.addEventListener("click", () => {
+  sendServer({ type: "leave-room" });
+  multiplayer.room = null;
+  multiplayer.ready = false;
+  multiplayer.peers.clear();
+  showMenuScreen("multiplayer");
+  sendServer({ type: "list-rooms" });
+});
+ui.readyButton?.addEventListener("click", () => {
+  multiplayer.ready = !multiplayer.ready;
+  sendServer({ type: "set-ready", ready: multiplayer.ready });
+});
+ui.startRoomButton?.addEventListener("click", () => sendServer({ type: "start-game" }));
+ui.lobbyBossSelector?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-boss]");
+  if (!button || button.disabled) return;
+  sendServer({ type: "select-boss", bossKind: button.dataset.boss });
+});
+
 ui.bossSelector.addEventListener("click", (event) => {
   const button = event.target.closest("[data-boss]");
-  if (!button) return;
+  if (!button || button.disabled || lockedBosses.has(button.dataset.boss)) return;
   event.preventDefault();
   selectBoss(button.dataset.boss);
 });
@@ -5872,5 +7916,5 @@ loadGame();
 applyGear();
 resizeCanvas();
 renderUi();
-setupMultiplayer();
+showMenuScreen("main");
 requestAnimationFrame(gameLoop);

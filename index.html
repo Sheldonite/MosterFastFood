@@ -7,6 +7,62 @@
     <link rel="stylesheet" href="./src/styles.css?v=20260428-1" />
   </head>
   <body>
+    <div id="menuOverlay" class="menu-overlay">
+      <section id="mainMenu" class="menu-screen active" aria-label="Main menu">
+        <h1>Boss Fight</h1>
+        <div class="menu-actions">
+          <button id="singlePlayerButton" type="button">Single Player</button>
+          <button id="multiplayerButton" type="button">Multiplayer</button>
+        </div>
+      </section>
+
+      <section id="multiplayerMenu" class="menu-screen" aria-label="Multiplayer rooms">
+        <div class="menu-head">
+          <h1>Multiplayer</h1>
+          <button id="backToMainButton" type="button">Back</button>
+        </div>
+        <div class="lobby-form">
+          <label>
+            <span>Name</span>
+            <input id="playerNameInput" maxlength="18" value="Player" />
+          </label>
+          <label>
+            <span>Room</span>
+            <input id="roomNameInput" maxlength="26" value="Boss Room" />
+          </label>
+          <button id="createRoomButton" type="button">Create Room</button>
+          <button id="refreshRoomsButton" type="button">Refresh</button>
+        </div>
+        <div id="roomList" class="room-list"></div>
+        <p id="multiplayerStatus" class="menu-status">Choose Multiplayer to connect.</p>
+      </section>
+
+      <section id="roomLobby" class="menu-screen" aria-label="Room lobby">
+        <div class="menu-head">
+          <h1 id="lobbyTitle">Lobby</h1>
+          <button id="leaveRoomButton" type="button">Leave</button>
+        </div>
+        <div id="lobbyPlayers" class="lobby-players"></div>
+        <div id="lobbyBossSelector" class="lobby-bosses">
+          <button class="choice selected" type="button" data-boss="cola"><span>Big Cola</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="burger"><span>Big Burger</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="fries"><span>Curly Fries</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="trio"><span>Condiment Trio</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="shake"><span>Peanut Buster Shake</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="nacho"><span>Nacho Libre</span><small>Boss</small></button>
+          <button class="choice" type="button" data-boss="pizza"><span>Pizza Phantom</span><small>Boss</small></button>
+          <button class="choice locked" type="button" data-boss="taco" disabled aria-disabled="true"><span>Taco Titan</span><small>Locked</small></button>
+          <button class="choice" type="button" data-boss="donut"><span>Donut Donald</span><small>Boss</small></button>
+          <button class="choice locked" type="button" data-boss="sushi" disabled aria-disabled="true"><span>Sushi Serpent</span><small>Locked</small></button>
+        </div>
+        <div class="menu-actions row">
+          <button id="readyButton" type="button">Ready</button>
+          <button id="startRoomButton" type="button">Start Fight</button>
+        </div>
+        <p id="lobbyStatus" class="menu-status">Waiting in lobby.</p>
+      </section>
+    </div>
+
     <main class="shell">
       <section class="game-wrap" aria-label="Boss arena game">
         <canvas id="game" width="1280" height="720"></canvas>
@@ -70,12 +126,15 @@
             <button class="choice" type="button" data-boss="shake"><span>Peanut Buster Shake</span><small>Test</small></button>
             <button class="choice" type="button" data-boss="nacho"><span>Nacho Libre</span><small>Test</small></button>
             <button class="choice" type="button" data-boss="pizza"><span>Pizza Phantom</span><small>Test</small></button>
+            <button class="choice locked" type="button" data-boss="taco" disabled aria-disabled="true"><span>Taco Titan</span><small>Locked</small></button>
+            <button class="choice" type="button" data-boss="donut"><span>Donut Donald</span><small>Test</small></button>
+            <button class="choice locked" type="button" data-boss="sushi" disabled aria-disabled="true"><span>Sushi Serpent</span><small>Locked</small></button>
           </div>
         </section>
 
       </aside>
     </main>
 
-    <script src="./src/game.js?v=20260429-coop-sprites"></script>
+    <script src="./src/game.js?v=20260430-bosslocks1"></script>
   </body>
 </html>
