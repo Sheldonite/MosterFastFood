@@ -128,11 +128,15 @@ server.on("upgrade", (request, socket) => {
     }
     try {
       const message = JSON.parse(frame.text);
-      if (message.type !== "state" || !message.state) return;
       const peer = peers.get(id);
       if (!peer) return;
-      peer.state = { ...message.state, updatedAt: Date.now() };
-      broadcast({ type: "peer-state", id, state: peer.state }, id);
+      if (message.type === "state" && message.state) {
+        peer.state = { ...message.state, updatedAt: Date.now() };
+        broadcast({ type: "peer-state", id, state: peer.state }, id);
+      }
+      if (message.type === "event" && message.event) {
+        broadcast({ type: "peer-event", id, event: message.event }, id);
+      }
     } catch {
       // Ignore malformed co-op packets so one browser cannot crash the server.
     }

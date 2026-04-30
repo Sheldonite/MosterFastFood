@@ -123,6 +123,7 @@ let boss = createBoss("cola");
 let condimentBosses = [];
 let hazards = [];
 let playerProjectiles = [];
+let remoteProjectiles = [];
 let abilityEffects = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
@@ -143,10 +144,15 @@ const multiplayer = {
   socket: null,
   id: null,
   connected: false,
+  everConnected: false,
+  enabled: false,
   count: 1,
   sendTimer: 0,
   reconnectTimer: 0,
   reconnectDelay: 3,
+  reconnectAttempts: 0,
+  maxReconnectAttempts: 3,
+  attackSeq: 0,
   peers: new Map(),
 };
 
@@ -404,6 +410,7 @@ function resetFight(keepPosition = false) {
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
+  remoteProjectiles = [];
   abilityEffects = [];
   particles = [];
   selectedBoss = null;
@@ -426,6 +433,7 @@ function selectBoss(kind) {
   condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
   hazards = [];
   playerProjectiles = [];
+  remoteProjectiles = [];
   abilityEffects = [];
   particles = [];
   selectedBoss = null;
@@ -1162,6 +1170,39 @@ function clampArenaPoint(x, y, radius) {
   };
 }
 
+function coopThreatTargets() {
+  const targets = [];
+  if (player.room === "arena" && !player.dead) {
+    targets.push({ x: player.x, y: player.y, radius: player.radius, local: true });
+  }
+  multiplayer.peers.forEach((peer) => {
+    if (peer.room !== "arena" || peer.dead || peer.bossKind !== boss.kind) return;
+    targets.push({ x: peer.x, y: peer.y, radius: 18, local: false });
+  });
+  return targets.filter((target) => Number.isFinite(target.x) && Number.isFinite(target.y));
+}
+
+function bossAimTarget(origin = boss) {
+  const targets = coopThreatTargets();
+  if (!targets.length) return player;
+  if (targets.length === 1) return targets[0];
+  const nearest = targets.slice().sort((a, b) => distance(origin, a) - distance(origin, b))[0];
+  return Math.random() < 0.58 ? nearest : targets[Math.floor(Math.random() * targets.length)];
+}
+
+function randomArenaPointNearThreat(spread, minDistance = 0) {
+  const target = bossAimTarget();
+  let point = null;
+  for (let attempt = 0; attempt < 18; attempt += 1) {
+    point = {
+      x: clamp(target.x + (Math.random() - 0.5) * spread * 2, world.arena.x + 110, world.arena.x + world.arena.w - 110),
+      y: clamp(target.y + (Math.random() - 0.5) * spread * 2, world.arena.y + 95, world.arena.y + world.arena.h - 95),
+    };
+    if (!minDistance || distance(point, target) >= minDistance) return point;
+  }
+  return point || randomPizzaArenaPoint(95);
+}
+
 function shootAt(x, y) {
   if (player.attackCooldown > 0) return;
   const dx = x - player.x;
@@ -1213,6 +1254,17 @@ function firePlayerProjectile(angle) {
   }
   player.attackCooldown = weapon.speed;
   ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
+  multiplayer.attackSeq += 1;
+  sendMultiplayerEvent({
+    kind: "attack",
+    seq: multiplayer.attackSeq,
+    x: player.x,
+    y: player.y,
+    angle,
+    weaponTag: weapon.tag,
+    color: magicAttack ? "#48efe4" : weapon.color,
+    heavy: magicAttack,
+  });
 }
 
 function projectileSpeedForWeapon(tag) {
@@ -1590,7 +1642,8 @@ function spawnPizzaPattern() {
 }
 
 function spawnPizzaDash() {
-  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const targetPlayer = bossAimTarget(boss);
+  const angle = Math.atan2(targetPlayer.y - boss.y, targetPlayer.x - boss.x);
   const travel = distanceToArenaWall(boss.x, boss.y, angle) - boss.radius - 34;
   const dashDistance = clamp(travel, 180, 760);
   const target = clampArenaPoint(
@@ -1617,7 +1670,8 @@ function spawnPizzaDash() {
 }
 
 function spawnPepperoniVolley(count, spread) {
-  const base = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const targetPlayer = bossAimTarget(boss);
+  const base = Math.atan2(targetPlayer.y - boss.y, targetPlayer.x - boss.x);
   const reducedCount = Math.max(1, Math.round(count * 0.8));
   for (let i = 0; i < reducedCount; i += 1) {
     const angle = base + (i - (reducedCount - 1) / 2) * (spread / Math.max(1, reducedCount - 1)) + (Math.random() - 0.5) * 0.08;
@@ -1695,7 +1749,8 @@ function spawnPizzaClones() {
 }
 
 function spawnPizzaCloneBolt(clone) {
-  const angle = Math.atan2(player.y - clone.y, player.x - clone.x);
+  const targetPlayer = bossAimTarget(clone);
+  const angle = Math.atan2(targetPlayer.y - clone.y, targetPlayer.x - clone.x);
   hazards.push({
     type: "cheeseBolt",
     x: clone.x,
@@ -1819,7 +1874,8 @@ function spawnColaBubbles(count) {
 }
 
 function spawnStrawSnipe() {
-  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const targetPlayer = bossAimTarget(boss);
+  const angle = Math.atan2(targetPlayer.y - boss.y, targetPlayer.x - boss.x);
   hazards.push({
     type: "strawSnipe",
     x: boss.x,
@@ -1847,7 +1903,7 @@ function spawnFizzBurst() {
 }
 
 function spawnSodaSpill() {
-  const point = randomArenaPointNearPlayer(180);
+  const point = randomArenaPointNearThreat(180);
   hazards.push({
     type: "sodaDrop",
     x: point.x,
@@ -1896,11 +1952,12 @@ function quadrantForPoint(x, y) {
 
 function ensureNachoCheeseWave() {
   if (hazards.some((hazard) => hazard.type === "cheeseWave")) return;
-  const fromLeft = player.x > world.arena.x + world.arena.w / 2;
+  const targetPlayer = bossAimTarget(boss);
+  const fromLeft = targetPlayer.x > world.arena.x + world.arena.w / 2;
   hazards.push({
     type: "cheeseWave",
     x: fromLeft ? world.arena.x + 80 : world.arena.x + world.arena.w - 80,
-    y: clamp(player.y, world.arena.y + 100, world.arena.y + world.arena.h - 100),
+    y: clamp(targetPlayer.y, world.arena.y + 100, world.arena.y + world.arena.h - 100),
     r: 76,
     ttl: Number.POSITIVE_INFINITY,
     damage: 1000,
@@ -2300,23 +2357,25 @@ function spawnGreasePuddles(count) {
 }
 
 function randomArenaPointAwayFromPlayer(minDistance) {
+  const targetPlayer = bossAimTarget(boss);
   let point = null;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     point = {
       x: world.arena.x + 130 + Math.random() * (world.arena.w - 260),
       y: world.arena.y + 120 + Math.random() * (world.arena.h - 240),
     };
-    if (distance(point, player) >= minDistance) return point;
+    if (distance(point, targetPlayer) >= minDistance) return point;
   }
   const angle = Math.random() * Math.PI * 2;
   return {
-    x: clamp(player.x + Math.cos(angle) * minDistance, world.arena.x + 130, world.arena.x + world.arena.w - 130),
-    y: clamp(player.y + Math.sin(angle) * minDistance, world.arena.y + 120, world.arena.y + world.arena.h - 120),
+    x: clamp(targetPlayer.x + Math.cos(angle) * minDistance, world.arena.x + 130, world.arena.x + world.arena.w - 130),
+    y: clamp(targetPlayer.y + Math.sin(angle) * minDistance, world.arena.y + 120, world.arena.y + world.arena.h - 120),
   };
 }
 
 function spawnFryMachineGun() {
-  const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const targetPlayer = bossAimTarget(boss);
+  const angle = Math.atan2(targetPlayer.y - boss.y, targetPlayer.x - boss.x);
   hazards.push({
     type: "machineGun",
     x: boss.x,
@@ -2355,7 +2414,7 @@ function spawnCurlySpiral() {
 }
 
 function spawnKetchupAttack(source) {
-  const point = randomArenaPointNearPlayer(140);
+  const point = randomArenaPointNearThreat(140);
   const mayoDead = isCondimentDead("mayo");
   hazards.push({
     type: "ketchupMortar",
@@ -2379,7 +2438,8 @@ function spawnMustardAttack(source) {
   const count = condimentBosses.filter((item) => item.hp <= 0).length > 0 ? 5 : 3;
   const mayoDead = condimentBosses.some((item) => item.kind === "mayo" && item.hp <= 0);
   const bounces = mayoDead ? (condimentBosses.filter((item) => item.hp > 0).length === 1 ? 2 : 1) : 0;
-  const base = Math.atan2(player.y - source.y, player.x - source.x);
+  const targetPlayer = bossAimTarget(source);
+  const base = Math.atan2(targetPlayer.y - source.y, targetPlayer.x - source.x);
   for (let i = 0; i < count; i += 1) {
     const angle = base + (i - (count - 1) / 2) * 0.18;
     hazards.push({
@@ -2414,10 +2474,7 @@ function spawnMayoHeal(source) {
 }
 
 function randomArenaPointNearPlayer(spread) {
-  return {
-    x: clamp(player.x + (Math.random() - 0.5) * spread * 2, world.arena.x + 110, world.arena.x + world.arena.w - 110),
-    y: clamp(player.y + (Math.random() - 0.5) * spread * 2, world.arena.y + 95, world.arena.y + world.arena.h - 95),
-  };
+  return randomArenaPointNearThreat(spread);
 }
 
 function randomPizzaArenaPoint(padding = 80) {
@@ -2433,10 +2490,11 @@ function setBossAnimation(animation) {
 }
 
 function spawnFloorSlam() {
+  const targetPlayer = bossAimTarget(boss);
   hazards.push({
     type: "slam",
-    x: player.x,
-    y: player.y,
+    x: targetPlayer.x,
+    y: targetPlayer.y,
     r: boss.enraged ? 42 : 36,
     warn: boss.enraged ? 0.68 : 0.82,
     ttl: boss.enraged ? 1.05 : 1.2,
@@ -2967,6 +3025,7 @@ function enterDeathState(source) {
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
+  remoteProjectiles = [];
   abilityEffects = [];
   Object.keys(movementKeys).forEach((direction) => {
     movementKeys[direction] = false;
@@ -2988,6 +3047,7 @@ function winFight() {
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
+  remoteProjectiles = [];
   abilityEffects = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   if (boss.kind === "shake" && boss.phase < boss.totalPhases) {
@@ -3257,6 +3317,7 @@ function update(dt) {
   updateCombat(dt);
   updateHazards(dt);
   updatePlayerProjectiles(dt);
+  updateRemoteProjectiles(dt);
   particles = particles.filter((particle) => {
     particle.ttl -= dt;
     particle.y -= 28 * dt;
@@ -3267,6 +3328,16 @@ function update(dt) {
   updateMultiplayer(dt);
   camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
   camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+}
+
+function updateRemoteProjectiles(dt) {
+  remoteProjectiles = remoteProjectiles.filter((projectile) => {
+    projectile.ttl -= dt;
+    projectile.age = (projectile.age || 0) + dt;
+    projectile.x += projectile.vx * dt;
+    projectile.y += projectile.vy * dt;
+    return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
+  });
 }
 
 function updatePlayerProjectiles(dt) {
@@ -3327,6 +3398,14 @@ function damageBossTarget(target, amount, source, options = {}) {
   }
   const damage = target.shieldTimer > 0 ? Math.ceil(amount * 0.5) : amount;
   target.hp = Math.max(0, target.hp - damage);
+  if (source !== "Co-op" && !options.remote) {
+    sendMultiplayerEvent({
+      kind: "damage",
+      bossKind: boss.kind,
+      targetKind: target.kind,
+      amount: damage,
+    });
+  }
   const color = options.poison ? "#9be06f" : source === "Bleed" || source === "Backstab" ? "#ff6e7f" : "#ffe08a";
   particles.push({ x: target.x, y: target.y - 40, text: `-${damage}`, color, ttl: 0.8 });
   if (target.hp <= 0) handleBossDefeated(target);
@@ -3399,6 +3478,7 @@ function spawnSpecialSauce() {
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
+  remoteProjectiles = [];
   abilityEffects = [];
   condimentBosses = [];
   boss = createBoss("sauce");
@@ -3418,6 +3498,7 @@ function draw() {
   drawHazards();
   drawAbilityEffects();
   drawPlayerProjectiles();
+  drawRemoteProjectiles();
   drawPlayer();
   drawRemotePlayers();
   drawParticles();
@@ -4627,6 +4708,60 @@ function drawPlayerProjectiles() {
   });
 }
 
+function drawRemoteProjectiles() {
+  remoteProjectiles.forEach((projectile) => {
+    const angle = Math.atan2(projectile.vy, projectile.vx);
+    ctx.save();
+    ctx.translate(projectile.x, projectile.y);
+    ctx.rotate(angle);
+    ctx.globalAlpha = 0.72;
+    ctx.shadowColor = projectile.color;
+    ctx.shadowBlur = projectile.heavy ? 18 : 8;
+    if (projectile.tag === "Ranged") {
+      ctx.strokeStyle = projectile.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(12, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, 0);
+      ctx.lineTo(3, -5);
+      ctx.lineTo(3, 5);
+      ctx.closePath();
+      ctx.fillStyle = projectile.color;
+      ctx.fill();
+    } else if (projectile.heavy) {
+      const pulse = Math.sin((projectile.age || 0) * 24) * 0.5 + 0.5;
+      ctx.fillStyle = "rgba(72, 239, 228, 0.26)";
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.r + 8 + pulse * 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = projectile.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (isWarriorTag(projectile.tag)) {
+      ctx.fillStyle = "rgba(255, 244, 210, 0.8)";
+      ctx.strokeStyle = projectile.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20, 0);
+      ctx.quadraticCurveTo(-5, -18, -24, -3);
+      ctx.quadraticCurveTo(-5, 18, 20, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = projectile.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, projectile.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+
 function drawMeleeProjectile(projectile) {
   const age = projectile.age || 0;
   const pulse = Math.sin(age * 22) * 0.5 + 0.5;
@@ -5402,10 +5537,12 @@ function setupMultiplayer() {
     setCoopStatus(location.protocol === "file:" ? "Start server for co-op" : "Solo", 1);
     return;
   }
+  multiplayer.enabled = true;
   connectMultiplayer();
 }
 
 function connectMultiplayer() {
+  if (!multiplayer.enabled) return;
   const protocol = location.protocol === "https:" ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${location.host}/coop`);
   multiplayer.socket = socket;
@@ -5413,6 +5550,8 @@ function connectMultiplayer() {
 
   socket.addEventListener("open", () => {
     multiplayer.connected = true;
+    multiplayer.everConnected = true;
+    multiplayer.reconnectAttempts = 0;
     multiplayer.reconnectTimer = 0;
     setCoopStatus("Online", multiplayer.count);
     sendMultiplayerState(true);
@@ -5430,8 +5569,19 @@ function connectMultiplayer() {
     multiplayer.connected = false;
     multiplayer.socket = null;
     multiplayer.peers.clear();
+    if (!multiplayer.everConnected) {
+      multiplayer.enabled = false;
+      setCoopStatus("Co-op offline", 1);
+      return;
+    }
+    multiplayer.reconnectAttempts += 1;
+    if (multiplayer.reconnectAttempts > multiplayer.maxReconnectAttempts) {
+      multiplayer.enabled = false;
+      setCoopStatus("Co-op offline", 1);
+      return;
+    }
     multiplayer.reconnectTimer = multiplayer.reconnectDelay;
-    setCoopStatus("Reconnecting", 1);
+    setCoopStatus(`Retry ${multiplayer.reconnectAttempts}`, 1);
   });
 
   socket.addEventListener("error", () => {
@@ -5458,6 +5608,10 @@ function handleMultiplayerMessage(message) {
     applyRemoteBossProgress(message.state);
     return;
   }
+  if (message.type === "peer-event" && message.id && message.event) {
+    handleMultiplayerEvent(message.id, message.event);
+    return;
+  }
   if (message.type === "peer-left" && message.id) {
     multiplayer.peers.delete(message.id);
     multiplayer.count = multiplayer.peers.size + 1;
@@ -5471,6 +5625,7 @@ function handleMultiplayerMessage(message) {
 }
 
 function updateMultiplayer(dt) {
+  if (!multiplayer.enabled) return;
   multiplayer.peers.forEach((peer, id) => {
     if (Date.now() - (peer.updatedAt || 0) > 12000) multiplayer.peers.delete(id);
   });
@@ -5490,6 +5645,49 @@ function sendMultiplayerState(force) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
   if (!force && document.hidden) return;
   multiplayer.socket.send(JSON.stringify({ type: "state", state: multiplayerSnapshot() }));
+}
+
+function sendMultiplayerEvent(event) {
+  if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
+  multiplayer.socket.send(JSON.stringify({ type: "event", event }));
+}
+
+function handleMultiplayerEvent(peerId, event) {
+  if (event.kind === "attack") {
+    spawnRemoteAttackVisual(peerId, event);
+    return;
+  }
+  if (event.kind === "damage") {
+    applyRemoteDamage(event);
+  }
+}
+
+function spawnRemoteAttackVisual(peerId, event) {
+  const angle = Number(event.angle);
+  if (!Number.isFinite(event.x) || !Number.isFinite(event.y) || !Number.isFinite(angle)) return;
+  const tag = event.weaponTag || "Warrior";
+  const speed = projectileSpeedForWeapon(tag) * 0.94;
+  remoteProjectiles.push({
+    peerId,
+    x: event.x + Math.cos(angle) * 24,
+    y: event.y + Math.sin(angle) * 24,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    r: tag === "Magic" ? 11 : isWarriorTag(tag) ? 12 : tag === "Rogue" ? 8 : 6,
+    color: event.color || remotePlayerColor(tag),
+    ttl: tag === "Ranged" ? 0.9 : tag === "Magic" ? 0.75 : 0.42,
+    age: 0,
+    heavy: Boolean(event.heavy),
+    tag,
+  });
+}
+
+function applyRemoteDamage(event) {
+  if (event.bossKind !== boss.kind || player.room !== "arena") return;
+  const amount = Math.max(0, Number(event.amount) || 0);
+  if (!amount) return;
+  const target = activeBosses().find((candidate) => candidate.kind === event.targetKind && candidate.hp > 0);
+  if (target) damageBossTarget(target, amount, "Co-op", { remote: true });
 }
 
 function multiplayerSnapshot() {
