@@ -9,6 +9,8 @@ const ui = {
   bossHpBar: document.querySelector("#bossHpBar"),
   roomText: document.querySelector("#roomText"),
   buildPanel: document.querySelector("#buildPanel"),
+  coopStatus: document.querySelector("#coopStatus"),
+  coopCount: document.querySelector("#coopCount"),
   armory: document.querySelector("#armory"),
   bossSelector: document.querySelector("#bossSelector"),
   floatText: document.querySelector("#floatText"),
@@ -59,7 +61,7 @@ const abilityLoadouts = {
   mage: [
     { key: "Q", name: "Fire Blast", cooldown: 6 },
     { key: "Space", name: "Blink Step", cooldown: 10 },
-    { key: "R", name: "Blizzard", cooldown: 18 },
+    { key: "R", name: "Time Warp", cooldown: 18 },
   ],
   rogue: [
     { key: "Space", name: "Shadow Step", cooldown: 8 },
@@ -137,6 +139,16 @@ let floatTimer = 0;
 let fightStartedAt = 0;
 let lastTime = performance.now();
 let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
+const multiplayer = {
+  socket: null,
+  id: null,
+  connected: false,
+  count: 1,
+  sendTimer: 0,
+  reconnectTimer: 0,
+  reconnectDelay: 3,
+  peers: new Map(),
+};
 
 function createPlayer() {
   return {
@@ -420,6 +432,7 @@ function selectBoss(kind) {
   fightStartedAt = 0;
   ui.status.textContent = `${boss.name} selected for testing. WASD to dodge, click to shoot.`;
   showFloat(boss.name);
+  sendMultiplayerState(true);
 }
 
 function startFight() {
@@ -1198,7 +1211,7 @@ function firePlayerProjectile(angle) {
     player.rogueAttackTimer = 0.24;
     player.rogueAttackAngle = angle;
   }
-  player.attackCooldown = magicAttack && playerInBlizzard() ? weapon.speed / 1.5 : weapon.speed;
+  player.attackCooldown = weapon.speed;
   ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
 }
 
@@ -1231,7 +1244,7 @@ function abilityIndexForKey(event) {
 }
 
 function spendAbility(index, ability) {
-  player.abilityCooldowns[index] = ability.cooldown;
+  player.abilityCooldowns[index] = ability.cooldown * (playerInTimeWarp() ? 0.5 : 1);
   ui.status.textContent = `${ability.name}.`;
   showFloat(ability.name);
 }
@@ -1374,8 +1387,8 @@ function useMageAbility(index, ability) {
     return;
   }
   spendAbility(index, ability);
-  abilityEffects = abilityEffects.filter((effect) => effect.type !== "blizzard");
-  abilityEffects.push({ type: "blizzard", x: player.x, y: player.y, r: 132, ttl: 7.5, maxTtl: 7.5 });
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "timeWarp");
+  abilityEffects.push({ type: "timeWarp", x: player.x, y: player.y, r: 132, ttl: 7.5, maxTtl: 7.5 });
 }
 
 function useRogueAbility(index, ability) {
@@ -3107,7 +3120,7 @@ function updateAbilities(dt) {
     if (effect.type === "smokeBomb") updateSmokeBomb(effect, dt);
     return effect.ttl > 0;
   });
-  applyBlizzardSlow(dt);
+  applyTimeWarpSlow(dt);
 }
 
 function updateRogueDebuffs(target, dt) {
@@ -3211,26 +3224,26 @@ function updateSmokeBomb(effect, dt) {
   });
 }
 
-function applyBlizzardSlow(dt) {
-  const blizzard = activeBlizzard();
-  if (!blizzard) return;
-  const decay = Math.pow(0.25, dt);
+function applyTimeWarpSlow(dt) {
+  const timeWarp = activeTimeWarp();
+  if (!timeWarp) return;
+  const decay = Math.pow(0.1, dt);
   hazards.forEach((hazard) => {
     if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
-    if (distance(blizzard, hazard) < blizzard.r + (hazard.r || 0)) {
+    if (distance(timeWarp, hazard) < timeWarp.r + (hazard.r || 0)) {
       hazard.vx *= decay;
       hazard.vy *= decay;
     }
   });
 }
 
-function activeBlizzard() {
-  return abilityEffects.find((effect) => effect.type === "blizzard" && effect.ttl > 0) || null;
+function activeTimeWarp() {
+  return abilityEffects.find((effect) => effect.type === "timeWarp" && effect.ttl > 0) || null;
 }
 
-function playerInBlizzard() {
-  const blizzard = activeBlizzard();
-  return Boolean(blizzard && distance(player, blizzard) < blizzard.r + player.radius);
+function playerInTimeWarp() {
+  const timeWarp = activeTimeWarp();
+  return Boolean(timeWarp && distance(player, timeWarp) < timeWarp.r + player.radius);
 }
 
 function update(dt) {
@@ -3251,6 +3264,7 @@ function update(dt) {
   });
   floatTimer -= dt;
   if (floatTimer <= 0) ui.floatText.textContent = "";
+  updateMultiplayer(dt);
   camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
   camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
 }
@@ -3405,6 +3419,7 @@ function draw() {
   drawAbilityEffects();
   drawPlayerProjectiles();
   drawPlayer();
+  drawRemotePlayers();
   drawParticles();
   ctx.restore();
   drawAbilityBar();
@@ -4395,25 +4410,36 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
-    if (effect.type === "blinkRune" || effect.type === "blizzard") {
-      const blizzard = effect.type === "blizzard";
-      ctx.globalAlpha = blizzard ? 0.82 : alpha;
-      ctx.strokeStyle = blizzard ? "rgba(186, 252, 255, 0.78)" : "rgba(186, 252, 255, 0.72)";
-      ctx.fillStyle = blizzard ? "rgba(96, 206, 255, 0.1)" : "rgba(120, 255, 244, 0.1)";
+    if (effect.type === "blinkRune" || effect.type === "timeWarp") {
+      const timeWarp = effect.type === "timeWarp";
+      ctx.globalAlpha = timeWarp ? 0.82 : alpha;
+      ctx.strokeStyle = timeWarp ? "rgba(186, 252, 255, 0.78)" : "rgba(186, 252, 255, 0.72)";
+      ctx.fillStyle = timeWarp ? "rgba(120, 255, 244, 0.1)" : "rgba(120, 255, 244, 0.1)";
       ctx.shadowColor = "#8cf8ff";
-      ctx.shadowBlur = blizzard ? 18 : 18;
-      ctx.lineWidth = blizzard ? 4 : 3;
+      ctx.shadowBlur = timeWarp ? 18 : 18;
+      ctx.lineWidth = timeWarp ? 4 : 3;
       ctx.beginPath();
-      ctx.arc(effect.x, effect.y, effect.r * (blizzard ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
+      ctx.arc(effect.x, effect.y, effect.r * (timeWarp ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      if (blizzard) {
+      if (timeWarp) {
         ctx.strokeStyle = "rgba(235, 255, 255, 0.42)";
         ctx.lineWidth = 2;
         for (let i = 0; i < 6; i += 1) {
           const angle = (effect.age || 0) * -1.1 + i * 1.05;
           ctx.beginPath();
           ctx.arc(effect.x + Math.cos(angle) * 46, effect.y + Math.sin(angle) * 32, 8, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = "rgba(186, 252, 255, 0.52)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i += 1) {
+          const tickAngle = (effect.age || 0) * 1.6 + i * Math.PI * 0.5;
+          const inner = effect.r - 18;
+          const outer = effect.r - 6;
+          ctx.beginPath();
+          ctx.moveTo(effect.x + Math.cos(tickAngle) * inner, effect.y + Math.sin(tickAngle) * inner);
+          ctx.lineTo(effect.x + Math.cos(tickAngle) * outer, effect.y + Math.sin(tickAngle) * outer);
           ctx.stroke();
         }
       }
@@ -4650,6 +4676,48 @@ function drawPlayer() {
   if (player.rangerAttackTimer > 0 && isRangedBuild()) drawRangerAttackRelease();
   drawPlayerHealthBar();
   if (player.destination) drawRing(player.destination.x, player.destination.y, 11, "#e9f6df");
+}
+
+function drawRemotePlayers() {
+  multiplayer.peers.forEach((peer, id) => {
+    if (!Number.isFinite(peer.x) || !Number.isFinite(peer.y)) return;
+    const alpha = peer.dead ? 0.36 : 0.78;
+    const color = remotePlayerColor(peer.weaponTag);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    drawRing(peer.x, peer.y, 25, color);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.beginPath();
+    ctx.ellipse(peer.x, peer.y + 19, 18, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(peer.x, peer.y - 10, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(peer.x - 13, peer.y - 2, 26, 27);
+    ctx.fillStyle = "#f1bd7d";
+    ctx.beginPath();
+    ctx.arc(peer.x, peer.y - 18, 9, 0, Math.PI * 2);
+    ctx.fill();
+    const hpPercent = clamp((peer.hp || 0) / Math.max(1, peer.maxHp || 1), 0, 1);
+    ctx.fillStyle = "rgba(15, 12, 10, 0.82)";
+    ctx.fillRect(peer.x - 25, peer.y - 47, 50, 6);
+    ctx.fillStyle = peer.dead ? "#5f5f5f" : "#67d987";
+    ctx.fillRect(peer.x - 24, peer.y - 46, 48 * hpPercent, 4);
+    ctx.fillStyle = "#f5ebd5";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(id.slice(0, 4).toUpperCase(), peer.x, peer.y - 54);
+    ctx.restore();
+  });
+}
+
+function remotePlayerColor(tag) {
+  if (tag === "Magic") return "#8ec7ff";
+  if (tag === "Ranged") return "#9bd07b";
+  if (tag === "Rogue") return "#9be06f";
+  if (tag === "Warrior") return "#f0c36a";
+  return "#d8d1c4";
 }
 
 function drawPlayerHealthBar() {
@@ -5329,6 +5397,156 @@ function bossHealthSummary() {
   };
 }
 
+function setupMultiplayer() {
+  if (!("WebSocket" in window) || location.protocol === "file:") {
+    setCoopStatus(location.protocol === "file:" ? "Start server for co-op" : "Solo", 1);
+    return;
+  }
+  connectMultiplayer();
+}
+
+function connectMultiplayer() {
+  const protocol = location.protocol === "https:" ? "wss" : "ws";
+  const socket = new WebSocket(`${protocol}://${location.host}/coop`);
+  multiplayer.socket = socket;
+  setCoopStatus("Connecting", multiplayer.count);
+
+  socket.addEventListener("open", () => {
+    multiplayer.connected = true;
+    multiplayer.reconnectTimer = 0;
+    setCoopStatus("Online", multiplayer.count);
+    sendMultiplayerState(true);
+  });
+
+  socket.addEventListener("message", (event) => {
+    try {
+      handleMultiplayerMessage(JSON.parse(event.data));
+    } catch {
+      // Ignore malformed co-op packets from old tabs or interrupted connections.
+    }
+  });
+
+  socket.addEventListener("close", () => {
+    multiplayer.connected = false;
+    multiplayer.socket = null;
+    multiplayer.peers.clear();
+    multiplayer.reconnectTimer = multiplayer.reconnectDelay;
+    setCoopStatus("Reconnecting", 1);
+  });
+
+  socket.addEventListener("error", () => {
+    socket.close();
+  });
+}
+
+function handleMultiplayerMessage(message) {
+  if (message.type === "welcome") {
+    multiplayer.id = message.id;
+    multiplayer.peers.clear();
+    (message.peers || []).forEach((peer) => {
+      if (peer.state) multiplayer.peers.set(peer.id, peer.state);
+    });
+    multiplayer.count = multiplayer.peers.size + 1;
+    setCoopStatus("Online", multiplayer.count);
+    sendMultiplayerState(true);
+    return;
+  }
+  if (message.type === "peer-state" && message.id && message.state) {
+    multiplayer.peers.set(message.id, message.state);
+    multiplayer.count = multiplayer.peers.size + 1;
+    setCoopStatus("Online", multiplayer.count);
+    applyRemoteBossProgress(message.state);
+    return;
+  }
+  if (message.type === "peer-left" && message.id) {
+    multiplayer.peers.delete(message.id);
+    multiplayer.count = multiplayer.peers.size + 1;
+    setCoopStatus(multiplayer.connected ? "Online" : "Solo", multiplayer.count);
+    return;
+  }
+  if (message.type === "peer-count") {
+    multiplayer.count = Math.max(1, Number(message.count) || 1);
+    setCoopStatus(multiplayer.connected ? "Online" : "Solo", multiplayer.count);
+  }
+}
+
+function updateMultiplayer(dt) {
+  multiplayer.peers.forEach((peer, id) => {
+    if (Date.now() - (peer.updatedAt || 0) > 12000) multiplayer.peers.delete(id);
+  });
+  if (!multiplayer.connected && multiplayer.reconnectTimer > 0) {
+    multiplayer.reconnectTimer -= dt;
+    if (multiplayer.reconnectTimer <= 0) connectMultiplayer();
+    return;
+  }
+  multiplayer.sendTimer -= dt;
+  if (multiplayer.sendTimer <= 0) {
+    multiplayer.sendTimer = 0.08;
+    sendMultiplayerState(false);
+  }
+}
+
+function sendMultiplayerState(force) {
+  if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
+  if (!force && document.hidden) return;
+  multiplayer.socket.send(JSON.stringify({ type: "state", state: multiplayerSnapshot() }));
+}
+
+function multiplayerSnapshot() {
+  const weapon = gear.weapon[player.gear.weapon];
+  const armor = gear.armor[player.gear.armor];
+  return {
+    x: Math.round(player.x),
+    y: Math.round(player.y),
+    hp: Math.ceil(player.hp),
+    maxHp: player.maxHp,
+    room: player.room,
+    dead: player.dead,
+    won: player.won,
+    facing: player.facing,
+    moving: player.moving,
+    weapon: player.gear.weapon,
+    armor: player.gear.armor,
+    weaponTag: weapon.tag,
+    armorTag: armor.tag,
+    bossKind: boss.kind,
+    bossHp: Math.max(0, Math.ceil(bossHealthSummary().hp)),
+    bossMaxHp: bossHealthSummary().maxHp,
+    bossPhase: boss.phase || 1,
+    bossTargets: bossTargetSnapshot(),
+  };
+}
+
+function bossTargetSnapshot() {
+  return activeBosses().map((target) => ({
+    kind: target.kind,
+    hp: Math.max(0, Math.ceil(target.hp)),
+    maxHp: target.maxHp,
+  }));
+}
+
+function applyRemoteBossProgress(state) {
+  if (!state || state.bossKind !== boss.kind || player.room !== "arena") return;
+  if (boss.kind === "trio") {
+    (state.bossTargets || []).forEach((remoteTarget) => {
+      const localTarget = condimentBosses.find((target) => target.kind === remoteTarget.kind);
+      if (!localTarget || localTarget.hp <= 0) return;
+      if (remoteTarget.hp <= 0) damageBossTarget(localTarget, localTarget.hp + 1, "Co-op");
+      else localTarget.hp = Math.min(localTarget.hp, remoteTarget.hp);
+    });
+    return;
+  }
+  if (boss.hp > 0 && Number.isFinite(state.bossHp)) {
+    if (state.bossHp <= 0) damageBossTarget(boss, boss.hp + 1, "Co-op");
+    else boss.hp = Math.min(boss.hp, state.bossHp);
+  }
+}
+
+function setCoopStatus(text, count) {
+  if (ui.coopStatus) ui.coopStatus.textContent = text;
+  if (ui.coopCount) ui.coopCount.textContent = String(count);
+}
+
 function showFloat(text) {
   ui.floatText.textContent = text;
   floatTimer = 1.7;
@@ -5411,4 +5629,5 @@ loadGame();
 applyGear();
 resizeCanvas();
 renderUi();
+setupMultiplayer();
 requestAnimationFrame(gameLoop);
