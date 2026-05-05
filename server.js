@@ -128,7 +128,6 @@ function publicPlayers(room) {
       name: peer?.name || "Player",
       ready: Boolean(peer?.ready),
       host: room.hostId === peerId,
-      state: peer?.state || null,
     };
   });
 }
@@ -255,6 +254,7 @@ function startGame(peer) {
     room: roomSnapshot(room),
     bossKind: "cola",
     startAt: room.startAt,
+    serverTime: Date.now(),
     spawns: players.map((player, index) => ({ id: player.id, ...spawnForIndex(index) })),
   });
   broadcastRoomUpdate(room);

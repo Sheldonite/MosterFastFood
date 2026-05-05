@@ -432,12 +432,18 @@ const multiplayer = {
   room: null,
   ready: false,
   pendingStart: null,
+  startAt: 0,
+  assignedSpawn: null,
   sendTimer: 0,
   reconnectTimer: 0,
   reconnectDelay: 3,
   reconnectAttempts: 0,
   maxReconnectAttempts: 3,
   attackSeq: 0,
+  bossSyncSeq: 0,
+  hazardSyncSeq: 0,
+  particleSyncSeq: 0,
+  lastBossSyncSeq: 0,
   peers: new Map(),
 };
 
@@ -1035,8 +1041,9 @@ function enterBossArena() {
   clearEncounterState();
   clearMazeState();
   player.room = "arena";
-  player.x = world.arena.x + 130;
-  player.y = world.arena.y + world.arena.h / 2;
+  const spawn = multiplayer.mode === "multiplayer" ? multiplayer.assignedSpawn : null;
+  player.x = spawn?.x || world.arena.x + 130;
+  player.y = spawn?.y || world.arena.y + world.arena.h / 2;
   mouseWorld = { x: player.x + 120, y: player.y };
   player.destination = null;
   player.slide = null;
@@ -1105,8 +1112,31 @@ function startMultiplayerFlow() {
   setupMultiplayer();
 }
 
-function startMultiplayerFight(bossKind, spawn) {
-  beginRun("multiplayer", lockedBosses.has(bossKind) ? "cola" : bossKind || "cola");
+function startMultiplayerFight(bossKind, spawn, startAt = 0, serverTime = 0) {
+  multiplayer.assignedSpawn = spawn && Number.isFinite(spawn.x) && Number.isFinite(spawn.y)
+    ? { x: spawn.x, y: spawn.y }
+    : null;
+  const rawStartAt = Number(startAt) || 0;
+  const rawServerTime = Number(serverTime) || Date.now();
+  const startDelay = rawStartAt ? Math.max(0, rawStartAt - rawServerTime) : 0;
+  multiplayer.startAt = Date.now() + startDelay;
+  multiplayer.bossSyncSeq = 0;
+  multiplayer.hazardSyncSeq = 0;
+  multiplayer.particleSyncSeq = 0;
+  multiplayer.lastBossSyncSeq = 0;
+  const safeBossKind = lockedBosses.has(bossKind) ? "cola" : bossKind || "cola";
+  if (startDelay > 60) {
+    multiplayer.pendingStart = { bossKind: safeBossKind, startAt: multiplayer.startAt };
+    setMenuStatus("Co-op run starting...");
+    setLobbyStatus("Co-op run starting...");
+    return;
+  }
+  beginMultiplayerFightNow(safeBossKind);
+}
+
+function beginMultiplayerFightNow(bossKind) {
+  multiplayer.pendingStart = null;
+  beginRun("multiplayer", bossKind);
 }
 
 function selectBoss(kind, options = {}) {
@@ -1149,6 +1179,30 @@ function attackInterval(kind, phase = boss.phase, enraged = boss.enraged) {
   if (phase >= 3 && tuning.phase3) return tuning.phase3 * pressure;
   if (phase >= 2 && tuning.phase2) return tuning.phase2 * pressure;
   return tuning.base * pressure;
+}
+
+function isMultiplayerGame() {
+  return multiplayer.mode === "multiplayer" && Boolean(multiplayer.room);
+}
+
+function isMultiplayerHost() {
+  return isMultiplayerGame() && multiplayer.room?.hostId === multiplayer.id;
+}
+
+function isHostPeer(peerId) {
+  return isMultiplayerGame() && multiplayer.room?.hostId === peerId;
+}
+
+function shouldSimulateBossAI() {
+  return !isMultiplayerGame() || isMultiplayerHost();
+}
+
+function shouldBroadcastBossSync() {
+  return isMultiplayerHost() && multiplayer.room?.state === "inGame" && player.room === "arena";
+}
+
+function isRemoteBossHazard(hazard) {
+  return Boolean(hazard?.remoteBossHazard) && isMultiplayerGame() && !isMultiplayerHost();
 }
 
 function clamp(value, min, max) {
@@ -2204,8 +2258,19 @@ function clampMazeHazardPoint(x, y, radius) {
 }
 
 function updateCombat(dt) {
-  if (player.room !== "arena" || player.dead || player.won) return;
+  if (player.room !== "arena" || player.won) return;
+  if (player.dead && !isMultiplayerHost()) return;
   startFight();
+  if (!shouldSimulateBossAI()) {
+    updateRemoteBossPassive(dt);
+    return;
+  }
+  const sync = beginBossSyncCapture("boss-ai");
+  updateBossCombatLocal(dt);
+  finishBossSyncCapture(sync);
+}
+
+function updateBossCombatLocal(dt) {
   if (boss.kind === "trio") {
     updateTrioCombat(dt);
     return;
@@ -2269,6 +2334,17 @@ function updateCombat(dt) {
       boss.attackTimer = attackInterval("burger");
     }
   }
+}
+
+function updateRemoteBossPassive(dt) {
+  boss.animationTime = (boss.animationTime || 0) + dt;
+  if (boss.shieldTimer) boss.shieldTimer = Math.max(0, boss.shieldTimer - dt);
+  if (boss.invulnerableTimer) boss.invulnerableTimer = Math.max(0, boss.invulnerableTimer - dt);
+  if (boss.enrageTextTimer) boss.enrageTextTimer = Math.max(0, boss.enrageTextTimer - dt);
+  condimentBosses.forEach((target) => {
+    target.moveTimer = (target.moveTimer || 0) + dt;
+    if (target.shieldTimer) target.shieldTimer = Math.max(0, target.shieldTimer - dt);
+  });
 }
 
 function updatePeanutBusterShake(dt) {
@@ -5279,6 +5355,7 @@ function updateHazards(dt) {
     if (hazard.mazeHazard && player.room !== "maze") {
       return false;
     }
+    const remoteBossHazard = isRemoteBossHazard(hazard);
     if (hazard.type === "mazeShot") {
       hazard.ttl -= dt;
       const previousX = hazard.x;
@@ -5324,7 +5401,7 @@ function updateHazards(dt) {
       hazard.explodeTimer = Math.max(0, (hazard.explodeTimer ?? 0) - dt);
       if (!hazard.exploded && hazard.explodeTimer <= 0) {
         hazard.exploded = true;
-        spawnGreaseExplosion(hazard, spawnedHazards);
+        if (!remoteBossHazard) spawnGreaseExplosion(hazard, spawnedHazards);
       }
       if (distance(player, hazard) < player.radius + hazard.r * 0.72) startGreaseSlide(hazard);
     } else if (hazard.type === "machineGun") {
@@ -5335,7 +5412,7 @@ function updateHazards(dt) {
         hazard.fireTimer -= dt;
         hazard.damageTimer -= dt;
         while (hazard.fireTimer <= 0) {
-          spawnFryShot(hazard, spawnedHazards);
+          if (!remoteBossHazard) spawnFryShot(hazard, spawnedHazards);
           hazard.fireTimer += boss.enraged ? 0.045 : 0.048;
         }
         if (isPlayerInMachineGun(hazard) && hazard.damageTimer <= 0) {
@@ -5404,7 +5481,7 @@ function updateHazards(dt) {
         damagePlayer(hazard.damage, "Tortilla chip");
         hazard.ttl = 0;
       } else if (hazard.traveled >= hazard.shatterDistance) {
-        shatterNachoChip(hazard, spawnedHazards);
+        if (!remoteBossHazard) shatterNachoChip(hazard, spawnedHazards);
         hazard.ttl = 0;
       }
     } else if (hazard.type === "pizzaDash") {
@@ -5415,10 +5492,10 @@ function updateHazards(dt) {
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
           damagePlayer(hazard.damage, "Delivery dash");
         }
-        spawnPizzaCheeseTrail(hazard, spawnedHazards);
+        if (!remoteBossHazard) spawnPizzaCheeseTrail(hazard, spawnedHazards);
         boss.x = hazard.targetX;
         boss.y = hazard.targetY;
-        particles.push({ x: boss.x, y: boss.y - 48, text: "dash", color: "#ffd76a", ttl: 0.55 });
+        if (!remoteBossHazard) particles.push({ x: boss.x, y: boss.y - 48, text: "dash", color: "#ffd76a", ttl: 0.55 });
       }
     } else if (hazard.type === "pizzaCheeseTrail") {
       hazard.ttl -= dt;
@@ -5443,7 +5520,8 @@ function updateHazards(dt) {
         hazard.y >= world.arena.y + world.arena.h - hazard.r ||
         hazard.ttl <= 0
       ) {
-        preparePizzaSliceReturn(hazard);
+        if (remoteBossHazard) hazard.ttl = 0;
+        else preparePizzaSliceReturn(hazard);
       }
     } else if (hazard.type === "pizzaSliceReturn") {
       hazard.ttl -= dt;
@@ -5526,7 +5604,7 @@ function updateHazards(dt) {
         hazard.ttl = boss.enraged ? 6 : 5;
         hazard.warn = 0;
         hazard.damageTimer = 0;
-        particles.push({ x: hazard.x, y: hazard.y - 18, text: "splash", color: "#b9f4ff", ttl: 0.55 });
+        if (!remoteBossHazard) particles.push({ x: hazard.x, y: hazard.y - 18, text: "splash", color: "#b9f4ff", ttl: 0.55 });
       }
     } else if (hazard.type === "sodaPuddle") {
       hazard.ttl -= dt;
@@ -5577,11 +5655,11 @@ function updateHazards(dt) {
         if (!hazard.hit) {
           hazard.hit = true;
           hazard.burstTimer = 0;
-          particles.push({ x: hazard.x, y: hazard.y - 18, text: "burst", color: "#ff5d73", ttl: 0.6 });
+          if (!remoteBossHazard) particles.push({ x: hazard.x, y: hazard.y - 18, text: "burst", color: "#ff5d73", ttl: 0.6 });
         }
         hazard.burstTimer -= dt;
         while (hazard.burstShots > 0 && hazard.burstTimer <= 0) {
-          spawnCherryBurst(hazard, spawnedHazards);
+          if (!remoteBossHazard) spawnCherryBurst(hazard, spawnedHazards);
           hazard.burstShots -= 1;
           hazard.burstTimer += hazard.burstDelay;
         }
@@ -5600,7 +5678,7 @@ function updateHazards(dt) {
         }
         boss.x = hazard.targetX;
         boss.y = hazard.targetY;
-        spawnTacoShellShards(hazard, spawnedHazards);
+        if (!remoteBossHazard) spawnTacoShellShards(hazard, spawnedHazards);
       }
     } else if (hazard.type === "tacoShellShard") {
       hazard.ttl -= dt;
@@ -6545,7 +6623,9 @@ function update(dt) {
   updateRoom(dt);
   updateMazeCombat(dt);
   updateCombat(dt);
+  const hazardSync = beginBossSyncCapture("hazards");
   updateHazards(dt);
+  finishBossSyncCapture(hazardSync);
   updatePlayerProjectiles(dt);
   updateRemoteProjectiles(dt);
   particles = particles.filter((particle) => {
@@ -10461,7 +10541,9 @@ function handleMultiplayerMessage(message) {
     return;
   }
   if (message.type === "joined-room" || message.type === "room-update") {
+    const previousHostId = multiplayer.room?.hostId;
     multiplayer.room = message.room;
+    if (previousHostId && previousHostId !== multiplayer.room?.hostId) multiplayer.lastBossSyncSeq = 0;
     multiplayer.ready = Boolean(message.room?.players?.find((peer) => peer.id === multiplayer.id)?.ready);
     multiplayer.count = message.room?.players?.length || 1;
     setCoopStatus(message.room?.state === "inGame" ? "In Room" : "Lobby", multiplayer.count);
@@ -10470,10 +10552,12 @@ function handleMultiplayerMessage(message) {
     return;
   }
   if (message.type === "game-start") {
+    const previousHostId = multiplayer.room?.hostId;
     multiplayer.room = message.room;
+    if (previousHostId && previousHostId !== multiplayer.room?.hostId) multiplayer.lastBossSyncSeq = 0;
     multiplayer.peers.clear();
     const spawn = (message.spawns || []).find((item) => item.id === multiplayer.id);
-    startMultiplayerFight(message.bossKind, spawn);
+    startMultiplayerFight(message.bossKind, spawn, message.startAt, message.serverTime);
     return;
   }
   if (message.type === "error") {
@@ -10485,7 +10569,7 @@ function handleMultiplayerMessage(message) {
     recordPeerSnapshot(message.id, message.state);
     multiplayer.count = multiplayer.peers.size + 1;
     setCoopStatus("In Room", multiplayer.room?.players?.length || multiplayer.count);
-    applyRemoteBossProgress(message.state);
+    applyRemoteBossProgress(message.state, message.id);
     return;
   }
   if (message.type === "peer-event" && message.id && message.event) {
@@ -10504,6 +10588,10 @@ function updateMultiplayer(dt) {
     if (multiplayer.reconnectTimer <= 0) connectMultiplayer();
     return;
   }
+  if (multiplayer.pendingStart && Date.now() >= multiplayer.pendingStart.startAt) {
+    const pending = multiplayer.pendingStart;
+    beginMultiplayerFightNow(pending.bossKind);
+  }
   multiplayer.sendTimer -= dt;
   if (multiplayer.sendTimer <= 0) {
     multiplayer.sendTimer = 0.08;
@@ -10514,6 +10602,7 @@ function updateMultiplayer(dt) {
 function sendMultiplayerState(force) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
   if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
+  if (multiplayer.pendingStart) return;
   if (!force && document.hidden) return;
   sendServer({ type: "state", state: multiplayerSnapshot() });
 }
@@ -10529,13 +10618,179 @@ function sendServer(payload) {
   multiplayer.socket.send(JSON.stringify(payload));
 }
 
+function beginBossSyncCapture(source) {
+  if (!shouldBroadcastBossSync()) return null;
+  return {
+    source,
+    hazardRefs: new Set(hazards),
+    particleRefs: new Set(particles),
+  };
+}
+
+function finishBossSyncCapture(capture) {
+  if (!capture || !shouldBroadcastBossSync()) return;
+  const newHazards = hazards
+    .filter((hazard) => !capture.hazardRefs.has(hazard) && isSyncableBossHazard(hazard))
+    .map(serializeBossHazard);
+  const newParticles = particles
+    .filter((particle) => !capture.particleRefs.has(particle) && isSyncableBossParticle(particle))
+    .slice(-18)
+    .map(serializeBossParticle);
+  if (!newHazards.length && !newParticles.length) return;
+  multiplayer.bossSyncSeq += 1;
+  sendMultiplayerEvent({
+    kind: "boss-sync",
+    seq: multiplayer.bossSyncSeq,
+    source: capture.source,
+    bossKind: boss.kind,
+    bossState: bossStateSnapshot(),
+    hazards: newHazards,
+    particles: newParticles,
+  });
+}
+
+function isSyncableBossHazard(hazard) {
+  return player.room === "arena" && hazard && !hazard.mazeHazard && typeof hazard.type === "string";
+}
+
+function isSyncableBossParticle(particle) {
+  if (player.room !== "arena" || !particle) return false;
+  return !String(particle.text || "").startsWith("-");
+}
+
+function serializeBossHazard(hazard) {
+  if (!hazard.syncId) {
+    multiplayer.hazardSyncSeq += 1;
+    hazard.syncId = `${multiplayer.id || "host"}-h${multiplayer.hazardSyncSeq}`;
+  }
+  return cloneSyncObject(hazard);
+}
+
+function serializeBossParticle(particle) {
+  if (!particle.syncId) {
+    multiplayer.particleSyncSeq += 1;
+    particle.syncId = `${multiplayer.id || "host"}-p${multiplayer.particleSyncSeq}`;
+  }
+  return cloneSyncObject(particle);
+}
+
+function bossHazardSnapshot() {
+  return hazards.filter(isSyncableBossHazard).map(serializeBossHazard);
+}
+
+function bossStateSnapshot() {
+  const state = cloneSyncObject(boss) || {};
+  state.kind = boss.kind;
+  if (boss.kind === "trio") {
+    state.condiments = condimentBosses.map((target) => cloneSyncObject(target));
+  }
+  return state;
+}
+
+function cloneSyncObject(value) {
+  return cloneSyncValue(value, 0);
+}
+
+function cloneSyncValue(value, depth) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 999999;
+  if (typeof value === "undefined" || typeof value === "function") return undefined;
+  if (depth > 4) return undefined;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => cloneSyncValue(item, depth + 1))
+      .filter((item) => typeof item !== "undefined");
+  }
+  if (typeof value === "object") {
+    const output = {};
+    Object.entries(value).forEach(([key, item]) => {
+      const cloned = cloneSyncValue(item, depth + 1);
+      if (typeof cloned !== "undefined") output[key] = cloned;
+    });
+    return output;
+  }
+  return undefined;
+}
+
 function handleMultiplayerEvent(peerId, event) {
+  if (event.kind === "boss-sync") {
+    applyRemoteBossSyncEvent(peerId, event);
+    return;
+  }
   if (event.kind === "attack") {
     spawnRemoteAttackVisual(peerId, event);
     return;
   }
   if (event.kind === "damage") {
     applyRemoteDamage(event);
+  }
+}
+
+function applyRemoteBossSyncEvent(peerId, event) {
+  if (!isHostPeer(peerId) || isMultiplayerHost() || event.bossKind !== boss.kind || player.room !== "arena") return;
+  if (Number.isFinite(event.seq) && event.seq <= multiplayer.lastBossSyncSeq) return;
+  if (Number.isFinite(event.seq)) multiplayer.lastBossSyncSeq = event.seq;
+  if (event.bossState) applyBossStateSnapshot(event.bossState);
+  (event.hazards || []).forEach((remoteHazard) => {
+    if (!remoteHazard?.syncId || hazards.some((hazard) => hazard.syncId === remoteHazard.syncId)) return;
+    hazards.push(normalizeRemoteBossHazard(remoteHazard, event.serverTime));
+  });
+  (event.particles || []).forEach((remoteParticle) => {
+    if (!remoteParticle?.syncId || particles.some((particle) => particle.syncId === remoteParticle.syncId)) return;
+    particles.push(normalizeRemoteBossParticle(remoteParticle, event.serverTime));
+  });
+}
+
+function normalizeRemoteBossHazard(remoteHazard, serverTime = 0) {
+  const hazard = cloneSyncObject(remoteHazard) || {};
+  hazard.remoteBossHazard = true;
+  const lag = multiplayerLagSeconds(serverTime);
+  if (Number.isFinite(hazard.x) && Number.isFinite(hazard.y) && Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy)) {
+    hazard.x += hazard.vx * lag;
+    hazard.y += hazard.vy * lag;
+  }
+  ["ttl", "warn", "delay", "fireTimer", "explodeTimer", "damageTimer"].forEach((key) => {
+    if (Number.isFinite(hazard[key])) hazard[key] = Math.max(0, hazard[key] - lag);
+  });
+  hazard.age = (hazard.age || 0) + lag;
+  return hazard;
+}
+
+function normalizeRemoteBossParticle(remoteParticle, serverTime = 0) {
+  const particle = cloneSyncObject(remoteParticle) || {};
+  particle.remoteBossParticle = true;
+  const lag = multiplayerLagSeconds(serverTime);
+  if (Number.isFinite(particle.ttl)) particle.ttl = Math.max(0.05, particle.ttl - lag);
+  if (Number.isFinite(particle.y)) particle.y -= 28 * lag;
+  return particle;
+}
+
+function multiplayerLagSeconds(serverTime = 0) {
+  if (!serverTime) return 0;
+  return clamp((Date.now() - serverTime) / 1000, 0, 0.32);
+}
+
+function syncBossHazardsSnapshot(remoteHazards, serverTime = 0) {
+  if (!Array.isArray(remoteHazards) || isMultiplayerHost() || player.room !== "arena") return;
+  const keepLocal = hazards.filter((hazard) => !isSyncableBossHazard(hazard));
+  const synced = remoteHazards.map((hazard) => normalizeRemoteBossHazard(hazard, serverTime));
+  hazards = keepLocal.concat(synced);
+}
+
+function applyBossStateSnapshot(state) {
+  if (!state || state.kind !== boss.kind) return;
+  Object.entries(state).forEach(([key, value]) => {
+    if (key === "condiments" || key === "kind") return;
+    boss[key] = cloneSyncObject(value);
+  });
+  if (boss.kind === "trio" && Array.isArray(state.condiments)) {
+    state.condiments.forEach((remoteTarget) => {
+      const localTarget = condimentBosses.find((target) => target.kind === remoteTarget.kind);
+      if (!localTarget) return;
+      Object.entries(remoteTarget).forEach(([key, value]) => {
+        localTarget[key] = cloneSyncObject(value);
+      });
+    });
   }
 }
 
@@ -10583,7 +10838,7 @@ function recordPeerSnapshot(peerId, state) {
 function multiplayerSnapshot() {
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
-  return {
+  const snapshot = {
     x: Math.round(player.x),
     y: Math.round(player.y),
     hp: Math.ceil(player.hp),
@@ -10604,6 +10859,12 @@ function multiplayerSnapshot() {
     bossPhase: boss.phase || 1,
     bossTargets: bossTargetSnapshot(),
   };
+  if (shouldBroadcastBossSync()) {
+    snapshot.bossState = bossStateSnapshot();
+    snapshot.bossHazards = bossHazardSnapshot();
+    snapshot.bossSyncSeq = multiplayer.bossSyncSeq;
+  }
+  return snapshot;
 }
 
 function bossTargetSnapshot() {
@@ -10614,8 +10875,12 @@ function bossTargetSnapshot() {
   }));
 }
 
-function applyRemoteBossProgress(state) {
+function applyRemoteBossProgress(state, peerId) {
   if (!state || state.bossKind !== boss.kind || player.room !== "arena") return;
+  if (isMultiplayerGame() && !isHostPeer(peerId)) return;
+  if (state.bossState) applyBossStateSnapshot(state.bossState);
+  if (Array.isArray(state.bossHazards)) syncBossHazardsSnapshot(state.bossHazards, state.serverTime);
+  if (state.bossState || Array.isArray(state.bossHazards)) return;
   if (boss.kind === "trio") {
     (state.bossTargets || []).forEach((remoteTarget) => {
       const localTarget = condimentBosses.find((target) => target.kind === remoteTarget.kind);
@@ -10750,6 +11015,9 @@ function closeMultiplayerSocket() {
   multiplayer.room = null;
   multiplayer.rooms = [];
   multiplayer.ready = false;
+  multiplayer.pendingStart = null;
+  multiplayer.startAt = 0;
+  multiplayer.assignedSpawn = null;
   if (multiplayer.socket) {
     multiplayer.socket.close();
     multiplayer.socket = null;
