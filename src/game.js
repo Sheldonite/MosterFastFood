@@ -399,6 +399,7 @@ let hazards = [];
 let playerProjectiles = [];
 let remoteProjectiles = [];
 let abilityEffects = [];
+let remoteAbilityEffects = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
 let mouseWorld = { x: 300, y: 685 };
@@ -935,6 +936,7 @@ function resetFight(keepPosition = false) {
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
+  remoteAbilityEffects = [];
   particles = [];
   selectedBoss = null;
   clearMazeState();
@@ -949,6 +951,7 @@ function clearEncounterState() {
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
+  remoteAbilityEffects = [];
   particles = [];
   selectedBoss = null;
   fightStartedAt = 0;
@@ -2290,6 +2293,7 @@ function updateMazeCombat(dt) {
   if (player.room !== "maze" || !mazeState || player.dead || player.won || mazeState.rewardPending) return;
   if (isPartySyncActive() && !isMultiplayerHost()) {
     updateGauntletPickups(dt);
+    updateLocalGauntletContactDamage(dt);
     return;
   }
   if (mazeState.encounterType === "gauntlet") updateGauntletProgress(dt);
@@ -2297,8 +2301,9 @@ function updateMazeCombat(dt) {
   living.forEach((enemy) => {
     enemy.moveTimer += dt;
     enemy.attackTimer -= dt;
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
+    const target = mazeAimTarget(enemy);
+    const dx = target.x - enemy.x;
+    const dy = target.y - enemy.y;
     const dist = Math.hypot(dx, dy) || 1;
     const activeRange = enemy.miniBoss ? 520 : 340;
     if (dist < activeRange) {
@@ -2311,10 +2316,6 @@ function updateMazeCombat(dt) {
         spawnMazeProjectile(enemy);
         enemy.attackTimer = 1.45;
       }
-      if (!enemy.miniBoss && !enemy.ranged && dist < enemy.radius + player.radius + 8 && enemy.attackTimer <= 0) {
-        damagePlayer(enemy.damage, enemy.name);
-        enemy.attackTimer = 1.05;
-      }
     } else if (!enemy.miniBoss) {
       const wobbleX = Math.cos(enemy.moveTimer * 0.8 + enemy.spawnX * 0.01);
       const wobbleY = Math.sin(enemy.moveTimer * 0.7 + enemy.spawnY * 0.01);
@@ -2324,6 +2325,26 @@ function updateMazeCombat(dt) {
       spawnMazeMiniBossPattern(enemy);
       enemy.attackTimer = mazeState.encounterType === "gauntlet" ? 1.1 : 1.18;
     }
+  });
+  updateLocalGauntletContactDamage(dt);
+}
+
+function updateLocalGauntletContactDamage(dt) {
+  if (!mazeState || player.dead || player.room !== "maze") return;
+  if (!mazeState.localContactTimers) mazeState.localContactTimers = new Map();
+  mazeState.localContactTimers.forEach((timer, id) => {
+    const next = timer - dt;
+    if (next > 0) mazeState.localContactTimers.set(id, next);
+    else mazeState.localContactTimers.delete(id);
+  });
+  mazeState.enemies.forEach((enemy) => {
+    if (enemy.hp <= 0) return;
+    const key = enemy.id || enemy.name || "enemy";
+    if ((mazeState.localContactTimers.get(key) || 0) > 0) return;
+    const contactRange = enemy.radius + player.radius + (enemy.miniBoss ? 10 : 8);
+    if (distance(enemy, player) > contactRange) return;
+    damagePlayer(enemy.miniBoss ? Math.max(12, enemy.damage || 10) : enemy.damage, enemy.name || "Gauntlet enemy");
+    mazeState.localContactTimers.set(key, enemy.miniBoss ? 0.95 : 1.05);
   });
 }
 
@@ -2340,7 +2361,8 @@ function moveMazeEnemy(enemy, dx, dy) {
 }
 
 function spawnMazeProjectile(enemy) {
-  const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  const target = mazeAimTarget(enemy);
+  const angle = Math.atan2(target.y - enemy.y, target.x - enemy.x);
   hazards.push({
     type: "mazeShot",
     mazeHazard: true,
@@ -2358,38 +2380,41 @@ function spawnMazeProjectile(enemy) {
 function spawnMazeMiniBossPattern(enemy) {
   enemy.patternIndex = (enemy.patternIndex || 0) + 1;
   const kind = mazeState?.kind || boss.kind;
+  const target = mazeAimTarget(enemy);
+  const targetX = target.x;
+  const targetY = target.y;
+  const targetAngle = Math.atan2(targetY - enemy.y, targetX - enemy.x);
   if (kind === "cola") {
-    spawnMazeCircle(player.x, player.y, 34, 0.55, 1.2, 10, "#b9f4ff", "Fizz pop");
-    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
-    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) - 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
+    spawnMazeCircle(targetX, targetY, 34, 0.55, 1.2, 10, "#b9f4ff", "Fizz pop");
+    spawnMazeShot(enemy, targetAngle + 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
+    spawnMazeShot(enemy, targetAngle - 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
     return;
   }
   if (kind === "burger") {
-    spawnMazeCircle(player.x, player.y, 48, 0.65, 1.05, 15, "#ff7044", "Grill slam");
+    spawnMazeCircle(targetX, targetY, 48, 0.65, 1.05, 15, "#ff7044", "Grill slam");
     return;
   }
   if (kind === "fries") {
     spawnMazeCircle(enemy.x + Math.cos(enemy.moveTimer) * 44, enemy.y + Math.sin(enemy.moveTimer) * 44, 34, 0.3, 3.2, 5, "#f0c95d", "Hot grease", { lingering: true });
     for (let i = -1; i <= 1; i += 1) {
-      spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + i * 0.22, { speed: 260, r: 10, ttl: 2.2, damage: 9, turn: i * 0.55, color: "#ffd76a", source: "Curly fry" });
+      spawnMazeShot(enemy, targetAngle + i * 0.22, { speed: 260, r: 10, ttl: 2.2, damage: 9, turn: i * 0.55, color: "#ffd76a", source: "Curly fry" });
     }
     return;
   }
   if (kind === "trio" || kind === "sauce") {
     const colors = ["#cf3b2f", "#e3bf34", "#f3ead2"];
     const color = colors[enemy.patternIndex % colors.length];
-    const base = Math.atan2(player.y - enemy.y, player.x - enemy.x);
     for (let i = -1; i <= 1; i += 1) {
-      spawnMazeShot(enemy, base + i * 0.24, { speed: 285, r: 10, ttl: 2.4, damage: 9, color, source: "Condiment burst" });
+      spawnMazeShot(enemy, targetAngle + i * 0.24, { speed: 285, r: 10, ttl: 2.4, damage: 9, color, source: "Condiment burst" });
     }
     return;
   }
   if (kind === "shake") {
-    spawnMazeCircle(player.x, player.y, 44, 0.7, 1.25, 11, "#bafcff", "Frost scoop", { chill: true });
+    spawnMazeCircle(targetX, targetY, 44, 0.7, 1.25, 11, "#bafcff", "Frost scoop", { chill: true });
     return;
   }
   if (kind === "nacho") {
-    spawnMazeCircle(player.x, player.y, 42, 0.45, 2.4, 7, "#ffda6b", "Cheese puddle", { lingering: true });
+    spawnMazeCircle(targetX, targetY, 42, 0.45, 2.4, 7, "#ffda6b", "Cheese puddle", { lingering: true });
     for (let i = 0; i < 6; i += 1) {
       spawnMazeShot(enemy, (Math.PI * 2 * i) / 6 + enemy.moveTimer * 0.2, { speed: 225, r: 8, ttl: 1.8, damage: 7, color: "#f0c35b", source: "Chip burst" });
     }
@@ -2397,9 +2422,9 @@ function spawnMazeMiniBossPattern(enemy) {
   }
   if (kind === "pizza") {
     const vertical = enemy.patternIndex % 2 === 0;
-    spawnMazeWall(vertical ? player.x : enemy.x, vertical ? enemy.y : player.y, vertical, 0.68, 1.25, 12, "#ff7044");
+    spawnMazeWall(vertical ? targetX : enemy.x, vertical ? enemy.y : targetY, vertical, 0.68, 1.25, 12, "#ff7044");
     for (let i = -2; i <= 2; i += 1) {
-      spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + i * 0.16, { speed: 275, r: 9, ttl: 2.1, damage: 7, color: "#b93a2f", source: "Pepperoni" });
+      spawnMazeShot(enemy, targetAngle + i * 0.16, { speed: 275, r: 9, ttl: 2.1, damage: 7, color: "#b93a2f", source: "Pepperoni" });
     }
     return;
   }
@@ -2407,16 +2432,16 @@ function spawnMazeMiniBossPattern(enemy) {
     for (let i = 0; i < 10; i += 1) {
       spawnMazeShot(enemy, (Math.PI * 2 * i) / 10 + enemy.patternIndex * 0.19, { speed: 185, r: 7, ttl: 2.4, damage: 6, color: i % 2 ? "#ff79aa" : "#8ec7ff", source: "Sprinkle ring" });
     }
-    spawnMazeCircle(player.x, player.y, 32, 0.55, 1.6, 9, "#ffd7e8", "Donut hole");
+    spawnMazeCircle(targetX, targetY, 32, 0.55, 1.6, 9, "#ffd7e8", "Donut hole");
     return;
   }
   if (kind === "sushi") {
-    spawnMazeWall(player.x, enemy.y, true, 0.7, 1.35, 12, "#b7e7d9");
-    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x), { speed: 310, r: 11, ttl: 2.4, damage: 9, color: "#7ab9a8", source: "Wasabi shot" });
+    spawnMazeWall(targetX, enemy.y, true, 0.7, 1.35, 12, "#b7e7d9");
+    spawnMazeShot(enemy, targetAngle, { speed: 310, r: 11, ttl: 2.4, damage: 9, color: "#7ab9a8", source: "Wasabi shot" });
     return;
   }
-  spawnMazeCircle(player.x, player.y, 42, 0.62, 1.15, 12, "#f0d47c", "Taco quake");
-  spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x), { speed: 300, r: 11, ttl: 2.2, damage: 9, color: "#6fbf55", source: "Taco shard" });
+  spawnMazeCircle(targetX, targetY, 42, 0.62, 1.15, 12, "#f0d47c", "Taco quake");
+  spawnMazeShot(enemy, targetAngle, { speed: 300, r: 11, ttl: 2.2, damage: 9, color: "#6fbf55", source: "Taco shard" });
 }
 
 function spawnMazeShot(enemy, angle, options = {}) {
@@ -3995,16 +4020,20 @@ function clampCombatPoint(x, y, radius) {
   };
 }
 
-function coopThreatTargets() {
+function encounterThreatTargets(room) {
   const targets = [];
-  if (player.room === "arena" && !player.dead) {
+  if (player.room === room && !player.dead) {
     targets.push({ x: player.x, y: player.y, radius: player.radius, local: true });
   }
   multiplayer.peers.forEach((peer) => {
-    if (peer.room !== "arena" || peer.dead || peer.bossKind !== boss.kind) return;
+    if (peer.room !== room || peer.dead || peer.bossKind !== boss.kind) return;
     targets.push({ x: peer.x, y: peer.y, radius: 18, local: false });
   });
   return targets.filter((target) => Number.isFinite(target.x) && Number.isFinite(target.y));
+}
+
+function coopThreatTargets() {
+  return encounterThreatTargets("arena");
 }
 
 function bossAimTarget(origin = boss) {
@@ -4013,6 +4042,14 @@ function bossAimTarget(origin = boss) {
   if (targets.length === 1) return targets[0];
   const nearest = targets.slice().sort((a, b) => distance(origin, a) - distance(origin, b))[0];
   return Math.random() < 0.58 ? nearest : targets[Math.floor(Math.random() * targets.length)];
+}
+
+function mazeAimTarget(origin) {
+  const targets = encounterThreatTargets("maze");
+  if (!targets.length) return player;
+  if (targets.length === 1) return targets[0];
+  const nearest = targets.slice().sort((a, b) => distance(origin, a) - distance(origin, b))[0];
+  return Math.random() < 0.62 ? nearest : targets[Math.floor(Math.random() * targets.length)];
 }
 
 function randomArenaPointNearThreat(spread, minDistance = 0) {
@@ -4094,6 +4131,9 @@ function firePlayerProjectile(angle) {
     x: player.x,
     y: player.y,
     angle,
+    room: player.room,
+    bossKind: boss.kind,
+    phaseSeq: multiplayer.phaseSeq,
     weaponTag: weapon.tag,
     color: magicAttack ? "#48efe4" : weapon.color,
     heavy: magicAttack,
@@ -4139,6 +4179,27 @@ function spendAbility(index, ability) {
   player.abilityCooldowns[index] = ability.cooldown * talentAbilityCooldownMultiplier(index);
   ui.status.textContent = `${ability.name}.`;
   showFloat(ability.name);
+  sendAbilityUseEvent(index, ability);
+}
+
+function sendAbilityUseEvent(index, ability) {
+  if (!isPartySyncActive()) return;
+  sendMultiplayerEvent({
+    kind: "ability",
+    seq: `${multiplayer.id || "player"}-${Date.now()}-${index}`,
+    classKey: currentClassKey(),
+    abilityIndex: index,
+    abilityName: ability.name,
+    room: player.room,
+    bossKind: boss.kind,
+    phaseSeq: multiplayer.phaseSeq,
+    x: player.x,
+    y: player.y,
+    targetX: mouseWorld.x,
+    targetY: mouseWorld.y,
+    angle: aimAngle(),
+    weaponTag: gear.weapon[player.gear.weapon].tag,
+  });
 }
 
 function useMeleeAbility(index, ability) {
@@ -4467,6 +4528,7 @@ function radiantSmite() {
     if (hasTalent("paladin_judgment_mark")) {
       enemy.judgmentTimer = 5;
       particles.push({ x: enemy.x, y: enemy.y - enemy.radius - 42, text: "judged", color: "#fff0bf", ttl: 0.7 });
+      syncTargetStatus(enemy);
     }
   });
   abilityEffects.push({ type: "radiantSmite", x: target.x, y: target.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
@@ -4627,12 +4689,14 @@ function shoveTarget(target, x, y, amount) {
     if (!mazeState || !isMazeCircleWalkable(rawPoint.x, rawPoint.y, target.radius)) return;
     target.x = rawPoint.x;
     target.y = rawPoint.y;
+    syncTargetControl(target);
     return;
   }
   const point = clampArenaPoint(rawPoint.x, rawPoint.y, target.radius);
   target.x = point.x;
   target.y = point.y;
   target.destination = null;
+  syncTargetControl(target);
 }
 
 function interruptTarget(target) {
@@ -4641,6 +4705,7 @@ function interruptTarget(target) {
   target.stateTimer = 0.45;
   target.attackTimer = Math.min(target.attackTimer || 1, 1.0);
   particles.push({ x: target.x, y: target.y - target.radius - 32, text: "interrupted", color: "#fff08a", ttl: 0.8 });
+  syncTargetControl(target);
 }
 
 function spawnBossPattern() {
@@ -6502,6 +6567,7 @@ function enterDeathState(source) {
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
+  remoteAbilityEffects = [];
   Object.keys(movementKeys).forEach((direction) => {
     movementKeys[direction] = false;
   });
@@ -6551,6 +6617,7 @@ function winFight() {
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
+  remoteAbilityEffects = [];
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   if (boss.kind === "shake" && boss.phase < boss.totalPhases) {
     boss.phase += 1;
@@ -6609,9 +6676,11 @@ function updateAbilities(dt) {
   player.deadeyeTimer = Math.max(0, (player.deadeyeTimer || 0) - dt);
 
   livingBosses().forEach((target) => {
-    target.markedTimer = Math.max(0, (target.markedTimer || 0) - dt);
-    if (target.markedTimer <= 0) target.markedShots = 0;
-    updateRogueDebuffs(target, dt);
+    if (!isPartySyncActive() || isMultiplayerHost()) {
+      target.markedTimer = Math.max(0, (target.markedTimer || 0) - dt);
+      if (target.markedTimer <= 0) target.markedShots = 0;
+      updateRogueDebuffs(target, dt);
+    }
   });
 
   if (player.pendingAbilityCast) {
@@ -6656,7 +6725,7 @@ function updateRogueDebuffs(target, dt) {
     target.poisonTickTimer = (target.poisonTickTimer || 1) - dt;
     if (target.poisonTickTimer <= 0) {
       target.poisonTickTimer += 1;
-      damageBossTarget(target, target.poisonStacks * roguePoisonDamagePerStack(), "Poison", { poison: true });
+      damageBossTarget(target, target.poisonStacks * (target.poisonDamagePerStack || roguePoisonDamagePerStack()), "Poison", { poison: true });
     }
   }
   target.bleedTimer = Math.max(0, (target.bleedTimer || 0) - dt);
@@ -6664,7 +6733,7 @@ function updateRogueDebuffs(target, dt) {
     target.bleedTickTimer = (target.bleedTickTimer || 0.5) - dt;
     if (target.bleedTickTimer <= 0) {
       target.bleedTickTimer += 0.5;
-      damageBossTarget(target, hasTalent("melee_blood_deep") ? 6 : 4, "Bleed");
+      damageBossTarget(target, target.bleedDamage || (hasTalent("melee_blood_deep") ? 6 : 4), "Bleed");
     }
   }
   target.burnTimer = Math.max(0, (target.burnTimer || 0) - dt);
@@ -6672,7 +6741,7 @@ function updateRogueDebuffs(target, dt) {
     target.burnTickTimer = (target.burnTickTimer || 0.5) - dt;
     if (target.burnTickTimer <= 0) {
       target.burnTickTimer += 0.5;
-      damageBossTarget(target, Math.round(player.stats.damage * 0.12), "Burn");
+      damageBossTarget(target, target.burnDamage || Math.round(player.stats.damage * 0.12), "Burn");
     }
   }
   target.exposedTimer = Math.max(0, (target.exposedTimer || 0) - dt);
@@ -6869,6 +6938,11 @@ function update(dt) {
   finishBossSyncCapture(hazardSync);
   updatePlayerProjectiles(dt);
   updateRemoteProjectiles(dt);
+  remoteAbilityEffects = remoteAbilityEffects.filter((effect) => {
+    effect.ttl -= dt;
+    effect.age = (effect.age || 0) + dt;
+    return effect.ttl > 0;
+  });
   particles = particles.filter((particle) => {
     particle.ttl -= dt;
     particle.y -= 28 * dt;
@@ -6933,7 +7007,10 @@ function updatePlayerProjectiles(dt) {
         } else {
           const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitMazeEnemy.markedTimer > 0 && hitMazeEnemy.markedShots > 0;
           const damage = markedBonus ? Math.ceil(projectile.damage * 1.45) : projectile.damage;
-          if (markedBonus) hitMazeEnemy.markedShots -= 1;
+          if (markedBonus) {
+            hitMazeEnemy.markedShots -= 1;
+            syncTargetStatus(hitMazeEnemy);
+          }
           damageBossTarget(hitMazeEnemy, damage, projectile.ability ? "Ability" : "Shot");
           if (projectile.tag === "Rogue" && !projectile.ability) {
             applyPoisonStack(hitMazeEnemy);
@@ -6973,6 +7050,7 @@ function updatePlayerProjectiles(dt) {
         if (markedBonus) {
           hitBoss.markedShots -= 1;
           particles.push({ x: hitBoss.x, y: hitBoss.y - 58, text: "mark", color: "#ffd782", ttl: 0.65 });
+          syncTargetStatus(hitBoss);
         }
         damageBossTarget(hitBoss, damage, projectile.ability ? "Ability" : "Shot");
         if (projectile.tag === "Rogue" && !projectile.ability) {
@@ -7004,6 +7082,7 @@ function markBossTarget(target) {
   target.markedShots = 4 + (hasTalent("ranger_deadeye_mark") ? 2 : 0) + (hasTalent("ranger_deadeye_cap") ? 4 : 0);
   selectedBoss = target;
   particles.push({ x: target.x, y: target.y - target.radius - 36, text: "marked", color: "#ffd782", ttl: 0.95 });
+  syncTargetStatus(target);
 }
 
 function damageBossTarget(target, amount, source, options = {}) {
@@ -7035,11 +7114,25 @@ function damageBossTarget(target, amount, source, options = {}) {
     particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
     return true;
   }
-  target.hp = Math.max(0, target.hp - damage);
-  if (!target.mazeEnemy && source !== "Co-op" && !options.remote) {
+  if (!target.mazeEnemy && isPartySyncActive() && !isMultiplayerHost() && source !== "Co-op" && !options.remote) {
     sendMultiplayerEvent({
       kind: "damage",
       encounter: "arena",
+      room: player.room,
+      phaseSeq: multiplayer.phaseSeq,
+      bossKind: boss.kind,
+      targetKind: target.kind,
+      amount: damage,
+    });
+    particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
+    return true;
+  }
+  target.hp = Math.max(0, target.hp - damage);
+  if (!target.mazeEnemy && source !== "Co-op" && !options.remote && !isPartySyncActive()) {
+    sendMultiplayerEvent({
+      kind: "damage",
+      encounter: "arena",
+      room: player.room,
       phaseSeq: multiplayer.phaseSeq,
       bossKind: boss.kind,
       targetKind: target.kind,
@@ -7080,11 +7173,13 @@ function applyPoisonStack(target) {
   const oldStacks = target.poisonStacks || 0;
   target.poisonStacks = Math.min(maxStacks, oldStacks + 1);
   target.poisonTimer = 5;
+  target.poisonDamagePerStack = roguePoisonDamagePerStack();
   if (!target.poisonTickTimer || target.poisonTickTimer <= 0) target.poisonTickTimer = 1;
   if (hasTalent("rogue_venom_cap") && oldStacks < maxStacks && target.poisonStacks >= maxStacks) {
     damageBossTarget(target, Math.round(player.stats.damage * 0.65), "Venom Nova");
   }
   particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
+  syncTargetStatus(target);
 }
 
 function roguePoisonDamagePerStack() {
@@ -7094,13 +7189,17 @@ function roguePoisonDamagePerStack() {
 function applyBleed(target) {
   target.bleedTimer = 4 + (hasTalent("melee_blood_deep") ? 2 : 0);
   target.bleedTickTimer = 0.5;
+  target.bleedDamage = hasTalent("melee_blood_deep") ? 6 : 4;
   particles.push({ x: target.x, y: target.y - target.radius - 44, text: "bleed", color: "#ff6e7f", ttl: 0.65 });
+  syncTargetStatus(target);
 }
 
 function applyBurn(target) {
   target.burnTimer = 3.5;
   target.burnTickTimer = 0.5;
+  target.burnDamage = Math.round(player.stats.damage * 0.12);
   particles.push({ x: target.x, y: target.y - target.radius - 50, text: "burn", color: "#ff8a32", ttl: 0.65 });
+  syncTargetStatus(target);
 }
 
 function applyExposedStack(target, projectile) {
@@ -7111,6 +7210,7 @@ function applyExposedStack(target, projectile) {
   target.exposedStacks = Math.min(3, (target.exposedStacks || 0) + 1);
   target.exposedTimer = 4 + (hasTalent("rogue_shadow_exposed") ? 2 : 0);
   particles.push({ x: target.x, y: target.y - target.radius - 58, text: `exposed ${target.exposedStacks}`, color: "#c8ff9a", ttl: 0.65 });
+  syncTargetStatus(target);
 }
 
 function consumeExposed(target) {
@@ -7119,6 +7219,7 @@ function consumeExposed(target) {
   target.exposedTimer = 0;
   damageBossTarget(target, Math.round(player.stats.damage * 0.8), "Expose");
   particles.push({ x: target.x, y: target.y - target.radius - 60, text: "exploit", color: "#c8ff9a", ttl: 0.75 });
+  syncTargetStatus(target);
 }
 
 function handleBossDefeated(target) {
@@ -7149,6 +7250,7 @@ function handleMazeEnemyDefeated(target) {
   selectedBoss = null;
   playerProjectiles = [];
   hazards = hazards.filter((hazard) => !hazard.mazeHazard);
+  remoteAbilityEffects = [];
   if (isPartySyncActive()) {
     if (isMultiplayerHost()) {
       broadcastPartyPhase("reward", {
@@ -7231,6 +7333,7 @@ function spawnSpecialSauce() {
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
+  remoteAbilityEffects = [];
   condimentBosses = [];
   boss = createBoss("sauce");
   fightStartedAt = performance.now();
@@ -7249,6 +7352,7 @@ function draw() {
   drawBoss();
   drawHazards();
   drawAbilityEffects();
+  drawRemoteAbilityEffects();
   drawPlayerProjectiles();
   drawRemoteProjectiles();
   drawPlayer();
@@ -9600,6 +9704,30 @@ function drawAbilityEffects() {
   });
 }
 
+function drawRemoteAbilityEffects() {
+  remoteAbilityEffects.forEach((effect) => {
+    const progress = 1 - effect.ttl / effect.maxTtl;
+    const alpha = clamp(effect.ttl / effect.maxTtl, 0, 1);
+    const radius = 28 + progress * (effect.abilityIndex === 1 ? 96 : 58);
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.8;
+    ctx.strokeStyle = effect.color || "#8ec7ff";
+    ctx.fillStyle = `${effect.color || "#8ec7ff"}33`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    const lineLength = Math.min(180, Math.hypot(effect.targetX - effect.x, effect.targetY - effect.y));
+    ctx.translate(effect.x, effect.y);
+    ctx.rotate(effect.angle || 0);
+    ctx.globalAlpha = alpha * 0.55;
+    ctx.fillStyle = effect.color || "#8ec7ff";
+    ctx.fillRect(18, -3, lineLength, 6);
+    ctx.restore();
+  });
+}
+
 function drawStackPips(target, count, color, yOffset) {
   ctx.save();
   ctx.fillStyle = color;
@@ -10931,6 +11059,7 @@ function finishBossSyncCapture(capture) {
     seq: multiplayer.bossSyncSeq,
     source: capture.source,
     bossKind: boss.kind,
+    phaseSeq: multiplayer.phaseSeq,
     bossState: bossStateSnapshot(),
     hazards: newHazards,
     particles: newParticles,
@@ -11017,6 +11146,18 @@ function handleMultiplayerEvent(peerId, event) {
     applyRemoteGauntletSync(peerId, event);
     return;
   }
+  if (event.kind === "target-status") {
+    applyRemoteTargetStatus(peerId, event);
+    return;
+  }
+  if (event.kind === "target-control") {
+    applyRemoteTargetControl(peerId, event);
+    return;
+  }
+  if (event.kind === "ability") {
+    spawnRemoteAbilityVisual(peerId, event);
+    return;
+  }
   if (event.kind === "boss-sync") {
     applyRemoteBossSyncEvent(peerId, event);
     return;
@@ -11032,6 +11173,7 @@ function handleMultiplayerEvent(peerId, event) {
 
 function applyRemoteBossSyncEvent(peerId, event) {
   if (!isHostPeer(peerId) || isMultiplayerHost() || event.bossKind !== boss.kind || player.room !== "arena") return;
+  if (Number.isFinite(event.phaseSeq) && event.phaseSeq !== multiplayer.phaseSeq) return;
   if (Number.isFinite(event.seq) && event.seq <= multiplayer.lastBossSyncSeq) return;
   if (Number.isFinite(event.seq)) multiplayer.lastBossSyncSeq = event.seq;
   if (event.bossState) applyBossStateSnapshot(event.bossState);
@@ -11198,6 +11340,128 @@ function applyRemoteGauntletDamage(peerId, event) {
   sendGauntletSync(true);
 }
 
+function targetSyncDescriptor(target) {
+  if (!isPartySyncActive() || isMultiplayerHost() || !target || target.kind === "trainingDummy") return null;
+  if (target.mazeEnemy && player.room === "maze" && target.id) {
+    return { encounter: "gauntlet", targetId: target.id };
+  }
+  if (!target.mazeEnemy && player.room === "arena") {
+    return { encounter: "arena", targetKind: target.kind };
+  }
+  return null;
+}
+
+function targetStatusSnapshot(target) {
+  return {
+    markedTimer: target.markedTimer || 0,
+    markedShots: target.markedShots || 0,
+    poisonStacks: target.poisonStacks || 0,
+    poisonTimer: target.poisonTimer || 0,
+    poisonTickTimer: target.poisonTickTimer || 0,
+    poisonDamagePerStack: target.poisonDamagePerStack || 0,
+    bleedTimer: target.bleedTimer || 0,
+    bleedTickTimer: target.bleedTickTimer || 0,
+    bleedDamage: target.bleedDamage || 0,
+    burnTimer: target.burnTimer || 0,
+    burnTickTimer: target.burnTickTimer || 0,
+    burnDamage: target.burnDamage || 0,
+    exposedStacks: target.exposedStacks || 0,
+    exposedTimer: target.exposedTimer || 0,
+    judgmentTimer: target.judgmentTimer || 0,
+  };
+}
+
+function targetControlSnapshot(target) {
+  return {
+    x: target.x,
+    y: target.y,
+    state: target.state || "",
+    stateTimer: target.stateTimer || 0,
+    attackTimer: target.attackTimer || 0,
+    destination: target.destination ? cloneSyncObject(target.destination) : null,
+  };
+}
+
+function syncTargetStatus(target) {
+  const descriptor = targetSyncDescriptor(target);
+  if (!descriptor) return;
+  sendMultiplayerEvent({
+    kind: "target-status",
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    ...descriptor,
+    status: targetStatusSnapshot(target),
+  });
+}
+
+function syncTargetControl(target) {
+  const descriptor = targetSyncDescriptor(target);
+  if (!descriptor) return;
+  sendMultiplayerEvent({
+    kind: "target-control",
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    ...descriptor,
+    control: targetControlSnapshot(target),
+  });
+}
+
+function resolveRemoteSyncedTarget(event) {
+  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) return null;
+  if (event.encounter === "gauntlet") {
+    if (player.room !== "maze" || !mazeState) return;
+    return mazeState.enemies.find((enemy) => enemy.id === event.targetId && enemy.hp > 0) || null;
+  }
+  if (event.encounter === "arena") {
+    if (player.room !== "arena") return;
+    return activeBosses().find((candidate) => candidate.kind === event.targetKind && candidate.hp > 0) || null;
+  }
+  return null;
+}
+
+function applyRemoteTargetStatus(peerId, event) {
+  const target = resolveRemoteSyncedTarget(event);
+  if (!target || !event.status) return;
+  Object.entries(event.status).forEach(([key, value]) => {
+    if (Number.isFinite(value)) target[key] = value;
+  });
+  if (event.encounter === "gauntlet") sendGauntletSync(true);
+}
+
+function applyRemoteTargetControl(peerId, event) {
+  const target = resolveRemoteSyncedTarget(event);
+  const control = event?.control;
+  if (!target || !control) return;
+  const x = Number(control.x);
+  const y = Number(control.y);
+  if (Number.isFinite(x) && Number.isFinite(y)) {
+    if (event.encounter === "gauntlet") {
+      if (isMazeCircleWalkable(x, y, target.radius)) {
+        target.x = x;
+        target.y = y;
+      }
+    } else {
+      const point = clampArenaPoint(x, y, target.radius);
+      target.x = point.x;
+      target.y = point.y;
+    }
+  }
+  if (typeof control.state === "string" && control.state) target.state = control.state;
+  ["stateTimer", "attackTimer"].forEach((key) => {
+    if (Number.isFinite(control[key])) target[key] = Math.max(0, control[key]);
+  });
+  if (control.destination === null) {
+    target.destination = null;
+  } else if (
+    control.destination &&
+    Number.isFinite(control.destination.x) &&
+    Number.isFinite(control.destination.y)
+  ) {
+    target.destination = { x: control.destination.x, y: control.destination.y };
+  }
+  if (event.encounter === "gauntlet") sendGauntletSync(true);
+}
+
 function applyBossStateSnapshot(state) {
   if (!state || state.kind !== boss.kind) return;
   Object.entries(state).forEach(([key, value]) => {
@@ -11215,7 +11479,53 @@ function applyBossStateSnapshot(state) {
   }
 }
 
+function spawnRemoteAbilityVisual(peerId, event) {
+  if (!event || event.bossKind !== boss.kind) return;
+  if (Number.isFinite(event.phaseSeq) && event.phaseSeq !== multiplayer.phaseSeq) return;
+  if (event.room !== player.room) return;
+  const x = Number(event.x);
+  const y = Number(event.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const targetX = Number.isFinite(event.targetX) ? event.targetX : x;
+  const targetY = Number.isFinite(event.targetY) ? event.targetY : y;
+  const angle = Number.isFinite(event.angle) ? event.angle : Math.atan2(targetY - y, targetX - x);
+  const color = remotePlayerColor(event.weaponTag);
+  remoteAbilityEffects.push({
+    peerId,
+    classKey: event.classKey || "fighter",
+    abilityIndex: Number(event.abilityIndex) || 0,
+    abilityName: event.abilityName || "Ability",
+    x,
+    y,
+    targetX,
+    targetY,
+    angle,
+    color,
+    ttl: 0.95,
+    maxTtl: 0.95,
+  });
+  if (event.classKey === "ranger" || event.classKey === "mage") {
+    const speed = event.classKey === "mage" ? 480 : 760;
+    remoteProjectiles.push({
+      peerId,
+      x: x + Math.cos(angle) * 28,
+      y: y + Math.sin(angle) * 28,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: event.classKey === "mage" ? 12 : 8,
+      color,
+      ttl: 0.65,
+      age: 0,
+      heavy: event.classKey === "mage",
+      tag: event.weaponTag || (event.classKey === "mage" ? "Magic" : "Ranged"),
+    });
+  }
+}
+
 function spawnRemoteAttackVisual(peerId, event) {
+  if (event.bossKind && event.bossKind !== boss.kind) return;
+  if (Number.isFinite(event.phaseSeq) && event.phaseSeq !== multiplayer.phaseSeq) return;
+  if (event.room && event.room !== player.room) return;
   const angle = Number(event.angle);
   if (!Number.isFinite(event.x) || !Number.isFinite(event.y) || !Number.isFinite(angle)) return;
   const tag = event.weaponTag || "Warrior";
@@ -11242,6 +11552,7 @@ function remoteProjectileLagDistance(event, speed) {
 }
 
 function applyRemoteDamage(event) {
+  if (isPartySyncActive() && !isMultiplayerHost()) return;
   if ((event.encounter !== "arena" && event.room !== "arena") || event.bossKind !== boss.kind || player.room !== "arena") return;
   if (Number.isFinite(event.phaseSeq) && event.phaseSeq !== multiplayer.phaseSeq) return;
   const amount = Math.max(0, Number(event.amount) || 0);
