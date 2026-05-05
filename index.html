@@ -13,7 +13,23 @@
         <div class="menu-actions">
           <button id="singlePlayerButton" type="button">Single Player</button>
           <button id="multiplayerButton" type="button">Multiplayer</button>
+          <button id="devTestButton" type="button">Dev Test</button>
         </div>
+      </section>
+
+      <section id="devMenu" class="menu-screen" aria-label="Dev test password">
+        <div class="menu-head">
+          <h1>Dev Test</h1>
+          <button id="backFromDevButton" type="button">Back</button>
+        </div>
+        <div class="lobby-form">
+          <label>
+            <span>Password</span>
+            <input id="devPasswordInput" maxlength="18" type="password" autocomplete="off" />
+          </label>
+          <button id="startDevButton" type="button">Start Dev Test</button>
+        </div>
+        <p id="devStatus" class="menu-status">Enter the dev password.</p>
       </section>
 
       <section id="multiplayerMenu" class="menu-screen" aria-label="Multiplayer rooms">
@@ -43,18 +59,6 @@
           <button id="leaveRoomButton" type="button">Leave</button>
         </div>
         <div id="lobbyPlayers" class="lobby-players"></div>
-        <div id="lobbyBossSelector" class="lobby-bosses">
-          <button class="choice selected" type="button" data-boss="cola"><span>Big Cola</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="burger"><span>Big Burger</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="fries"><span>Curly Fries</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="trio"><span>Condiment Trio</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="shake"><span>Peanut Buster Shake</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="nacho"><span>Nacho Libre</span><small>Boss</small></button>
-          <button class="choice" type="button" data-boss="pizza"><span>Pizza Phantom</span><small>Boss</small></button>
-          <button class="choice locked" type="button" data-boss="taco" disabled aria-disabled="true"><span>Taco Titan</span><small>Locked</small></button>
-          <button class="choice" type="button" data-boss="donut"><span>Donut Donald</span><small>Boss</small></button>
-          <button class="choice locked" type="button" data-boss="sushi" disabled aria-disabled="true"><span>Sushi Serpent</span><small>Locked</small></button>
-        </div>
         <div class="menu-actions row">
           <button id="readyButton" type="button">Ready</button>
           <button id="startRoomButton" type="button">Start Fight</button>
@@ -77,7 +81,13 @@
         <div id="floatText" class="float-text" aria-live="polite"></div>
         <div id="deathScreen" class="death-screen" aria-live="assertive" hidden>
           <div class="death-title">You're Stuffed</div>
-          <button id="deathResetButton" class="death-reset" type="button">Reset</button>
+          <button id="deathResetButton" class="death-reset" type="button">Reset Run</button>
+        </div>
+        <div id="mazeRewardOverlay" class="reward-overlay" hidden>
+          <section class="reward-panel" aria-label="Choose gauntlet reward">
+            <h1 id="mazeRewardTitle">Choose a Reward</h1>
+            <div id="mazeRewardCards" class="reward-cards"></div>
+          </section>
         </div>
       </section>
 
@@ -108,6 +118,21 @@
         </section>
 
         <section class="panel compact">
+          <h2>Class</h2>
+          <button id="classMenuButton" class="selector-button" type="button">Select Class</button>
+        </section>
+
+        <section class="panel compact">
+          <h2>Armor</h2>
+          <button id="armorMenuButton" class="selector-button" type="button">Select Armor</button>
+        </section>
+
+        <section class="panel compact">
+          <h2>Skills</h2>
+          <button id="skillsButton" class="selector-button skills-button" type="button">Skills (0)</button>
+        </section>
+
+        <section class="panel compact">
           <h2>Co-op</h2>
           <div class="coop-row">
             <span id="coopStatus">Solo</span>
@@ -115,26 +140,55 @@
           </div>
         </section>
 
-        <section class="panel compact">
+        <section id="bossTestPanel" class="panel compact" hidden>
           <h2>Boss Test</h2>
-          <div id="bossSelector" class="choice-list">
-            <button class="choice selected" type="button" data-boss="cola"><span>Big Cola</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="burger"><span>Big Burger</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="fries"><span>Curly Fries</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="trio"><span>Condiment Trio</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="sauce"><span>Special Sauce</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="shake"><span>Peanut Buster Shake</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="nacho"><span>Nacho Libre</span><small>Test</small></button>
-            <button class="choice" type="button" data-boss="pizza"><span>Pizza Phantom</span><small>Test</small></button>
-            <button class="choice locked" type="button" data-boss="taco" disabled aria-disabled="true"><span>Taco Titan</span><small>Locked</small></button>
-            <button class="choice" type="button" data-boss="donut"><span>Donut Donald</span><small>Test</small></button>
-            <button class="choice locked" type="button" data-boss="sushi" disabled aria-disabled="true"><span>Sushi Serpent</span><small>Locked</small></button>
-          </div>
+          <button id="bossMenuButton" class="selector-button" type="button">Select Boss</button>
         </section>
 
       </aside>
     </main>
 
-    <script src="./src/game.js?v=20260430-bosslocks1"></script>
+    <div id="classMenuOverlay" class="class-menu-overlay" hidden>
+      <section class="class-menu" aria-label="Select class">
+        <div class="menu-head">
+          <h1>Select Class</h1>
+          <button id="classMenuClose" type="button">Close</button>
+        </div>
+        <div id="classSelector" class="choice-list class-menu-list"></div>
+      </section>
+    </div>
+
+    <div id="armorMenuOverlay" class="class-menu-overlay" hidden>
+      <section class="class-menu" aria-label="Select armor">
+        <div class="menu-head">
+          <h1>Select Armor</h1>
+          <button id="armorMenuClose" type="button">Close</button>
+        </div>
+        <div id="armorSelector" class="choice-list class-menu-list"></div>
+      </section>
+    </div>
+
+    <div id="talentMenuOverlay" class="class-menu-overlay" hidden>
+      <section class="class-menu talent-menu" aria-label="Class talents">
+        <div class="menu-head">
+          <h1 id="talentMenuTitle">Talents</h1>
+          <button id="talentMenuClose" type="button">Close</button>
+        </div>
+        <div id="talentMenuPoints" class="talent-points">Talent Points: 0</div>
+        <div id="talentTree" class="talent-tree"></div>
+      </section>
+    </div>
+
+    <div id="bossMenuOverlay" class="class-menu-overlay" hidden>
+      <section class="class-menu" aria-label="Select boss">
+        <div class="menu-head">
+          <h1>Select Boss</h1>
+          <button id="bossMenuClose" type="button">Close</button>
+        </div>
+        <div id="bossSelector" class="choice-list class-menu-list"></div>
+      </section>
+    </div>
+
+    <script src="./src/game.js?v=20260504-bosshp3x1"></script>
   </body>
 </html>

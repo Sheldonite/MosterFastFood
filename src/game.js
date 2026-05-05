@@ -15,8 +15,14 @@ const ui = {
   mainMenu: document.querySelector("#mainMenu"),
   multiplayerMenu: document.querySelector("#multiplayerMenu"),
   roomLobby: document.querySelector("#roomLobby"),
+  devMenu: document.querySelector("#devMenu"),
   singlePlayerButton: document.querySelector("#singlePlayerButton"),
   multiplayerButton: document.querySelector("#multiplayerButton"),
+  devTestButton: document.querySelector("#devTestButton"),
+  backFromDevButton: document.querySelector("#backFromDevButton"),
+  devPasswordInput: document.querySelector("#devPasswordInput"),
+  startDevButton: document.querySelector("#startDevButton"),
+  devStatus: document.querySelector("#devStatus"),
   backToMainButton: document.querySelector("#backToMainButton"),
   playerNameInput: document.querySelector("#playerNameInput"),
   roomNameInput: document.querySelector("#roomNameInput"),
@@ -32,15 +38,36 @@ const ui = {
   leaveRoomButton: document.querySelector("#leaveRoomButton"),
   lobbyStatus: document.querySelector("#lobbyStatus"),
   armory: document.querySelector("#armory"),
+  classSelector: document.querySelector("#classSelector"),
+  classMenuButton: document.querySelector("#classMenuButton"),
+  classMenuOverlay: document.querySelector("#classMenuOverlay"),
+  classMenuClose: document.querySelector("#classMenuClose"),
+  armorSelector: document.querySelector("#armorSelector"),
+  armorMenuButton: document.querySelector("#armorMenuButton"),
+  armorMenuOverlay: document.querySelector("#armorMenuOverlay"),
+  armorMenuClose: document.querySelector("#armorMenuClose"),
+  skillsButton: document.querySelector("#skillsButton"),
+  talentMenuOverlay: document.querySelector("#talentMenuOverlay"),
+  talentMenuClose: document.querySelector("#talentMenuClose"),
+  talentMenuTitle: document.querySelector("#talentMenuTitle"),
+  talentMenuPoints: document.querySelector("#talentMenuPoints"),
+  talentTree: document.querySelector("#talentTree"),
   bossSelector: document.querySelector("#bossSelector"),
+  bossTestPanel: document.querySelector("#bossTestPanel"),
+  bossMenuButton: document.querySelector("#bossMenuButton"),
+  bossMenuOverlay: document.querySelector("#bossMenuOverlay"),
+  bossMenuClose: document.querySelector("#bossMenuClose"),
   floatText: document.querySelector("#floatText"),
   potionButton: document.querySelector("#potionButton"),
   resetButton: document.querySelector("#resetButton"),
   deathScreen: document.querySelector("#deathScreen"),
   deathResetButton: document.querySelector("#deathResetButton"),
+  mazeRewardOverlay: document.querySelector("#mazeRewardOverlay"),
+  mazeRewardTitle: document.querySelector("#mazeRewardTitle"),
+  mazeRewardCards: document.querySelector("#mazeRewardCards"),
 };
 
-const lockedBosses = new Set(["taco", "sushi"]);
+const lockedBosses = new Set();
 
 const world = {
   width: 1680,
@@ -48,6 +75,7 @@ const world = {
   wall: 36,
   starter: { x: 80, y: 120, w: 560, h: 660 },
   arena: { x: 760, y: 90, w: 820, h: 720 },
+  maze: { x: 760, y: 90, w: 820, h: 720 },
   gate: { x: 610, y: 390, w: 150, h: 130 },
 };
 
@@ -57,6 +85,7 @@ const gear = {
     emberBow: { slot: "weapon", name: "Bow", tag: "Ranged", damage: 27, range: 230, speed: 0.78, color: "#e0a14e" },
     pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
     shadowDaggers: { slot: "weapon", name: "Daggers", tag: "Rogue", damage: 32, range: 82, speed: 0.62, moveSpeedBonus: 36, color: "#9be06f" },
+    dawnHammer: { slot: "weapon", name: "Dawn Hammer", tag: "Paladin", damage: 38, range: 74, speed: 1.08, moveSpeedBonus: 10, color: "#f0d47c" },
   },
   armor: {
     duelistCoat: { slot: "armor", name: "Light Armor", tag: "Light", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
@@ -65,38 +94,259 @@ const gear = {
   },
 };
 
+const classOptions = [
+  { id: "warrior", name: "Warrior", weapon: "ironBlade", tag: "Melee", note: "Close control" },
+  { id: "ranger", name: "Ranger", weapon: "emberBow", tag: "Ranged", note: "Safe pressure" },
+  { id: "mage", name: "Mage", weapon: "pulseStaff", tag: "Magic", note: "Burst spells" },
+  { id: "rogue", name: "Rogue", weapon: "shadowDaggers", tag: "Rogue", note: "Fast poison" },
+  { id: "paladin", name: "Paladin", weapon: "dawnHammer", tag: "Holy", note: "Wards and AoE" },
+  { id: "priest", name: "Priest", tag: "Soon", note: "Locked", locked: true },
+  { id: "warlock", name: "Warlock", tag: "Soon", note: "Locked", locked: true },
+  { id: "druid", name: "Druid", tag: "Soon", note: "Locked", locked: true },
+  { id: "gunslinger", name: "Gunslinger", tag: "Soon", note: "Locked", locked: true },
+  { id: "amazon", name: "Amazon", tag: "Soon", note: "Locked", locked: true },
+];
+
+const bossTestOptions = [
+  { id: "cola", name: "Big Cola" },
+  { id: "burger", name: "Big Burger" },
+  { id: "fries", name: "Curly Fries" },
+  { id: "trio", name: "Condiment Trio" },
+  { id: "sauce", name: "Special Sauce" },
+  { id: "shake", name: "Peanut Buster Shake" },
+  { id: "nacho", name: "Nacho Libre" },
+  { id: "pizza", name: "Pizza Phantom" },
+  { id: "taco", name: "Taco Titan" },
+  { id: "donut", name: "Donut Donald" },
+  { id: "sushi", name: "Sushi Serpent" },
+];
+
+const progressionBosses = ["cola", "burger", "fries", "trio", "shake", "nacho", "pizza", "donut", "taco", "sushi"];
+
+const mazeThemes = {
+  cola: { name: "Fizzworks", floor: "#18313a", wall: "#2f5260", trim: "#b9f4ff", enemy: "#7ed8ef", mini: "#b9f4ff", decor: "#5fc5e6" },
+  burger: { name: "Grill Pit", floor: "#30251f", wall: "#65402b", trim: "#e0a14e", enemy: "#a76e3e", mini: "#e0a14e", decor: "#ff7044" },
+  fries: { name: "Fryer Lanes", floor: "#342e1c", wall: "#725b24", trim: "#f0c95d", enemy: "#d9aa4f", mini: "#ffd76a", decor: "#f0c95d" },
+  trio: { name: "Condiment Pantry", floor: "#2f2528", wall: "#5e3334", trim: "#f7efd9", enemy: "#cf3b2f", mini: "#e3bf34", decor: "#f3ead2" },
+  sauce: { name: "Sauce Cellar", floor: "#2c1e24", wall: "#67343b", trim: "#f0d47c", enemy: "#cf3b2f", mini: "#f3ead2", decor: "#e3bf34" },
+  shake: { name: "Freezer Lab", floor: "#1e2b36", wall: "#35546a", trim: "#bafcff", enemy: "#8ec7ff", mini: "#ffd7e8", decor: "#f7efd9" },
+  nacho: { name: "Nacho Arena", floor: "#332613", wall: "#73521d", trim: "#ffda6b", enemy: "#d9aa4f", mini: "#f0c35b", decor: "#6fbf55" },
+  pizza: { name: "Pizza Parlor", floor: "#301f1c", wall: "#6b351f", trim: "#ffd76a", enemy: "#b93a2f", mini: "#ff7044", decor: "#f7e28b" },
+  donut: { name: "Donut Bakery", floor: "#332334", wall: "#6b3c57", trim: "#ff9fc8", enemy: "#ff79aa", mini: "#ffd7e8", decor: "#8ec7ff" },
+  taco: { name: "Taco Foundry", floor: "#2d2418", wall: "#75572b", trim: "#f0d47c", enemy: "#6fbf55", mini: "#ff7044", decor: "#e3bf34" },
+  sushi: { name: "Sushi Canal", floor: "#17292a", wall: "#30504c", trim: "#b7e7d9", enemy: "#7ab9a8", mini: "#f7efd9", decor: "#563a2f" },
+};
+
+const mazeRewardPool = [
+  { id: "damage", name: "Sharper Strikes", description: "+8% damage for this run.", values: { damageMultiplier: 0.08 } },
+  { id: "speed", name: "Quick Feet", description: "+10% move speed for this run.", values: { speedMultiplier: 0.1 } },
+  { id: "hp", name: "Heartier Build", description: "+15 maximum health for this run.", values: { maxHp: 15 } },
+  { id: "armor", name: "Extra Plating", description: "+1 armor for this run.", values: { armor: 1 } },
+  { id: "attackSpeed", name: "Fast Hands", description: "+8% basic attack speed for this run.", values: { attackSpeed: 0.08 } },
+  { id: "potion", name: "Spare Flask", description: "+1 potion now, up to 4.", values: { potion: 1 } },
+  { id: "cooldown", name: "Clear Focus", description: "+10% ability cooldown recovery for this run.", values: { cooldownRecovery: 0.1 } },
+];
+
+const mazeWallThickness = 8;
+const mazePlayerWallPadding = 8;
+
 const combatTuning = {
-  incomingDamageMultiplier: 1.8975,
+  incomingDamageMultiplier: 1.74,
+  overlapDamageWindowMs: 360,
+  overlapDamageMultiplier: 0.62,
+  bossAttackIntervalMultiplier: 0.92,
+  globalBossHealthMultiplier: 3,
+  bossHealthMultipliers: {
+    cola: 1.5,
+    burger: 1.55,
+    fries: 1.5,
+    trio: 1.5,
+    sauce: 1.65,
+    shake: 1.7,
+    nacho: 1.58,
+    pizza: 1.62,
+    donut: 1.9,
+    taco: 5.8,
+    sushi: 1.58,
+  },
+  attackIntervals: {
+    burger: { base: 2.08, phase2: 1.66, enraged: 1.3 },
+    fries: { base: 1.58, phase2: 1.3, enraged: 1.2 },
+    cola: { base: 1.62, phase2: 1.3, enraged: 1.06 },
+    shake: { base: 1.34, phase2: 1.16, phase3: 0.98, enraged: 0.84 },
+    pizza: { base: 1.78, phase2: 1.46, phase3: 1.26, enraged: 1.06 },
+    donut: { base: 1.5, holes: 1.18, enraged: 0.98 },
+  },
+  phaseDelay: {
+    short: 0.85,
+    medium: 1.15,
+  },
+  donut: {
+    gauntletDuration: 30,
+    gauntletEarlySpawn: 2.25,
+    gauntletLateSpawn: 1.62,
+    glazeFinalStagger: 0.96,
+    glazeNormalStagger: 0.56,
+  },
 };
 
 const abilityLoadouts = {
   melee: [
     { key: "Q", name: "Shield Bash", cooldown: 4.5 },
+    { key: "E", name: "Groundbreaker", cooldown: 10 },
     { key: "Space", name: "Whirlwind Dash", cooldown: 8 },
     { key: "R", name: "Shield Wall", cooldown: 15 },
   ],
   ranger: [
     { key: "Q", name: "Marked Shot", cooldown: 7 },
+    { key: "E", name: "Arrow Storm", cooldown: 12 },
     { key: "Space", name: "Tumble Shot", cooldown: 9 },
     { key: "R", name: "Volley Trap", cooldown: 16 },
   ],
   mage: [
     { key: "Q", name: "Fire Blast", cooldown: 6 },
+    { key: "E", name: "Meteor Field", cooldown: 13 },
     { key: "Space", name: "Blink Step", cooldown: 10 },
     { key: "R", name: "Time Warp", cooldown: 18 },
   ],
   rogue: [
+    { key: "Q", name: "Backstab", cooldown: 6 },
+    { key: "E", name: "Poison Cloud", cooldown: 11 },
     { key: "Space", name: "Shadow Step", cooldown: 8 },
-    { key: "E", name: "Backstab", cooldown: 6 },
     { key: "R", name: "Smoke Bomb", cooldown: 16 },
   ],
+  paladin: [
+    { key: "Q", name: "Radiant Smite", cooldown: 5.5 },
+    { key: "E", name: "Consecration", cooldown: 12 },
+    { key: "Space", name: "Aegis Step", cooldown: 9 },
+    { key: "R", name: "Divine Bulwark", cooldown: 16 },
+  ],
 };
+
+const talentClassNames = {
+  melee: "Warrior",
+  ranger: "Ranger",
+  mage: "Mage",
+  rogue: "Rogue",
+  paladin: "Paladin",
+};
+
+function buildTalentBranch(classKey, branch, column, nodes) {
+  return nodes.map((node, row) => ({
+    id: node.id,
+    classKey,
+    branch,
+    row,
+    column,
+    name: node.name,
+    description: node.description,
+    type: node.type || (row === nodes.length - 1 ? "capstone" : row === 0 ? "minor" : "major"),
+    parents: row === 0 ? [] : [nodes[row - 1].id],
+    effect: node.effect,
+  }));
+}
+
+const talentDefinitions = [
+  ...buildTalentBranch("melee", "Iron Wall", 0, [
+    { id: "melee_iron_hp", name: "Iron Stomach", description: "+25 maximum health.", effect: "+25 HP" },
+    { id: "melee_iron_wall", name: "Reinforced Guard", description: "Shield Wall lasts longer and blocks more damage.", effect: "Better Shield Wall" },
+    { id: "melee_iron_heal", name: "Deflecting Bite", description: "Shield Bash heals when it blocks projectiles.", effect: "Block heal" },
+    { id: "melee_iron_last", name: "Last Stand", description: "Once per fight, survive lethal damage and gain Shield Wall.", type: "capstone", effect: "Cheat death" },
+  ]),
+  ...buildTalentBranch("melee", "Bloodblade", 1, [
+    { id: "melee_blood_bleed", name: "Serrated Edge", description: "Basic attacks apply bleed.", effect: "Bleed basics" },
+    { id: "melee_blood_deep", name: "Deep Cuts", description: "Bleeds last longer and tick harder.", effect: "Stronger bleed" },
+    { id: "melee_blood_whirl", name: "Red Whirl", description: "Whirlwind Dash applies bleed.", effect: "Dash bleed" },
+    { id: "melee_blood_hemo", name: "Hemorrhage", description: "Groundbreaker bursts bleeding targets for bonus damage.", type: "capstone", effect: "Bleed burst" },
+  ]),
+  ...buildTalentBranch("melee", "Earthbreaker", 2, [
+    { id: "melee_earth_radius", name: "Wider Quake", description: "Groundbreaker radius is larger.", effect: "+Radius" },
+    { id: "melee_earth_after", name: "Aftershock", description: "Groundbreaker hits a second time after a short delay.", effect: "Aftershock" },
+    { id: "melee_earth_bash", name: "Shock Bash", description: "Shield Bash reaches farther and hits harder.", effect: "Bigger bash" },
+    { id: "melee_earth_cap", name: "Earthsplitter", description: "Groundbreaker destroys nearby small projectiles.", type: "capstone", effect: "Projectile clear" },
+  ]),
+  ...buildTalentBranch("ranger", "Deadeye", 0, [
+    { id: "ranger_deadeye_mark", name: "Long Mark", description: "Marked Shot grants more marked hits.", effect: "+Marked hits" },
+    { id: "ranger_deadeye_damage", name: "Clean Angle", description: "Marked basic shots deal more damage.", effect: "+Marked damage" },
+    { id: "ranger_deadeye_tumble", name: "Snap Aim", description: "Tumble Shot empowers your next basic attack.", effect: "Tumble buff" },
+    { id: "ranger_deadeye_cap", name: "Perfect Mark", description: "Marked Shot marks longer and enables bigger damage windows.", type: "capstone", effect: "Longer mark" },
+  ]),
+  ...buildTalentBranch("ranger", "Trapmaster", 1, [
+    { id: "ranger_trap_size", name: "Wide Net", description: "Volley Trap trigger radius is larger.", effect: "+Trap size" },
+    { id: "ranger_trap_tumble", name: "Pocket Trap", description: "Tumble Shot drops a short-lived mini trap.", effect: "Tumble trap" },
+    { id: "ranger_trap_damage", name: "Barbed Springs", description: "Volley Trap shots hit harder.", effect: "+Trap damage" },
+    { id: "ranger_trap_cap", name: "Kill Zone", description: "Volley Trap fires more shots and refreshes faster.", type: "capstone", effect: "More trap shots" },
+  ]),
+  ...buildTalentBranch("ranger", "Arrow Storm", 2, [
+    { id: "ranger_storm_radius", name: "Broad Storm", description: "Arrow Storm radius is larger.", effect: "+Storm size" },
+    { id: "ranger_storm_pulses", name: "Rapid Rain", description: "Arrow Storm pulses more often.", effect: "Faster pulses" },
+    { id: "ranger_storm_duration", name: "Lingering Clouds", description: "Arrow Storm lasts longer.", effect: "+Duration" },
+    { id: "ranger_storm_cap", name: "Skyfall", description: "Arrow Storm hits much harder.", type: "capstone", effect: "+Storm damage" },
+  ]),
+  ...buildTalentBranch("mage", "Pyromancer", 0, [
+    { id: "mage_pyro_radius", name: "Hotter Blast", description: "Fire Blast explosion radius is larger.", effect: "+Blast size" },
+    { id: "mage_pyro_burn", name: "Scorch", description: "Fire Blast burns enemies over time.", effect: "Burn" },
+    { id: "mage_pyro_damage", name: "Combustion", description: "Fire Blast deals more damage.", effect: "+Blast damage" },
+    { id: "mage_pyro_cap", name: "Inferno Core", description: "Fire Blast becomes a huge, high-damage explosion.", type: "capstone", effect: "Huge blast" },
+  ]),
+  ...buildTalentBranch("mage", "Meteor Savant", 1, [
+    { id: "mage_meteor_radius", name: "Wide Field", description: "Meteor Field radius is larger.", effect: "+Meteor size" },
+    { id: "mage_meteor_speed", name: "Falling Stars", description: "Meteor Field impacts more often.", effect: "Faster meteors" },
+    { id: "mage_meteor_duration", name: "Molten Sky", description: "Meteor Field lasts longer.", effect: "+Duration" },
+    { id: "mage_meteor_cap", name: "Cataclysm", description: "Meteor impacts are larger and hit harder.", type: "capstone", effect: "Big meteors" },
+  ]),
+  ...buildTalentBranch("mage", "Chronomancer", 2, [
+    { id: "mage_chrono_duration", name: "Long Warp", description: "Time Warp lasts longer.", effect: "+Warp time" },
+    { id: "mage_chrono_radius", name: "Wide Warp", description: "Time Warp radius is larger.", effect: "+Warp size" },
+    { id: "mage_chrono_blink", name: "Echo Rune", description: "Blink Rune is larger and stronger.", effect: "+Blink rune" },
+    { id: "mage_chrono_cap", name: "Time Loop", description: "Once per fight, lethal damage rewinds into a heal.", type: "capstone", effect: "Cheat death" },
+  ]),
+  ...buildTalentBranch("rogue", "Venomancer", 0, [
+    { id: "rogue_venom_stacks", name: "Toxic Edge", description: "Poison can stack higher.", effect: "+Poison stacks" },
+    { id: "rogue_venom_damage", name: "Vile Dose", description: "Poison ticks harder.", effect: "+Poison damage" },
+    { id: "rogue_venom_cloud", name: "Spreading Cloud", description: "Poison Cloud is larger and lasts longer.", effect: "+Cloud" },
+    { id: "rogue_venom_cap", name: "Venom Nova", description: "Max poison stacks burst for bonus damage.", type: "capstone", effect: "Poison burst" },
+  ]),
+  ...buildTalentBranch("rogue", "Shadow Duelist", 1, [
+    { id: "rogue_shadow_backstab", name: "Dirty Knife", description: "Backstab hits harder.", effect: "+Backstab" },
+    { id: "rogue_shadow_exposed", name: "Deep Expose", description: "Exposed stacks last longer.", effect: "+Expose time" },
+    { id: "rogue_shadow_step", name: "Long Shadow", description: "Shadow Step keeps Backstab ready longer.", effect: "+Backstab window" },
+    { id: "rogue_shadow_cap", name: "Deathblow", description: "Empowered Backstab consumes Exposed for bonus damage.", type: "capstone", effect: "Execute burst" },
+  ]),
+  ...buildTalentBranch("rogue", "Smoke Trickster", 2, [
+    { id: "rogue_smoke_size", name: "Heavy Smoke", description: "Smoke Bomb radius is larger.", effect: "+Smoke size" },
+    { id: "rogue_smoke_duration", name: "Lingering Cover", description: "Smoke Bomb lasts longer.", effect: "+Duration" },
+    { id: "rogue_smoke_poison", name: "Noxious Cover", description: "Smoke Bomb poisons enemies inside it.", effect: "Poison smoke" },
+    { id: "rogue_smoke_cap", name: "Blackout", description: "Smoke Bomb clears small projectiles when dropped.", type: "capstone", effect: "Projectile clear" },
+  ]),
+  ...buildTalentBranch("paladin", "Consecrated Ground", 0, [
+    { id: "paladin_consecrate_size", name: "Wider Light", description: "Consecration radius is larger.", effect: "+Consecration size" },
+    { id: "paladin_consecrate_duration", name: "Lasting Prayer", description: "Consecration lasts longer.", effect: "+Duration" },
+    { id: "paladin_consecrate_damage", name: "Holy Burn", description: "Consecration deals more damage.", effect: "+Holy damage" },
+    { id: "paladin_consecrate_cap", name: "Divine Domain", description: "Abilities recover faster while you stand in Consecration.", type: "capstone", effect: "Cooldown haste" },
+  ]),
+  ...buildTalentBranch("paladin", "Guardian", 1, [
+    { id: "paladin_guard_heal", name: "Mercy Ward", description: "Divine Bulwark heals more.", effect: "+Bulwark heal" },
+    { id: "paladin_guard_mitigation", name: "Blessed Plate", description: "Shield Wall and Bulwark reduce more damage.", effect: "+Mitigation" },
+    { id: "paladin_guard_projectiles", name: "Projectile Ward", description: "Divine Bulwark clears nearby projectiles.", effect: "Projectile clear" },
+    { id: "paladin_guard_cap", name: "Unfallen", description: "Once per fight, survive lethal damage and gain Bulwark.", type: "capstone", effect: "Cheat death" },
+  ]),
+  ...buildTalentBranch("paladin", "Judgment", 2, [
+    { id: "paladin_judgment_damage", name: "Sharp Judgment", description: "Radiant Smite hits harder.", effect: "+Smite damage" },
+    { id: "paladin_judgment_radius", name: "Wide Verdict", description: "Radiant Smite radius is larger.", effect: "+Smite size" },
+    { id: "paladin_judgment_mark", name: "Marked Guilty", description: "Radiant Smite marks enemies to take more damage.", effect: "Judgment mark" },
+    { id: "paladin_judgment_cap", name: "Final Judgment", description: "Radiant Smite bursts marked enemies for bonus damage.", type: "capstone", effect: "Judgment burst" },
+  ]),
+];
+
+const talentById = new Map(talentDefinitions.map((talent) => [talent.id, talent]));
 
 const stands = [
   { x: 165, y: 270, type: "weapon", id: "ironBlade" },
   { x: 285, y: 270, type: "weapon", id: "emberBow" },
   { x: 405, y: 270, type: "weapon", id: "pulseStaff" },
   { x: 525, y: 270, type: "weapon", id: "shadowDaggers" },
+  { x: 585, y: 395, type: "weapon", id: "dawnHammer" },
   { x: 205, y: 520, type: "armor", id: "duelistCoat" },
   { x: 340, y: 520, type: "armor", id: "bulwarkPlate" },
   { x: 475, y: 520, type: "armor", id: "channelerRobe" },
@@ -142,7 +392,9 @@ curlyFriesSprite.addEventListener("load", () => {
 
 let player = createPlayer();
 let boss = createBoss("cola");
+let trainingDummy = createTrainingDummy();
 let condimentBosses = [];
+let mazeState = null;
 let hazards = [];
 let playerProjectiles = [];
 let remoteProjectiles = [];
@@ -159,9 +411,15 @@ const keyDirections = {
 };
 let selectedBoss = null;
 let floatTimer = 0;
+let screenBanner = null;
 let fightStartedAt = 0;
 let lastTime = performance.now();
 let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
+let classSelectorSignature = "";
+let armorSelectorSignature = "";
+let bossSelectorSignature = "";
+let talentTreeSignature = "";
+let lastCanvasPointerAttackAt = 0;
 const multiplayer = {
   socket: null,
   id: null,
@@ -183,6 +441,18 @@ const multiplayer = {
   peers: new Map(),
 };
 
+const runState = {
+  mode: "menu",
+  active: false,
+  buildLocked: false,
+  devUnlocked: false,
+  talentPoints: 0,
+  learnedTalents: new Set(),
+  lockedTalentClass: null,
+  mazeCount: 0,
+  mazeBuffs: {},
+};
+
 function createPlayer() {
   return {
     x: 300,
@@ -193,7 +463,7 @@ function createPlayer() {
     maxHp: 115,
     potions: 3,
     attackCooldown: 0,
-    abilityCooldowns: [0, 0, 0],
+    abilityCooldowns: [0, 0, 0, 0],
     castTimer: 0,
     castMoveLockTimer: 0,
     castAngle: 0,
@@ -205,16 +475,20 @@ function createPlayer() {
     rogueAttackTimer: 0,
     rogueAttackAngle: 0,
     backstabTimer: 0,
+    deadeyeTimer: 0,
     smokeSpeedGranted: false,
     tumbleTimer: 0,
     invulnerableTimer: 0,
     shieldWallTimer: 0,
+    consecrationTimer: 0,
     guardSpeedTimer: 0,
+    tacoGreaseTimer: 0,
     gateCooldown: 0,
     room: "starter",
     dead: false,
     won: false,
     freezeTimer: 0,
+    lastDamageAt: 0,
     chillStacks: 0,
     chillTimer: 0,
     facing: "down",
@@ -225,6 +499,7 @@ function createPlayer() {
     greaseCooldown: 0,
     slide: null,
     gear: { weapon: "ironBlade", armor: "duelistCoat" },
+    talentSaves: {},
     stats: { damage: 26, range: 54, speed: 250, armor: 2 },
   };
 }
@@ -343,11 +618,13 @@ function createBoss(kind = "burger") {
     },
   };
   const template = bosses[kind];
+  const scaledMaxHp = scaledBossHp(kind, template.maxHp);
   const createdBoss = {
     ...template,
+    maxHp: scaledMaxHp,
     x: 1180,
     y: 450,
-    hp: template.maxHp,
+    hp: scaledMaxHp,
     phase: 1,
     totalPhases: kind === "donut" ? 6 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
     enraged: false,
@@ -391,6 +668,22 @@ function createBoss(kind = "burger") {
     napkinZone: null,
     napkinCooldownTimer: 0,
     napkinUses: 0,
+    shellGuardActive: kind === "taco",
+    shellCrackStacks: 0,
+    exposedFillingTimer: 0,
+    tacoPuzzleStep: 0,
+    tacoPuzzleTimer: 0,
+    tacoPuzzleResolveTimer: 0,
+    tacoPuzzleActive: false,
+    tacoPuzzleFailed: false,
+    tacoPuzzleProgress: false,
+    tacoIngredientQueue: [],
+    tacoCurrentIngredient: null,
+    tacoComboSolved: false,
+    tacoFloodCountdown: 0,
+    tacoCycleCount: 0,
+    tacoObjectiveText: "",
+    tacoFinalFeastAnnounced: false,
     serpentAngle: 0,
     serpentHeading: 0,
     serpentTrail: [],
@@ -403,6 +696,35 @@ function createBoss(kind = "burger") {
   };
   if (kind === "sushi") initializeSushiTrail(createdBoss);
   return createdBoss;
+}
+
+function scaledBossHp(kind, baseHp) {
+  const multiplier = combatTuning.bossHealthMultipliers[kind] || 1;
+  return Math.round(baseHp * multiplier * combatTuning.globalBossHealthMultiplier);
+}
+
+function createTrainingDummy() {
+  return {
+    kind: "trainingDummy",
+    name: "Training Dummy",
+    x: world.starter.x + world.starter.w - 255,
+    y: world.starter.y + world.starter.h - 96,
+    radius: 34,
+    hp: 1200,
+    maxHp: 1200,
+    shieldTimer: 0,
+    markedTimer: 0,
+    markedShots: 0,
+    poisonStacks: 0,
+    poisonTimer: 0,
+    poisonTickTimer: 0,
+    exposedStacks: 0,
+    exposedTimer: 0,
+    damageTotal: 0,
+    dpsWindowStart: 0,
+    lastHitAt: 0,
+    lastDamage: 0,
+  };
 }
 
 function initializeSushiTrail(targetBoss) {
@@ -439,14 +761,15 @@ function createCondimentBosses() {
 }
 
 function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
+  const scaledMaxHp = scaledBossHp("trio", maxHp);
   return {
     kind,
     name,
     x,
     y,
     radius: 34,
-    hp: maxHp,
-    maxHp,
+    hp: scaledMaxHp,
+    maxHp: scaledMaxHp,
     color,
     attackTimer,
     baseAttackTimer: attackTimer,
@@ -458,19 +781,100 @@ function createCondiment(kind, name, x, y, color, maxHp, attackTimer) {
   };
 }
 
+function resetRunTalents() {
+  runState.talentPoints = 0;
+  runState.learnedTalents = new Set();
+  runState.lockedTalentClass = null;
+  runState.mazeCount = 0;
+  runState.mazeBuffs = {};
+  talentTreeSignature = "";
+}
+
+function activeTalentClass() {
+  return runState.lockedTalentClass || currentClassKey();
+}
+
+function talentsForActiveClass() {
+  return talentDefinitions.filter((talent) => talent.classKey === activeTalentClass());
+}
+
+function hasTalent(talentId) {
+  return runState.learnedTalents?.has(talentId);
+}
+
+function canLearnTalent(talentId) {
+  const talent = talentById.get(talentId);
+  if (!talent || talent.classKey !== activeTalentClass()) return false;
+  if (hasTalent(talentId) || runState.talentPoints <= 0) return false;
+  return talent.parents.every((parentId) => hasTalent(parentId));
+}
+
+function learnTalent(talentId) {
+  if (!canLearnTalent(talentId)) return false;
+  const oldMaxHp = player.maxHp;
+  runState.learnedTalents.add(talentId);
+  runState.talentPoints -= 1;
+  applyTalentEffects(oldMaxHp);
+  talentTreeSignature = "";
+  const talent = talentById.get(talentId);
+  showFloat(talent ? talent.name : "Talent learned");
+  return true;
+}
+
+function grantTalentPoints(amount, sourceBossName = "Boss") {
+  if (!runState.active) return;
+  runState.talentPoints += amount;
+  talentTreeSignature = "";
+  ui.status.textContent = `${sourceBossName} defeated. +${amount} Talent Points.`;
+  showFloat(`+${amount} Talent Points`);
+}
+
+function applyTalentEffects(oldMaxHp = player.maxHp) {
+  applyGear();
+  if (player.maxHp > oldMaxHp) {
+    player.hp = Math.min(player.maxHp, player.hp + player.maxHp - oldMaxHp);
+  }
+}
+
+function talentMaxHpBonus() {
+  return hasTalent("melee_iron_hp") ? 25 : 0;
+}
+
+function talentAbilityCooldownMultiplier(index) {
+  let multiplier = playerInTimeWarp() ? 0.5 : 1;
+  if (hasTalent("ranger_trap_cap") && index === 3) multiplier *= 0.8;
+  if (hasTalent("paladin_consecrate_cap") && player.consecrationTimer > 0) multiplier *= 0.85;
+  multiplier *= 1 - (runState.mazeBuffs.cooldownRecovery || 0);
+  return multiplier;
+}
+
+function destroyProjectilesInRadius(x, y, radius) {
+  let cleared = 0;
+  hazards = hazards.filter((hazard) => {
+    if (!hazard.r || hazard.r > 14 || !Number.isFinite(hazard.ttl)) return true;
+    if (distance({ x, y }, hazard) > radius + hazard.r) return true;
+    cleared += 1;
+    particles.push({ x: hazard.x, y: hazard.y - 10, text: "cleared", color: "#fff4c4", ttl: 0.45 });
+    return false;
+  });
+  return cleared;
+}
+
 function applyGear() {
+  if (!gear.weapon[player.gear.weapon]) player.gear.weapon = "ironBlade";
+  if (!gear.armor[player.gear.armor]) player.gear.armor = "duelistCoat";
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
   const rogueArmorBonus = weapon.tag === "Rogue" ? 2 : 0;
   const warriorArmorBonus = isWarriorTag(weapon.tag) ? 4 : 0;
   player.stats = {
-    damage: Math.round(weapon.damage * (armor.damageMultiplier || 1)),
+    damage: Math.round(weapon.damage * (armor.damageMultiplier || 1) * (1 + (runState.mazeBuffs.damageMultiplier || 0))),
     range: weapon.range,
-    speed: armor.speed + (weapon.moveSpeedBonus || 0),
-    armor: armor.armor + rogueArmorBonus + warriorArmorBonus,
+    speed: Math.round((armor.speed + (weapon.moveSpeedBonus || 0)) * (1 + (runState.mazeBuffs.speedMultiplier || 0))),
+    armor: armor.armor + rogueArmorBonus + warriorArmorBonus + (runState.mazeBuffs.armor || 0),
   };
   const hpPercent = player.hp / player.maxHp || 1;
-  player.maxHp = armor.maxHp;
+  player.maxHp = armor.maxHp + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
   player.hp = Math.min(player.maxHp, Math.max(1, Math.round(player.maxHp * hpPercent)));
 }
 
@@ -501,9 +905,11 @@ function resizeCanvas() {
 function resetFight(keepPosition = false) {
   const gearState = { ...player.gear };
   const bossKind = lockedBosses.has(boss.kind) ? "cola" : boss.kind;
+  resetRunTalents();
   player = createPlayer();
   player.gear = gearState;
   applyGear();
+  resetTrainingDummy();
   if (keepPosition) {
     player.x = 705;
     player.y = 455;
@@ -518,9 +924,170 @@ function resetFight(keepPosition = false) {
   abilityEffects = [];
   particles = [];
   selectedBoss = null;
+  clearMazeState();
   fightStartedAt = 0;
+  screenBanner = null;
   logLines = ["Fight reset. Use WASD to cross the gate when ready."];
   showFloat("Fight reset");
+}
+
+function clearEncounterState() {
+  hazards = [];
+  playerProjectiles = [];
+  remoteProjectiles = [];
+  abilityEffects = [];
+  particles = [];
+  selectedBoss = null;
+  fightStartedAt = 0;
+}
+
+function clearMazeState() {
+  mazeState = null;
+  if (ui.mazeRewardOverlay) ui.mazeRewardOverlay.hidden = true;
+}
+
+function showScreenBanner(title, subtitle = "", tone = "neutral", duration = 2.4) {
+  screenBanner = {
+    title,
+    subtitle,
+    tone,
+    timer: duration,
+    duration,
+  };
+}
+
+function resetTrainingDummy() {
+  trainingDummy = createTrainingDummy();
+}
+
+function clearPlayerTransientState() {
+  player.destination = null;
+  player.slide = null;
+  player.attackCooldown = 0;
+  player.abilityCooldowns = [0, 0, 0, 0];
+  player.castTimer = 0;
+  player.castMoveLockTimer = 0;
+  player.pendingAbilityCast = null;
+  player.rangerAttackTimer = 0;
+  player.meleeAttackTimer = 0;
+  player.rogueAttackTimer = 0;
+  player.tumbleTimer = 0;
+  player.invulnerableTimer = 0;
+  player.shieldWallTimer = 0;
+  player.consecrationTimer = 0;
+  player.guardSpeedTimer = 0;
+  player.tacoGreaseTimer = 0;
+  player.backstabTimer = 0;
+  player.deadeyeTimer = 0;
+  player.talentSaves = {};
+  player.lastDamageAt = 0;
+  Object.keys(movementKeys).forEach((direction) => {
+    movementKeys[direction] = false;
+  });
+}
+
+function loadBoss(kind) {
+  const safeKind = lockedBosses.has(kind) ? "cola" : kind;
+  boss = createBoss(safeKind);
+  if (boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi") boss.attackTimer = 2.4;
+  condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
+  clearEncounterState();
+  clearMazeState();
+}
+
+function sendPlayerToStarterRoom() {
+  player.room = "starter";
+  player.x = 300;
+  player.y = 685;
+  clearPlayerTransientState();
+  resetTrainingDummy();
+  player.gateCooldown = 0.8;
+  player.dead = false;
+  player.won = false;
+  mouseWorld = { x: player.x + player.lastMoveX * 120, y: player.y + player.lastMoveY * 120 };
+}
+
+function startMazeForBoss(kind) {
+  if (runState.active && !runState.buildLocked) {
+    runState.buildLocked = true;
+    runState.lockedTalentClass = currentClassKey();
+    talentTreeSignature = "";
+    showFloat("Build locked");
+  }
+  clearEncounterState();
+  runState.mazeCount += 1;
+  mazeState = generateMazeForBoss(kind, runState.mazeCount);
+  const start = mazeState.playerStart || mazeCellCenter(mazeState, mazeState.entranceCell.x, mazeState.entranceCell.y);
+  player.room = "maze";
+  player.x = start.x;
+  player.y = start.y;
+  player.destination = null;
+  player.slide = null;
+  player.gateCooldown = 1.2;
+  mouseWorld = { x: player.x + 120, y: player.y };
+  ui.status.textContent = `${mazeState.theme.name}: clear the gauntlet before ${boss.name}.`;
+  showScreenBanner(mazeState.theme.name, `Survive the room before ${boss.name}`, "neutral", 2.4);
+  log(`${mazeState.theme.name} generated.`);
+  sendMultiplayerState(true);
+}
+
+function enterBossArena() {
+  clearEncounterState();
+  clearMazeState();
+  player.room = "arena";
+  player.x = world.arena.x + 130;
+  player.y = world.arena.y + world.arena.h / 2;
+  mouseWorld = { x: player.x + 120, y: player.y };
+  player.destination = null;
+  player.slide = null;
+  player.gateCooldown = 1.2;
+  ui.status.textContent = `${boss.name} arena reached.`;
+  startFight();
+  sendMultiplayerState(true);
+}
+
+function beginRun(mode, firstBoss = "cola") {
+  const gearState = { ...player.gear };
+  runState.mode = mode;
+  runState.active = true;
+  runState.buildLocked = false;
+  resetRunTalents();
+  runState.mode = mode;
+  runState.active = true;
+  player = createPlayer();
+  player.gear = gearState;
+  applyGear();
+  player.hp = player.maxHp;
+  player.potions = 3;
+  sendPlayerToStarterRoom();
+  loadBoss(firstBoss);
+  hideMenus();
+  setCoopStatus(mode === "multiplayer" ? "In Room" : mode === "dev" ? "Dev Test" : "Solo", mode === "multiplayer" ? multiplayer.room?.players?.length || 1 : 1);
+  ui.status.textContent = `Choose class and armor, then cross the gate for ${boss.name}.`;
+  showFloat(`${boss.name} ready`);
+  sendMultiplayerState(true);
+}
+
+function returnToMainMenu(message = "Choose a mode.") {
+  closeMultiplayerSocket();
+  closeClassMenu();
+  closeArmorMenu();
+  closeTalentMenu();
+  closeBossMenu();
+  runState.mode = "menu";
+  runState.active = false;
+  runState.buildLocked = false;
+  resetRunTalents();
+  screenBanner = null;
+  const gearState = { ...player.gear };
+  player = createPlayer();
+  player.gear = gearState;
+  applyGear();
+  resetTrainingDummy();
+  loadBoss("cola");
+  setCoopStatus("Solo", 1);
+  ui.status.textContent = message;
+  showMenuScreen("main");
 }
 
 function startSinglePlayer() {
@@ -528,9 +1095,7 @@ function startSinglePlayer() {
   multiplayer.enabled = false;
   closeMultiplayerSocket();
   multiplayer.peers.clear();
-  hideMenus();
-  setCoopStatus("Solo", 1);
-  ui.status.textContent = "Single player. Gear up, enter the arena, then click to shoot.";
+  beginRun("single", "cola");
 }
 
 function startMultiplayerFlow() {
@@ -541,44 +1106,25 @@ function startMultiplayerFlow() {
 }
 
 function startMultiplayerFight(bossKind, spawn) {
-  hideMenus();
-  selectBoss(lockedBosses.has(bossKind) ? "cola" : bossKind || "cola", { fromLobby: true, spawn });
-  player.room = "arena";
-  player.x = spawn?.x || world.arena.x + 130;
-  player.y = spawn?.y || world.arena.y + world.arena.h / 2;
-  mouseWorld = { x: player.x + 120, y: player.y };
-  player.gateCooldown = 1.2;
-  setCoopStatus("In Room", multiplayer.room?.players?.length || 1);
-  ui.status.textContent = "Co-op fight started.";
-  sendMultiplayerState(true);
+  beginRun("multiplayer", lockedBosses.has(bossKind) ? "cola" : bossKind || "cola");
 }
 
 function selectBoss(kind, options = {}) {
+  if (runState.mode !== "dev") {
+    ui.status.textContent = "Boss Test is only available in Dev Test mode.";
+    showFloat("Dev Test only");
+    return;
+  }
   if (lockedBosses.has(kind)) {
     ui.status.textContent = "That boss is locked for now.";
     showFloat("Locked");
     return;
   }
-  const gearState = { ...player.gear };
-  player = createPlayer();
-  player.gear = gearState;
-  applyGear();
-  player.room = "arena";
-  player.x = options.spawn?.x || world.arena.x + 130;
-  player.y = options.spawn?.y || world.arena.y + world.arena.h / 2;
-  mouseWorld = { x: player.x + 120, y: player.y };
-  player.gateCooldown = 1.2;
-  boss = createBoss(kind);
-  if (boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi") boss.attackTimer = 2.4;
-  condimentBosses = boss.kind === "trio" ? createCondimentBosses() : [];
-  hazards = [];
-  playerProjectiles = [];
-  remoteProjectiles = [];
-  abilityEffects = [];
-  particles = [];
-  selectedBoss = null;
-  fightStartedAt = 0;
-  ui.status.textContent = `${boss.name} selected for testing. WASD to dodge, click to shoot.`;
+  loadBoss(kind);
+  player.hp = player.maxHp;
+  player.potions = 3;
+  sendPlayerToStarterRoom();
+  ui.status.textContent = `${boss.name} selected for testing. Cross the gate when ready.`;
   showFloat(boss.name);
   if (!options.fromLobby) sendMultiplayerState(true);
 }
@@ -587,15 +1133,33 @@ function startFight() {
   if (fightStartedAt) return;
   fightStartedAt = performance.now();
   log("Boss awakened.");
-  ui.status.textContent = "Boss awakened. Use WASD to dodge and click to shoot.";
+  ui.status.textContent = `${boss.name} awakened. Dodge, attack, and use Q/E/Space/R.`;
+  showScreenBanner(boss.name, "Boss fight begins", "danger", 2.2);
 }
 
 function log(text) {
   logLines = [text, ...logLines].slice(0, 5);
 }
 
+function attackInterval(kind, phase = boss.phase, enraged = boss.enraged) {
+  const tuning = combatTuning.attackIntervals[kind];
+  const pressure = combatTuning.bossAttackIntervalMultiplier || 1;
+  if (!tuning) return (enraged ? 1.35 : phase >= 2 ? 1.7 : 2.05) * pressure;
+  if (enraged && tuning.enraged) return tuning.enraged * pressure;
+  if (phase >= 3 && tuning.phase3) return tuning.phase3 * pressure;
+  if (phase >= 2 && tuning.phase2) return tuning.phase2 * pressure;
+  return tuning.base * pressure;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function hexToRgba(hex, alpha) {
+  const clean = String(hex || "#ffffff").replace("#", "");
+  const value = Number.parseInt(clean.length === 3 ? clean.split("").map((char) => char + char).join("") : clean, 16);
+  if (!Number.isFinite(value)) return `rgba(255, 255, 255, ${alpha})`;
+  return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
 }
 
 function distance(a, b) {
@@ -606,11 +1170,32 @@ function pointInRect(x, y, rect) {
   return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
 }
 
+function hashString(value) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createRng(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function isTypingTarget(element) {
   return ["INPUT", "TEXTAREA", "SELECT"].includes(element?.tagName) || element?.isContentEditable;
 }
 
 function currentBounds() {
+  if (player.room === "maze") return world.maze;
   return player.room === "arena" ? world.arena : world.starter;
 }
 
@@ -619,11 +1204,16 @@ function currentClassKey() {
   if (weaponTag === "Ranged") return "ranger";
   if (weaponTag === "Magic") return "mage";
   if (weaponTag === "Rogue") return "rogue";
+  if (weaponTag === "Paladin") return "paladin";
   return "melee";
 }
 
+function currentClassOption() {
+  return classOptions.find((option) => option.weapon === player.gear.weapon) || classOptions[0];
+}
+
 function isWarriorTag(tag) {
-  return tag === "Warrior" || tag === "Melee";
+  return tag === "Warrior" || tag === "Melee" || tag === "Paladin";
 }
 
 function currentAbilities() {
@@ -674,15 +1264,6 @@ function nachoQuadrantBounds() {
 
 function handleCanvasClick(x, y) {
   if (player.dead || player.won) return;
-  const stand = stands.find((item) => Math.hypot(item.x - x, item.y - y) < 48);
-  if (stand && player.room === "starter") {
-    equipFromStand(stand);
-    return;
-  }
-  if (player.room !== "arena") {
-    ui.status.textContent = "Use WASD to move through the gate.";
-    return;
-  }
   selectedBoss = null;
   shootAt(x, y);
 }
@@ -692,6 +1273,8 @@ function findClickedBoss(x, y) {
 }
 
 function activeBosses() {
+  if (player.room === "starter") return [trainingDummy];
+  if (player.room === "maze" && mazeState) return mazeState.enemies;
   return boss.kind === "trio" ? condimentBosses : [boss];
 }
 
@@ -699,7 +1282,8 @@ function livingBosses() {
   return activeBosses().filter((target) => target.hp > 0);
 }
 
-function constrainToRoom(x, y) {
+function constrainToRoom(x, y, fromX = player.x, fromY = player.y) {
+  if (player.room === "maze" && mazeState) return constrainToMaze(x, y, mazePlayerCollisionRadius(), fromX, fromY);
   const bounds = nachoQuadrantBounds() || currentBounds();
   return {
     x: clamp(x, bounds.x + player.radius, bounds.x + bounds.w - player.radius),
@@ -707,9 +1291,453 @@ function constrainToRoom(x, y) {
   };
 }
 
+function mazePlayerCollisionRadius() {
+  return player.radius + mazePlayerWallPadding;
+}
+
+function generateMazeForBoss(kind, sequence) {
+  const theme = mazeThemes[kind] || mazeThemes.burger;
+  const seed = hashString(`${multiplayer.room?.id || "solo"}:${kind}:${sequence}`);
+  const rng = createRng(seed);
+  const cols = 13;
+  const rows = 11;
+  const bounds = createGauntletBounds();
+  const entrance = {
+    x: bounds.x + 18,
+    y: bounds.y + bounds.h - 92,
+    w: 72,
+    h: 72,
+  };
+  const exit = {
+    x: bounds.x + bounds.w - 92,
+    y: bounds.y + 20,
+    w: 72,
+    h: 72,
+  };
+  const playerStart = {
+    x: entrance.x + entrance.w / 2,
+    y: entrance.y + entrance.h / 2,
+  };
+  const obstacles = createGauntletObstacles(kind, bounds, rng, theme);
+  const waves = [
+    createGauntletWave(kind, 0, bounds, obstacles, rng),
+    createGauntletWave(kind, 1, bounds, obstacles, rng),
+  ];
+  const miniBossEnemy = createGauntletMiniBoss(kind, sequence, bounds, obstacles, rng);
+  return {
+    active: true,
+    encounterType: "gauntlet",
+    kind,
+    sequence,
+    seed,
+    theme,
+    cols,
+    rows,
+    grid: Array.from({ length: rows }, () => Array.from({ length: cols }, () => false)),
+    bounds,
+    cellSize: 1,
+    entranceCell: { x: 0, y: 0 },
+    exitCell: { x: 0, y: 0 },
+    miniBossCell: null,
+    miniRoomCells: new Set(),
+    entrance,
+    exit,
+    playerStart,
+    obstacles,
+    waves,
+    waveIndex: -1,
+    waveTimer: 0.75,
+    miniBossSpawned: false,
+    miniBossEnemy,
+    pickupDrops: [],
+    spawnMarkers: waves.flatMap((wave) => wave.spawnMarkers),
+    enemies: [],
+    rewardOptions: chooseMazeRewards(seed),
+    rewardPending: false,
+    rewardChosen: false,
+    exitOpen: false,
+    cleared: false,
+  };
+}
+
+function createGauntletBounds() {
+  return {
+    x: world.maze.x + 76,
+    y: world.maze.y + 82,
+    w: world.maze.w - 152,
+    h: world.maze.h - 164,
+  };
+}
+
+function gauntletPoint(bounds, nx, ny) {
+  return {
+    x: bounds.x + bounds.w * nx,
+    y: bounds.y + bounds.h * ny,
+  };
+}
+
+function createGauntletObstacles(kind, bounds, rng, theme) {
+  const labels = {
+    cola: ["fountain", "carbonator", "syrup", "cooler"],
+    burger: ["grill", "prep", "vent", "counter"],
+    fries: ["fryer", "oil", "basket", "warmer"],
+    trio: ["ketchup", "mustard", "mayo", "crate"],
+    sauce: ["ketchup", "mustard", "mayo", "crate"],
+    shake: ["freezer", "ice", "mixer", "crate"],
+    nacho: ["cheese", "chips", "warmer", "crate"],
+    pizza: ["oven", "counter", "dough", "rack"],
+    donut: ["oven", "glaze", "rack", "tray"],
+    taco: ["plancha", "salsa", "crate", "counter"],
+    sushi: ["bar", "rice", "cooler", "crate"],
+  };
+  const palette = labels[kind] || labels.cola;
+  const templates = [
+    { type: "rect", nx: 0.28, ny: 0.26, w: 104, h: 40 },
+    { type: "circle", nx: 0.53, ny: 0.24, r: 28 },
+    { type: "rect", nx: 0.72, ny: 0.38, w: 46, h: 104 },
+    { type: "circle", nx: 0.34, ny: 0.55, r: 32 },
+    { type: "rect", nx: 0.56, ny: 0.68, w: 126, h: 38 },
+    { type: "rect", nx: 0.79, ny: 0.74, w: 82, h: 46 },
+    { type: "circle", nx: 0.18, ny: 0.40, r: 24 },
+  ];
+  const count = 5 + Math.floor(rng() * 3);
+  return templates.slice(0, count).map((template, index) => {
+    const point = gauntletPoint(bounds, template.nx, template.ny);
+    const jitterX = (rng() - 0.5) * 28;
+    const jitterY = (rng() - 0.5) * 24;
+    const base = {
+      id: `obstacle-${index}`,
+      label: palette[index % palette.length],
+      color: theme.wall,
+      outline: theme.trim,
+    };
+    if (template.type === "circle") {
+      return {
+        ...base,
+        type: "circle",
+        x: point.x + jitterX,
+        y: point.y + jitterY,
+        r: template.r,
+      };
+    }
+    return {
+      ...base,
+      type: "rect",
+      x: point.x - template.w / 2 + jitterX,
+      y: point.y - template.h / 2 + jitterY,
+      w: template.w,
+      h: template.h,
+    };
+  });
+}
+
+function createGauntletWave(kind, waveIndex, bounds, obstacles, rng) {
+  const waveSpawns = [
+    [
+      { nx: 0.25, ny: 0.72 },
+      { nx: 0.39, ny: 0.58 },
+      { nx: 0.58, ny: 0.74 },
+      { nx: 0.73, ny: 0.57 },
+    ],
+    [
+      { nx: 0.78, ny: 0.31 },
+      { nx: 0.61, ny: 0.36 },
+      { nx: 0.43, ny: 0.30 },
+      { nx: 0.76, ny: 0.70 },
+      { nx: 0.49, ny: 0.55 },
+    ],
+  ];
+  const spawnMarkers = waveSpawns[waveIndex].map((spawn) => gauntletPoint(bounds, spawn.nx, spawn.ny));
+  const enemies = spawnMarkers.map((spawn, index) => {
+    const point = findGauntletOpenPoint(
+      { x: spawn.x + (rng() - 0.5) * 34, y: spawn.y + (rng() - 0.5) * 30 },
+      22,
+      bounds,
+      obstacles,
+      rng,
+    );
+    const enemy = createMazeEnemy(kind, point.x, point.y, waveIndex * 10 + index, false, rng);
+    const hpScale = waveIndex === 0 ? 0.88 : 1.02;
+    enemy.maxHp = Math.round(enemy.maxHp * hpScale);
+    enemy.hp = enemy.maxHp;
+    enemy.waveIndex = waveIndex;
+    return enemy;
+  });
+  return {
+    index: waveIndex,
+    spawned: false,
+    cleared: false,
+    enemies,
+    spawnMarkers,
+  };
+}
+
+function createGauntletMiniBoss(kind, sequence, bounds, obstacles, rng) {
+  const point = gauntletPoint(bounds, 0.76, 0.30);
+  const spawn = findGauntletOpenPoint(
+    { x: point.x + (rng() - 0.5) * 20, y: point.y + (rng() - 0.5) * 18 },
+    38,
+    bounds,
+    obstacles,
+    rng,
+  );
+  const enemy = createMazeEnemy(kind, spawn.x, spawn.y, 99, true, rng);
+  enemy.maxHp = 500 + Math.min(150, sequence * 18);
+  enemy.hp = enemy.maxHp;
+  enemy.attackTimer = 1.1;
+  enemy.speed = 86;
+  enemy.damage = 18;
+  enemy.spawnX = enemy.x;
+  enemy.spawnY = enemy.y;
+  return enemy;
+}
+
+function findGauntletOpenPoint(point, radius, bounds, obstacles, rng) {
+  let candidate = {
+    x: clamp(point.x, bounds.x + radius, bounds.x + bounds.w - radius),
+    y: clamp(point.y, bounds.y + radius, bounds.y + bounds.h - radius),
+  };
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (isGauntletCircleClear(candidate.x, candidate.y, radius, bounds, obstacles)) return candidate;
+    const angle = rng() * Math.PI * 2;
+    const distance = 34 + attempt * 11;
+    candidate = {
+      x: clamp(point.x + Math.cos(angle) * distance, bounds.x + radius, bounds.x + bounds.w - radius),
+      y: clamp(point.y + Math.sin(angle) * distance, bounds.y + radius, bounds.y + bounds.h - radius),
+    };
+  }
+  return candidate;
+}
+
+function isGauntletCircleClear(x, y, radius, bounds, obstacles) {
+  if (x - radius < bounds.x || x + radius > bounds.x + bounds.w) return false;
+  if (y - radius < bounds.y || y + radius > bounds.y + bounds.h) return false;
+  return !obstacles.some((obstacle) => circleIntersectsGauntletObstacle(x, y, radius, obstacle));
+}
+
+function cellsAround(center, radius, cols, rows) {
+  const cells = [];
+  for (let y = center.y - radius; y <= center.y + radius; y += 1) {
+    for (let x = center.x - radius; x <= center.x + radius; x += 1) {
+      if (x > 0 && x < cols - 1 && y > 0 && y < rows - 1) cells.push({ x, y });
+    }
+  }
+  return cells;
+}
+
+function carveMiniBossRoom(grid, center) {
+  const rows = grid.length;
+  const cols = grid[0]?.length || 0;
+  cellsAround(center, 1, cols, rows).forEach((cell) => {
+    grid[cell.y][cell.x] = false;
+  });
+  grid[center.y][center.x + 2] = false;
+  grid[center.y - 1][center.x + 2] = false;
+}
+
+function mazeCellCenter(state, x, y) {
+  return {
+    x: state.bounds.x + x * state.cellSize + state.cellSize / 2,
+    y: state.bounds.y + y * state.cellSize + state.cellSize / 2,
+  };
+}
+
+function mazeCellRect(state, x, y) {
+  return {
+    x: state.bounds.x + x * state.cellSize,
+    y: state.bounds.y + y * state.cellSize,
+    w: state.cellSize,
+    h: state.cellSize,
+  };
+}
+
+function mazeCellAt(x, y) {
+  if (!mazeState) return null;
+  const col = Math.floor((x - mazeState.bounds.x) / mazeState.cellSize);
+  const row = Math.floor((y - mazeState.bounds.y) / mazeState.cellSize);
+  if (col < 0 || row < 0 || col >= mazeState.cols || row >= mazeState.rows) return null;
+  return { x: col, y: row };
+}
+
+function isMazePointWalkable(x, y) {
+  if (mazeState?.encounterType === "gauntlet") return isGauntletPointWalkable(x, y);
+  const cell = mazeCellAt(x, y);
+  if (!cell || !mazeState) return false;
+  if (!mazeState.grid[cell.y][cell.x]) return true;
+  return !isPointInsideMazeWallLine(x, y, cell);
+}
+
+function isMazeSegmentWalkable(startX, startY, endX, endY, radius = 0) {
+  const length = Math.hypot(endX - startX, endY - startY);
+  const steps = Math.max(1, Math.ceil(length / Math.max(2, mazeWallThickness / 2)));
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const x = startX + (endX - startX) * t;
+    const y = startY + (endY - startY) * t;
+    if (radius > 0 ? !isMazeCircleWalkable(x, y, radius) : !isMazePointWalkable(x, y)) return false;
+  }
+  return true;
+}
+
+function isMazeCircleWalkable(x, y, radius) {
+  if (!mazeState) return false;
+  if (mazeState.encounterType === "gauntlet") return isGauntletCircleWalkable(x, y, radius);
+  if (x - radius < mazeState.bounds.x || x + radius > mazeState.bounds.x + mazeState.bounds.w) return false;
+  if (y - radius < mazeState.bounds.y || y + radius > mazeState.bounds.y + mazeState.bounds.h) return false;
+  const minCell = mazeCellAt(x - radius - mazeWallThickness, y - radius - mazeWallThickness);
+  const maxCell = mazeCellAt(x + radius + mazeWallThickness, y + radius + mazeWallThickness);
+  if (!minCell || !maxCell) return false;
+  for (let row = minCell.y; row <= maxCell.y; row += 1) {
+    for (let col = minCell.x; col <= maxCell.x; col += 1) {
+      if (!mazeState.grid[row][col]) continue;
+      if (mazeWallLineRects({ x: col, y: row }).some((wall) => circleIntersectsRect(x, y, radius, wall))) return false;
+    }
+  }
+  return true;
+}
+
+function isGauntletPointWalkable(x, y) {
+  if (!mazeState?.bounds) return false;
+  const bounds = mazeState.bounds;
+  if (x < bounds.x || x > bounds.x + bounds.w || y < bounds.y || y > bounds.y + bounds.h) return false;
+  return !mazeState.obstacles?.some((obstacle) => pointInGauntletObstacle(x, y, obstacle));
+}
+
+function isGauntletCircleWalkable(x, y, radius) {
+  if (!mazeState?.bounds) return false;
+  const bounds = mazeState.bounds;
+  if (x - radius < bounds.x || x + radius > bounds.x + bounds.w) return false;
+  if (y - radius < bounds.y || y + radius > bounds.y + bounds.h) return false;
+  return !mazeState.obstacles?.some((obstacle) => circleIntersectsGauntletObstacle(x, y, radius, obstacle));
+}
+
+function pointInGauntletObstacle(x, y, obstacle) {
+  if (obstacle.type === "circle") return Math.hypot(x - obstacle.x, y - obstacle.y) <= obstacle.r;
+  return pointInRect(x, y, obstacle);
+}
+
+function circleIntersectsGauntletObstacle(x, y, radius, obstacle) {
+  if (obstacle.type === "circle") return Math.hypot(x - obstacle.x, y - obstacle.y) <= radius + obstacle.r;
+  return circleIntersectsRect(x, y, radius, obstacle);
+}
+
+function mazeWallLineRects(cell) {
+  const rect = mazeCellRect(mazeState, cell.x, cell.y);
+  const thickness = mazeWallThickness;
+  const midX = rect.x + rect.w / 2;
+  const midY = rect.y + rect.h / 2;
+  if (cell.x % 2 === 0 && cell.y % 2 === 1) {
+    return [{ x: midX - thickness / 2, y: rect.y, w: thickness, h: rect.h }];
+  }
+  if (cell.x % 2 === 1 && cell.y % 2 === 0) {
+    return [{ x: rect.x, y: midY - thickness / 2, w: rect.w, h: thickness }];
+  }
+  const walls = [];
+  const connectsVertical = cell.x % 2 === 0 && (hasMazeWallCell(cell.x, cell.y - 1) || hasMazeWallCell(cell.x, cell.y + 1));
+  const connectsHorizontal = cell.y % 2 === 0 && (hasMazeWallCell(cell.x - 1, cell.y) || hasMazeWallCell(cell.x + 1, cell.y));
+  if (connectsVertical) {
+    walls.push({ x: midX - thickness / 2, y: rect.y, w: thickness, h: rect.h });
+  }
+  if (connectsHorizontal) {
+    walls.push({ x: rect.x, y: midY - thickness / 2, w: rect.w, h: thickness });
+  }
+  return walls;
+}
+
+function hasMazeWallCell(x, y) {
+  return Boolean(mazeState && y >= 0 && y < mazeState.rows && x >= 0 && x < mazeState.cols && mazeState.grid[y][x]);
+}
+
+function mazeWallVisualRects(cell) {
+  const rect = mazeCellRect(mazeState, cell.x, cell.y);
+  const thickness = mazeWallThickness;
+  const midX = rect.x + rect.w / 2;
+  const midY = rect.y + rect.h / 2;
+  if (cell.x % 2 === 0 && cell.y % 2 === 1) {
+    return [{ x: midX - thickness / 2, y: rect.y + rect.h * 0.18, w: thickness, h: rect.h * 0.64 }];
+  }
+  if (cell.x % 2 === 1 && cell.y % 2 === 0) {
+    return [{ x: rect.x + rect.w * 0.18, y: midY - thickness / 2, w: rect.w * 0.64, h: thickness }];
+  }
+  return [{ x: midX - thickness / 2, y: midY - thickness / 2, w: thickness, h: thickness }];
+}
+
+function isPointInsideMazeWallLine(x, y, cell) {
+  return mazeWallLineRects(cell).some((wall) => x >= wall.x && x <= wall.x + wall.w && y >= wall.y && y <= wall.y + wall.h);
+}
+
+function circleIntersectsRect(cx, cy, radius, rect) {
+  const nearestX = clamp(cx, rect.x, rect.x + rect.w);
+  const nearestY = clamp(cy, rect.y, rect.y + rect.h);
+  return Math.hypot(cx - nearestX, cy - nearestY) <= radius;
+}
+
+function constrainToMaze(x, y, radius, fromX = player.x, fromY = player.y) {
+  const bounds = mazeState.bounds;
+  const clamped = {
+    x: clamp(x, bounds.x + radius, bounds.x + bounds.w - radius),
+    y: clamp(y, bounds.y + radius, bounds.y + bounds.h - radius),
+  };
+  if (isMazeCircleWalkable(clamped.x, clamped.y, radius) && isMazeSegmentWalkable(fromX, fromY, clamped.x, clamped.y, radius)) return clamped;
+  if (isMazeCircleWalkable(clamped.x, fromY, radius) && isMazeSegmentWalkable(fromX, fromY, clamped.x, fromY, radius)) return { x: clamped.x, y: fromY };
+  if (isMazeCircleWalkable(fromX, clamped.y, radius) && isMazeSegmentWalkable(fromX, fromY, fromX, clamped.y, radius)) return { x: fromX, y: clamped.y };
+  return { x: fromX, y: fromY };
+}
+
+function chooseMazeRewards(seed) {
+  const rng = createRng(seed ^ 0x9e3779b9);
+  const pool = mazeRewardPool.slice();
+  const rewards = [];
+  while (rewards.length < 3 && pool.length) {
+    rewards.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  }
+  return rewards;
+}
+
+function createMazeEnemy(kind, x, y, index, miniBoss, rng) {
+  const theme = mazeThemes[kind] || mazeThemes.burger;
+  const ranged = !miniBoss && index % 4 === 1;
+  return {
+    kind: miniBoss ? "mazeMiniBoss" : "mazeMob",
+    name: miniBoss ? `${theme.name} Warden` : themedMobName(kind, ranged),
+    mazeEnemy: true,
+    miniBoss,
+    x,
+    y,
+    spawnX: x,
+    spawnY: y,
+    radius: miniBoss ? 34 : ranged ? 17 : 19,
+    maxHp: miniBoss ? 360 : ranged ? 80 : 95,
+    hp: miniBoss ? 360 : ranged ? 80 : 95,
+    color: miniBoss ? theme.mini : theme.enemy,
+    attackTimer: miniBoss ? 1.15 : 0.75 + rng() * 0.7,
+    patternIndex: 0,
+    moveTimer: rng() * Math.PI * 2,
+    ranged,
+    speed: miniBoss ? 82 : ranged ? 70 : 106,
+    damage: miniBoss ? 16 : ranged ? 8 : 10,
+    state: "roaming",
+  };
+}
+
+function themedMobName(kind, ranged) {
+  const names = {
+    cola: ranged ? "Fizz Spitter" : "Soda Scrapper",
+    burger: ranged ? "Sesame Slinger" : "Grill Grunt",
+    fries: ranged ? "Salt Sniper" : "Fry Runner",
+    trio: ranged ? "Bottle Popper" : "Pantry Brawler",
+    sauce: ranged ? "Sauce Lobber" : "Cellar Bruiser",
+    shake: ranged ? "Frost Flinger" : "Freezer Shambler",
+    nacho: ranged ? "Chip Tosser" : "Cheese Charger",
+    pizza: ranged ? "Pepperoni Pitcher" : "Crust Cutter",
+    donut: ranged ? "Glaze Sprayer" : "Dough Roller",
+  };
+  return names[kind] || (ranged ? "Maze Spitter" : "Maze Grunt");
+}
+
 function equipFromStand(stand) {
   player.gear[stand.type] = stand.id;
-  player.abilityCooldowns = [0, 0, 0];
+  player.abilityCooldowns = [0, 0, 0, 0];
   player.pendingAbilityCast = null;
   applyGear();
   player.hp = player.maxHp;
@@ -719,7 +1747,43 @@ function equipFromStand(stand) {
   showFloat(item.name);
 }
 
+function equipClass(classId) {
+  if (runState.buildLocked) {
+    showFloat("Build locked");
+    return;
+  }
+  const option = classOptions.find((entry) => entry.id === classId);
+  if (!option || option.locked || !option.weapon) {
+    showFloat("Locked");
+    return;
+  }
+  equipGear("weapon", option.weapon);
+}
+
+function equipGear(slot, id) {
+  if (runState.buildLocked && (slot === "weapon" || slot === "armor")) {
+    showFloat("Build locked");
+    return;
+  }
+  if (!gear[slot]?.[id]) return;
+  player.gear[slot] = id;
+  player.abilityCooldowns = [0, 0, 0, 0];
+  player.pendingAbilityCast = null;
+  applyGear();
+  player.hp = player.maxHp;
+  saveGear();
+  const item = gear[slot][id];
+  log(`Equipped ${item.name}.`);
+  showFloat(item.name);
+}
+
 function movePlayer(dt) {
+  if (mazeState?.rewardPending) {
+    player.destination = null;
+    player.slide = null;
+    player.moving = false;
+    return;
+  }
   if (player.dead || player.won) {
     player.destination = null;
     player.slide = null;
@@ -755,18 +1819,22 @@ function movePlayer(dt) {
   player.animationTime += dt;
   player.lastMoveX = dx / dist;
   player.lastMoveY = dy / dist;
-  player.x += player.lastMoveX * playerSpeed() * dt;
-  player.y += player.lastMoveY * playerSpeed() * dt;
-  const point = constrainToRoom(player.x, player.y);
+  const nextX = player.x + player.lastMoveX * playerSpeed() * dt;
+  const nextY = player.y + player.lastMoveY * playerSpeed() * dt;
+  const point = constrainToRoom(nextX, nextY, player.x, player.y);
   player.x = point.x;
   player.y = point.y;
 }
 
 function playerSpeed() {
-  return player.stats.speed * (player.guardSpeedTimer > 0 ? 1.45 : 1);
+  const haste = player.guardSpeedTimer > 0 ? 1.45 : 1;
+  const greaseSlow = player.tacoGreaseTimer > 0 ? 0.58 : 1;
+  return player.stats.speed * haste * greaseSlow;
 }
 
 function moveSlidingPlayer(dt) {
+  const previousX = player.x;
+  const previousY = player.y;
   player.moving = true;
   player.animationTime += dt * 1.8;
   player.slide.timer -= dt;
@@ -777,7 +1845,8 @@ function moveSlidingPlayer(dt) {
     player.slide.damageTimer -= dt;
     if (player.slide.damageTimer <= 0) {
       player.slide.damageTimer = 0.06;
-      const hit = damageTargetsInRadius(player.x, player.y, 92, Math.round(player.stats.damage * 0.28), "Whirlwind Dash");
+      const hit = damageEnemiesInRadius(player.x, player.y, 92, Math.round(player.stats.damage * 0.28), "Whirlwind Dash");
+      if (hasTalent("melee_blood_whirl")) hit.forEach((target) => applyBleed(target));
       if (hit.length > 0 && !player.slide.reducedShieldCooldown) {
         player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
         player.slide.reducedShieldCooldown = true;
@@ -789,8 +1858,15 @@ function moveSlidingPlayer(dt) {
   player.slide.vy *= Math.pow(0.82, dt * 6);
 
   const bounds = currentBounds();
-  const clampedX = clamp(player.x, bounds.x + player.radius, bounds.x + bounds.w - player.radius);
-  const clampedY = clamp(player.y, bounds.y + player.radius, bounds.y + bounds.h - player.radius);
+  const collisionRadius = player.room === "maze" && mazeState ? mazePlayerCollisionRadius() : player.radius;
+  const clampedX = clamp(player.x, bounds.x + collisionRadius, bounds.x + bounds.w - collisionRadius);
+  const clampedY = clamp(player.y, bounds.y + collisionRadius, bounds.y + bounds.h - collisionRadius);
+  if (player.room === "maze" && mazeState && !isMazeSegmentWalkable(previousX, previousY, clampedX, clampedY, collisionRadius)) {
+    player.slide = null;
+    player.x = previousX;
+    player.y = previousY;
+    return;
+  }
   if (clampedX !== player.x || clampedY !== player.y) {
     player.slide = null;
     player.x = clampedX;
@@ -840,20 +1916,291 @@ function getFacing(dx, dy) {
 function updateRoom(dt) {
   player.gateCooldown = Math.max(0, player.gateCooldown - dt);
   if (player.room === "starter" && pointInRect(player.x, player.y, world.gate)) {
-    player.room = "arena";
-    player.x = world.arena.x + 130;
-    player.y = world.arena.y + world.arena.h / 2;
-    mouseWorld = { x: player.x + 120, y: player.y };
-    player.destination = null;
-    player.slide = null;
-    player.gateCooldown = 1.2;
-    startFight();
+    startMazeForBoss(boss.kind);
+  }
+  if (player.room === "maze" && mazeState?.exitOpen && pointInRect(player.x, player.y, mazeState.exit)) {
+    enterBossArena();
   }
   if (player.room === "arena" && player.x < world.arena.x + player.radius) {
     player.x = world.arena.x + player.radius;
     player.destination = null;
     player.slide = null;
   }
+}
+
+function updateGauntletProgress(dt) {
+  if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending) return;
+  mazeState.waveTimer = Math.max(0, (mazeState.waveTimer || 0) - dt);
+  updateGauntletPickups(dt);
+  if (mazeState.waveIndex < 0 && mazeState.waveTimer <= 0) {
+    spawnGauntletWave(0);
+    return;
+  }
+  const activeTrash = mazeState.enemies.some((enemy) => enemy.hp > 0 && !enemy.miniBoss);
+  const currentWave = mazeState.waves?.[mazeState.waveIndex];
+  if (currentWave?.spawned && !currentWave.cleared && !activeTrash) {
+    currentWave.cleared = true;
+    mazeState.waveTimer = 1.1;
+    dropGauntletPickup(currentWave.index);
+    ui.status.textContent = currentWave.index === 0 ? "Wave cleared. Next wave incoming." : "Trash cleared. The warden is coming.";
+    showFloat(currentWave.index === 0 ? "Wave cleared" : "Warden incoming");
+    return;
+  }
+  if (activeTrash || mazeState.waveTimer > 0) return;
+  if (mazeState.waveIndex < mazeState.waves.length - 1) {
+    spawnGauntletWave(mazeState.waveIndex + 1);
+    return;
+  }
+  if (!mazeState.miniBossSpawned) spawnGauntletMiniBoss();
+}
+
+function spawnGauntletWave(index) {
+  if (!mazeState?.waves?.[index]) return;
+  const wave = mazeState.waves[index];
+  if (wave.spawned) return;
+  wave.spawned = true;
+  wave.cleared = false;
+  mazeState.waveIndex = index;
+  mazeState.enemies.push(...wave.enemies);
+  ui.status.textContent = `${mazeState.theme.name}: clear wave ${index + 1} of ${mazeState.waves.length}.`;
+  showScreenBanner(`Wave ${index + 1}`, "Keep moving and clear the room", "neutral", 1.6);
+  sendMultiplayerState(true);
+}
+
+function spawnGauntletMiniBoss() {
+  if (!mazeState || mazeState.miniBossSpawned || !mazeState.miniBossEnemy) return;
+  mazeState.miniBossSpawned = true;
+  mazeState.enemies.push(mazeState.miniBossEnemy);
+  ui.status.textContent = `${mazeState.theme.name}: defeat the warden.`;
+  showScreenBanner("Warden", `${mazeState.miniBossEnemy.name} blocks the boss gate`, "neutral", 2.1);
+  showFloat("Warden spawned");
+  sendMultiplayerState(true);
+}
+
+function dropGauntletPickup(waveIndex) {
+  if (!mazeState?.bounds) return;
+  const point = gauntletPoint(mazeState.bounds, waveIndex === 0 ? 0.38 : 0.61, waveIndex === 0 ? 0.80 : 0.50);
+  const potionDrop = waveIndex === 1 && player.potions < 4;
+  mazeState.pickupDrops.push({
+    type: potionDrop ? "potion" : "heal",
+    x: point.x,
+    y: point.y,
+    r: potionDrop ? 15 : 18,
+    amount: potionDrop ? 1 : 28,
+    ttl: 22,
+  });
+}
+
+function updateGauntletPickups(dt) {
+  if (!mazeState?.pickupDrops?.length) return;
+  mazeState.pickupDrops = mazeState.pickupDrops.filter((pickup) => {
+    pickup.ttl -= dt;
+    if (pickup.ttl <= 0) return false;
+    if (Math.hypot(player.x - pickup.x, player.y - pickup.y) > player.radius + pickup.r + 8) return true;
+    if (pickup.type === "potion") {
+      player.potions = Math.min(4, player.potions + pickup.amount);
+      showFloat("Potion shard");
+      log("A potion shard drops from the gauntlet wave.");
+    } else {
+      player.hp = Math.min(player.maxHp, player.hp + pickup.amount);
+      showFloat(`+${pickup.amount} HP`);
+      log("A snack pickup restores health.");
+    }
+    particles.push({ x: pickup.x, y: pickup.y - 28, text: pickup.type === "potion" ? "+potion" : "+hp", color: "#9be06f", ttl: 0.85 });
+    return false;
+  });
+}
+
+function updateMazeCombat(dt) {
+  if (player.room !== "maze" || !mazeState || player.dead || player.won || mazeState.rewardPending) return;
+  if (mazeState.encounterType === "gauntlet") updateGauntletProgress(dt);
+  const living = mazeState.enemies.filter((enemy) => enemy.hp > 0);
+  living.forEach((enemy) => {
+    enemy.moveTimer += dt;
+    enemy.attackTimer -= dt;
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const activeRange = enemy.miniBoss ? 520 : 340;
+    if (dist < activeRange) {
+      enemy.state = "fighting";
+      if (!enemy.ranged || dist < 130) {
+        const speed = enemy.speed * (enemy.miniBoss && dist > 110 ? 1 : 0.82);
+        moveMazeEnemy(enemy, (dx / dist) * speed * dt, (dy / dist) * speed * dt);
+      }
+      if (!enemy.miniBoss && enemy.ranged && enemy.attackTimer <= 0 && dist < 420) {
+        spawnMazeProjectile(enemy);
+        enemy.attackTimer = 1.45;
+      }
+      if (!enemy.miniBoss && !enemy.ranged && dist < enemy.radius + player.radius + 8 && enemy.attackTimer <= 0) {
+        damagePlayer(enemy.damage, enemy.name);
+        enemy.attackTimer = 1.05;
+      }
+    } else if (!enemy.miniBoss) {
+      const wobbleX = Math.cos(enemy.moveTimer * 0.8 + enemy.spawnX * 0.01);
+      const wobbleY = Math.sin(enemy.moveTimer * 0.7 + enemy.spawnY * 0.01);
+      moveMazeEnemy(enemy, wobbleX * enemy.speed * 0.18 * dt, wobbleY * enemy.speed * 0.18 * dt);
+    }
+    if (enemy.miniBoss && enemy.attackTimer <= 0) {
+      spawnMazeMiniBossPattern(enemy);
+      enemy.attackTimer = mazeState.encounterType === "gauntlet" ? 1.1 : 1.18;
+    }
+  });
+}
+
+function moveMazeEnemy(enemy, dx, dy) {
+  const nextX = enemy.x + dx;
+  const nextY = enemy.y + dy;
+  if (isMazeCircleWalkable(nextX, nextY, enemy.radius)) {
+    enemy.x = nextX;
+    enemy.y = nextY;
+    return;
+  }
+  if (isMazeCircleWalkable(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
+  if (isMazeCircleWalkable(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
+}
+
+function spawnMazeProjectile(enemy) {
+  const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+  hazards.push({
+    type: "mazeShot",
+    mazeHazard: true,
+    x: enemy.x,
+    y: enemy.y,
+    vx: Math.cos(angle) * (enemy.miniBoss ? 330 : 250),
+    vy: Math.sin(angle) * (enemy.miniBoss ? 330 : 250),
+    r: enemy.miniBoss ? 13 : 9,
+    ttl: enemy.miniBoss ? 2.8 : 2.2,
+    damage: enemy.miniBoss ? 12 : 8,
+    color: enemy.color,
+  });
+}
+
+function spawnMazeMiniBossPattern(enemy) {
+  enemy.patternIndex = (enemy.patternIndex || 0) + 1;
+  const kind = mazeState?.kind || boss.kind;
+  if (kind === "cola") {
+    spawnMazeCircle(player.x, player.y, 34, 0.55, 1.2, 10, "#b9f4ff", "Fizz pop");
+    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
+    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) - 0.22, { speed: 220, r: 16, ttl: 2.5, damage: 8, color: "#7ed8ef", source: "Fizz bubble" });
+    return;
+  }
+  if (kind === "burger") {
+    spawnMazeCircle(player.x, player.y, 48, 0.65, 1.05, 15, "#ff7044", "Grill slam");
+    return;
+  }
+  if (kind === "fries") {
+    spawnMazeCircle(enemy.x + Math.cos(enemy.moveTimer) * 44, enemy.y + Math.sin(enemy.moveTimer) * 44, 34, 0.3, 3.2, 5, "#f0c95d", "Hot grease", { lingering: true });
+    for (let i = -1; i <= 1; i += 1) {
+      spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + i * 0.22, { speed: 260, r: 10, ttl: 2.2, damage: 9, turn: i * 0.55, color: "#ffd76a", source: "Curly fry" });
+    }
+    return;
+  }
+  if (kind === "trio" || kind === "sauce") {
+    const colors = ["#cf3b2f", "#e3bf34", "#f3ead2"];
+    const color = colors[enemy.patternIndex % colors.length];
+    const base = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    for (let i = -1; i <= 1; i += 1) {
+      spawnMazeShot(enemy, base + i * 0.24, { speed: 285, r: 10, ttl: 2.4, damage: 9, color, source: "Condiment burst" });
+    }
+    return;
+  }
+  if (kind === "shake") {
+    spawnMazeCircle(player.x, player.y, 44, 0.7, 1.25, 11, "#bafcff", "Frost scoop", { chill: true });
+    return;
+  }
+  if (kind === "nacho") {
+    spawnMazeCircle(player.x, player.y, 42, 0.45, 2.4, 7, "#ffda6b", "Cheese puddle", { lingering: true });
+    for (let i = 0; i < 6; i += 1) {
+      spawnMazeShot(enemy, (Math.PI * 2 * i) / 6 + enemy.moveTimer * 0.2, { speed: 225, r: 8, ttl: 1.8, damage: 7, color: "#f0c35b", source: "Chip burst" });
+    }
+    return;
+  }
+  if (kind === "pizza") {
+    const vertical = enemy.patternIndex % 2 === 0;
+    spawnMazeWall(vertical ? player.x : enemy.x, vertical ? enemy.y : player.y, vertical, 0.68, 1.25, 12, "#ff7044");
+    for (let i = -2; i <= 2; i += 1) {
+      spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x) + i * 0.16, { speed: 275, r: 9, ttl: 2.1, damage: 7, color: "#b93a2f", source: "Pepperoni" });
+    }
+    return;
+  }
+  if (kind === "donut") {
+    for (let i = 0; i < 10; i += 1) {
+      spawnMazeShot(enemy, (Math.PI * 2 * i) / 10 + enemy.patternIndex * 0.19, { speed: 185, r: 7, ttl: 2.4, damage: 6, color: i % 2 ? "#ff79aa" : "#8ec7ff", source: "Sprinkle ring" });
+    }
+    spawnMazeCircle(player.x, player.y, 32, 0.55, 1.6, 9, "#ffd7e8", "Donut hole");
+    return;
+  }
+  if (kind === "sushi") {
+    spawnMazeWall(player.x, enemy.y, true, 0.7, 1.35, 12, "#b7e7d9");
+    spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x), { speed: 310, r: 11, ttl: 2.4, damage: 9, color: "#7ab9a8", source: "Wasabi shot" });
+    return;
+  }
+  spawnMazeCircle(player.x, player.y, 42, 0.62, 1.15, 12, "#f0d47c", "Taco quake");
+  spawnMazeShot(enemy, Math.atan2(player.y - enemy.y, player.x - enemy.x), { speed: 300, r: 11, ttl: 2.2, damage: 9, color: "#6fbf55", source: "Taco shard" });
+}
+
+function spawnMazeShot(enemy, angle, options = {}) {
+  hazards.push({
+    type: "mazeShot",
+    mazeHazard: true,
+    x: enemy.x,
+    y: enemy.y,
+    vx: Math.cos(angle) * (options.speed || 280),
+    vy: Math.sin(angle) * (options.speed || 280),
+    r: options.r || 10,
+    ttl: options.ttl || 2.2,
+    damage: options.damage || 8,
+    color: options.color || enemy.color,
+    turn: options.turn || 0,
+    source: options.source || "Maze shot",
+  });
+}
+
+function spawnMazeCircle(x, y, r, warn, ttl, damage, color, source, options = {}) {
+  const point = clampMazeHazardPoint(x, y, r);
+  hazards.push({
+    type: "mazeCircle",
+    mazeHazard: true,
+    x: point.x,
+    y: point.y,
+    r,
+    warn,
+    ttl,
+    damage,
+    color,
+    source,
+    lingering: Boolean(options.lingering),
+    chill: Boolean(options.chill),
+    damageTimer: 0,
+    hit: false,
+  });
+}
+
+function spawnMazeWall(x, y, vertical, warn, ttl, damage, color) {
+  const point = clampMazeHazardPoint(x, y, 24);
+  hazards.push({
+    type: "mazeWall",
+    mazeHazard: true,
+    x: point.x,
+    y: point.y,
+    vertical,
+    warn,
+    ttl,
+    damage,
+    color,
+    length: mazeState ? mazeState.cellSize * 2.45 : 110,
+    width: 24,
+    hit: false,
+  });
+}
+
+function clampMazeHazardPoint(x, y, radius) {
+  if (!mazeState) return { x, y };
+  return {
+    x: clamp(x, mazeState.bounds.x + radius, mazeState.bounds.x + mazeState.bounds.w - radius),
+    y: clamp(y, mazeState.bounds.y + radius, mazeState.bounds.y + mazeState.bounds.h - radius),
+  };
 }
 
 function updateCombat(dt) {
@@ -917,9 +2264,9 @@ function updateCombat(dt) {
   if (boss.attackTimer <= 0) {
     spawnBossPattern();
     if (boss.kind === "fries") {
-      boss.attackTimer = boss.enraged ? 1.2 : boss.phase === 2 ? 1.25 : 1.55;
+      boss.attackTimer = attackInterval("fries");
     } else {
-      boss.attackTimer = boss.enraged ? 1.25 : boss.phase === 2 ? 1.65 : 2.1;
+      boss.attackTimer = attackInterval("burger");
     }
   }
 }
@@ -935,7 +2282,7 @@ function updatePeanutBusterShake(dt) {
   }
   if (boss.attackTimer <= 0) {
     spawnShakePattern();
-    boss.attackTimer = boss.enraged ? 0.75 : boss.phase === 3 ? 0.95 : boss.phase === 2 ? 1.12 : 1.3;
+    boss.attackTimer = attackInterval("shake");
   }
 }
 
@@ -1075,7 +2422,7 @@ function updatePizzaPhantom(dt) {
   }
   if (boss.attackTimer <= 0) {
     spawnPizzaPattern();
-    boss.attackTimer = boss.enraged ? 1.05 : boss.phase === 3 ? 1.25 : boss.phase === 2 ? 1.45 : 1.75;
+    boss.attackTimer = attackInterval("pizza");
   }
 }
 
@@ -1083,22 +2430,22 @@ function updatePizzaPhase() {
   const hpPercent = boss.hp / boss.maxHp;
   if (hpPercent <= 0.66 && boss.phase === 1) {
     boss.phase = 2;
-    boss.attackTimer = 0.4;
+    boss.attackTimer = Math.max(boss.attackTimer, combatTuning.phaseDelay.medium);
     log("Phase 2: slice split.");
     ui.status.textContent = "Pizza Phantom starts splitting slices.";
   }
   if (hpPercent <= 0.33 && boss.phase < 3) {
     boss.phase = 3;
-    boss.attackTimer = 0.5;
-    boss.cloneTimer = 0.2;
-    boss.ovenTimer = 1.2;
+    boss.attackTimer = Math.max(boss.attackTimer, combatTuning.phaseDelay.medium);
+    boss.cloneTimer = 1.1;
+    boss.ovenTimer = 1.65;
     boss.deliveryCooldown = 4.5;
     log("Phase 3: stuffed crust possession.");
     ui.status.textContent = "Pizza Phantom summons decoys.";
   }
   if (hpPercent <= 0.18 && !boss.enraged) {
     boss.enraged = true;
-    boss.attackTimer = Math.min(boss.attackTimer, 0.45);
+    boss.attackTimer = Math.max(boss.attackTimer, combatTuning.phaseDelay.short);
     log("Pizza Phantom haunts the oven.");
   }
 }
@@ -1159,7 +2506,7 @@ function updateBigCola(dt) {
   }
   if (boss.attackTimer <= 0) {
     spawnBigColaPattern();
-    boss.attackTimer = boss.enraged ? 1.0 : boss.phase === 2 ? 1.25 : 1.55;
+    boss.attackTimer = attackInterval("cola");
   }
 }
 
@@ -1167,10 +2514,16 @@ function updateTacoTitan(dt) {
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.attackTimer -= dt;
+  boss.tacoPuzzleTimer = Math.max(0, (boss.tacoPuzzleTimer || 0) - dt);
+  boss.tacoPuzzleResolveTimer = Math.max(0, (boss.tacoPuzzleResolveTimer || 0) - dt);
+  boss.exposedFillingTimer = Math.max(0, (boss.exposedFillingTimer || 0) - dt);
+  boss.tacoFloodCountdown = Math.max(0, (boss.tacoFloodCountdown || 0) - dt);
+  boss.shellGuardActive = boss.exposedFillingTimer <= 0 && boss.hp > 0;
   if (boss.napkinCooldownTimer > 0) {
     boss.napkinCooldownTimer -= dt;
   }
   updateTacoPhase();
+  updateTacoPuzzle(dt);
   if (boss.napkinTimer > 0) {
     boss.napkinTimer -= dt;
     boss.attackTimer = Math.max(boss.attackTimer, 0.65);
@@ -1183,9 +2536,9 @@ function updateTacoTitan(dt) {
     boss.swingTimer = boss.enraged ? 0.82 : 1.05;
   }
   boss.swingTimer -= dt;
-  if (boss.attackTimer <= 0) {
+  if (boss.attackTimer <= 0 && !boss.tacoPuzzleActive && boss.tacoPuzzleTimer <= 0) {
     spawnTacoPattern();
-    boss.attackTimer = boss.enraged ? 1.15 : boss.phase === 3 ? 1.28 : boss.phase === 2 ? 1.45 : 1.75;
+    boss.attackTimer = boss.enraged ? 1.35 : boss.phase === 3 ? 1.55 : boss.phase === 2 ? 1.75 : 2.05;
   }
 }
 
@@ -1194,6 +2547,8 @@ function updateTacoPhase() {
   if (hpPercent <= 0.66 && boss.phase === 1) {
     boss.phase = 2;
     boss.attackTimer = 0.35;
+    boss.tacoPuzzleTimer = 0.2;
+    boss.tacoPuzzleActive = false;
     log("Phase 2: Taco Titan's shell cracks open.");
     ui.status.textContent = "Taco Titan starts spilling ingredients.";
   }
@@ -1201,27 +2556,179 @@ function updateTacoPhase() {
     boss.phase = 3;
     boss.enraged = true;
     boss.attackTimer = 0.25;
-    log("Phase 3: Last Bite.");
-    showFloat("Last Bite");
+    boss.tacoPuzzleTimer = 0.2;
+    boss.tacoPuzzleActive = false;
+    if (!boss.tacoFinalFeastAnnounced) {
+      boss.tacoFinalFeastAnnounced = true;
+      log("Phase 3: Final Feast.");
+      showFloat("Final Feast");
+    }
   }
 }
 
 function spawnTacoPattern() {
-  const roll = Math.random();
-  if (roll < 0.28) {
-    spawnTacoCrunchCharge();
-    if (boss.phase >= 3) spawnIngredientAvalanche(2);
-  } else if (roll < 0.52) {
-    spawnIngredientAvalanche(boss.phase >= 3 ? 5 : boss.phase >= 2 ? 4 : 3);
-  } else if (roll < 0.74) {
-    spawnTacoShellSlam();
-  } else {
-    spawnLettuceFan();
-    if (boss.phase >= 2) spawnTacoSalsaPools(2);
+  startTacoPuzzleCycle();
+}
+
+function updateTacoPuzzle(dt) {
+  if (!boss.tacoPuzzleActive) {
+    if (boss.tacoPuzzleTimer <= 0 && boss.napkinTimer <= 0) startTacoPuzzleCycle();
+    return;
+  }
+  const current = boss.tacoCurrentIngredient;
+  if (current === "lettuce") updateTacoLettuceProgress();
+  if (current === "shell") updateTacoShellProgress();
+  if (current === "salsa") updateTacoSalsaProgress(dt);
+  if (boss.tacoPuzzleResolveTimer <= 0) resolveTacoIngredientStep();
+}
+
+function startTacoPuzzleCycle() {
+  if (boss.tacoPuzzleActive || boss.napkinTimer > 0) return;
+  boss.tacoCycleCount += 1;
+  boss.tacoPuzzleStep = 0;
+  boss.tacoComboSolved = true;
+  boss.tacoIngredientQueue = tacoPuzzleQueueForPhase();
+  boss.tacoPuzzleActive = true;
+  startTacoIngredientStep();
+}
+
+function tacoPuzzleQueueForPhase() {
+  if (boss.phase >= 3) {
+    const finalCombos = [
+      ["shell", "beef", "lettuce"],
+      ["cheese", "lettuce", "salsa"],
+      ["shell", "cheese", "salsa"],
+    ];
+    return finalCombos[boss.tacoCycleCount % finalCombos.length].slice();
+  }
+  if (boss.phase >= 2) {
+    const combos = [
+      ["beef", "lettuce"],
+      ["cheese", "lettuce"],
+      ["shell", "salsa"],
+    ];
+    return combos[boss.tacoCycleCount % combos.length].slice();
+  }
+  return [["shell"], ["beef"], ["cheese"], ["lettuce"], ["salsa"]][boss.tacoCycleCount % 5].slice();
+}
+
+function startTacoIngredientStep() {
+  boss.tacoCurrentIngredient = boss.tacoIngredientQueue[boss.tacoPuzzleStep] || null;
+  boss.tacoPuzzleFailed = false;
+  boss.tacoPuzzleProgress = false;
+  if (!boss.tacoCurrentIngredient) {
+    finishTacoPuzzleCycle();
+    return;
+  }
+  const duration = boss.phase >= 3 ? 3.2 : boss.phase >= 2 ? 3.6 : 4.0;
+  boss.tacoPuzzleResolveTimer = duration;
+  boss.tacoObjectiveText = tacoIngredientObjective(boss.tacoCurrentIngredient);
+  spawnTacoIngredientMechanic(boss.tacoCurrentIngredient);
+  showFloat(tacoIngredientName(boss.tacoCurrentIngredient));
+  ui.status.textContent = boss.tacoObjectiveText;
+}
+
+function tacoIngredientName(ingredient) {
+  return {
+    shell: "Shell",
+    beef: "Beef",
+    cheese: "Cheese",
+    lettuce: "Lettuce",
+    salsa: "Salsa",
+  }[ingredient] || "Ingredient";
+}
+
+function tacoIngredientObjective(ingredient) {
+  return {
+    shell: "Shell: stand in the slam gap to prime a crack.",
+    beef: "Beef: bait heavy drops away and dodge the impact.",
+    cheese: "Cheese: survive the sticky drop, then look for lettuce.",
+    lettuce: "Lettuce: step into the green cleanse lane.",
+    salsa: "Salsa: keep moving out of spreading pools.",
+  }[ingredient] || "Solve the ingredient mechanic.";
+}
+
+function spawnTacoIngredientMechanic(ingredient) {
+  if (ingredient === "shell") {
+    spawnTacoShellSlam({ puzzle: true });
+    spawnTacoCrunchCharge({ allowNapkin: false, puzzle: true });
+    return;
+  }
+  if (ingredient === "beef") {
+    spawnIngredientAvalanche(boss.phase >= 3 ? 5 : 3, "beef", { puzzle: true });
+    return;
+  }
+  if (ingredient === "cheese") {
+    spawnIngredientAvalanche(boss.phase >= 2 ? 4 : 3, "cheese", { puzzle: true });
+    spawnTacoLettuceCleanseZone(1.4);
+    return;
+  }
+  if (ingredient === "lettuce") {
+    spawnLettuceFan({ puzzle: true });
+    spawnTacoLettuceCleanseZone(0.2);
+    return;
+  }
+  if (ingredient === "salsa") {
+    boss.tacoSalsaSafeTimer = 1.4;
+    spawnTacoSalsaPools(boss.phase >= 3 ? 4 : 3, { puzzle: true });
+    return;
   }
 }
 
-function spawnTacoCrunchCharge() {
+function resolveTacoIngredientStep() {
+  const ingredient = boss.tacoCurrentIngredient;
+  const solved = tacoIngredientSolved(ingredient);
+  if (!solved) {
+    boss.tacoComboSolved = false;
+    addStuffedStack();
+    particles.push({ x: player.x, y: player.y - 45, text: "messy", color: "#ffb0a4", ttl: 0.85 });
+  } else {
+    particles.push({ x: boss.x, y: boss.y - boss.radius - 58, text: `${tacoIngredientName(ingredient)} solved`, color: "#fff4c4", ttl: 0.85 });
+  }
+  boss.tacoPuzzleStep += 1;
+  startTacoIngredientStep();
+}
+
+function tacoIngredientSolved(ingredient) {
+  if (ingredient === "shell" || ingredient === "lettuce") return Boolean(boss.tacoPuzzleProgress);
+  return !boss.tacoPuzzleFailed;
+}
+
+function finishTacoPuzzleCycle() {
+  boss.tacoPuzzleActive = false;
+  boss.tacoCurrentIngredient = null;
+  boss.tacoPuzzleResolveTimer = 0;
+  if (boss.tacoComboSolved) {
+    const chunk = boss.phase >= 3 ? 0.105 : boss.phase >= 2 ? 0.08 : 0.055;
+    const duration = boss.phase >= 3 ? 7.5 : boss.phase >= 2 ? 6.5 : 5.5;
+    crackTacoShell(chunk, duration);
+    if (boss.phase >= 2 || boss.tacoCycleCount % 2 === 0) spawnTacoNapkinFloodNearPlayer();
+  } else {
+    boss.tacoPuzzleTimer = boss.phase >= 3 ? 2.0 : 2.7;
+    ui.status.textContent = "Taco Titan keeps Shell Guard up. Solve the next combo to crack it.";
+    showFloat("Shell Guard holds");
+  }
+}
+
+function crackTacoShell(percent, duration) {
+  const chunkDamage = Math.max(1, Math.round(boss.maxHp * percent));
+  boss.shellCrackStacks = (boss.shellCrackStacks || 0) + 1;
+  boss.shellGuardActive = false;
+  boss.hp = Math.max(1, boss.hp - chunkDamage);
+  particles.push({ x: boss.x, y: boss.y - boss.radius - 62, text: `Shell Cracked -${chunkDamage}`, color: "#fff4c4", ttl: 1.2 });
+  showFloat("Shell Cracked");
+  startTacoExposedWindow(duration);
+  if (boss.hp <= 1 && boss.shellCrackStacks >= 3) damageBossTarget(boss, boss.hp + 1, "Shell Cracked", { tacoBypassGuard: true });
+}
+
+function startTacoExposedWindow(duration) {
+  boss.exposedFillingTimer = Math.max(boss.exposedFillingTimer || 0, duration);
+  boss.tacoPuzzleTimer = duration + 1.2;
+  ui.status.textContent = "Exposed Filling! Burst Taco Titan before Shell Guard returns.";
+  showFloat("Exposed Filling");
+}
+
+function spawnTacoCrunchCharge(options = {}) {
   const target = bossAimTarget(boss);
   const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
   const length = 820;
@@ -1239,33 +2746,43 @@ function spawnTacoCrunchCharge() {
     ttl: boss.enraged ? 1.08 : 1.32,
     damage: boss.enraged ? 16 : 13,
     hit: false,
+    tacoPuzzleIngredient: options.puzzle ? "shell" : null,
   });
-  if (canSpawnTacoNapkinFlood()) {
-    const size = tacoNapkinSize();
-    const safeX = clamp(targetPoint.x - Math.cos(angle) * 150, world.arena.x + size.w / 2 + 24, world.arena.x + world.arena.w - size.w / 2 - 24);
-    const safeY = clamp(targetPoint.y - Math.sin(angle) * 150, world.arena.y + size.h / 2 + 24, world.arena.y + world.arena.h - size.h / 2 - 24);
-    const delay = boss.enraged ? 3.35 : boss.phase >= 2 ? 3.75 : 4.1;
-    boss.napkinTimer = delay + 1.5;
-    boss.napkinCooldownTimer = boss.enraged ? 13.5 : boss.phase >= 2 ? 15.5 : 17.5;
-    boss.napkinUses += 1;
-    boss.napkinZone = { x: safeX, y: safeY, w: size.w, h: size.h };
-    hazards.push({
-      type: "tacoIngredientFlood",
-      x: world.arena.x + world.arena.w / 2,
-      y: world.arena.y + world.arena.h / 2,
-      warn: delay,
-      warningDuration: delay,
-      ttl: delay + 1.5,
-      safeX,
-      safeY,
-      safeW: size.w,
-      safeH: size.h,
-      cleared: false,
-      hit: false,
-    });
-    log("Napkin safe spot.");
-  }
+  if (options.allowNapkin !== false && canSpawnTacoNapkinFlood()) spawnTacoNapkinFlood(targetPoint.x - Math.cos(angle) * 150, targetPoint.y - Math.sin(angle) * 150);
   log("Crunch Charge lane.");
+}
+
+function spawnTacoNapkinFloodNearPlayer() {
+  const offset = pointFromAngle(player.x, player.y, movementOrAimAngle() + Math.PI, 135);
+  spawnTacoNapkinFlood(offset.x, offset.y);
+}
+
+function spawnTacoNapkinFlood(x, y) {
+  if (!canSpawnTacoNapkinFlood()) return;
+  const size = tacoNapkinSize();
+  const safeX = clamp(x, world.arena.x + size.w / 2 + 24, world.arena.x + world.arena.w - size.w / 2 - 24);
+  const safeY = clamp(y, world.arena.y + size.h / 2 + 24, world.arena.y + world.arena.h - size.h / 2 - 24);
+  const delay = boss.enraged ? 3.35 : boss.phase >= 2 ? 3.75 : 4.1;
+  boss.napkinTimer = delay + 1.5;
+  boss.tacoFloodCountdown = delay;
+  boss.napkinCooldownTimer = boss.enraged ? 13.5 : boss.phase >= 2 ? 15.5 : 17.5;
+  boss.napkinUses += 1;
+  boss.napkinZone = { x: safeX, y: safeY, w: size.w, h: size.h };
+  hazards.push({
+    type: "tacoIngredientFlood",
+    x: world.arena.x + world.arena.w / 2,
+    y: world.arena.y + world.arena.h / 2,
+    warn: delay,
+    warningDuration: delay,
+    ttl: delay + 1.5,
+    safeX,
+    safeY,
+    safeW: size.w,
+    safeH: size.h,
+    cleared: false,
+    hit: false,
+  });
+  log("Napkin safe spot.");
 }
 
 function canSpawnTacoNapkinFlood() {
@@ -1288,7 +2805,7 @@ function isPlayerOnTacoNapkin(zone) {
 }
 
 function clearTacoHazardsForNapkinFlood(floodHazard) {
-  const clearedTypes = new Set(["tacoCharge", "tacoShellShard", "ingredientDrop", "tacoSalsa", "tacoSlam", "lettuceLeaf"]);
+  const clearedTypes = new Set(["tacoCharge", "tacoShellShard", "ingredientDrop", "tacoSalsa", "tacoSlam", "lettuceLeaf", "tacoGrease", "tacoCheese", "lettuceCleanseZone"]);
   hazards.forEach((hazard) => {
     if (hazard === floodHazard || !clearedTypes.has(hazard.type)) return;
     hazard.ttl = 0;
@@ -1297,13 +2814,13 @@ function clearTacoHazardsForNapkinFlood(floodHazard) {
   particles.push({ x: floodHazard.safeX, y: floodHazard.safeY - 44, text: "clear", color: "#f5f5e6", ttl: 0.6 });
 }
 
-function spawnIngredientAvalanche(count) {
+function spawnIngredientAvalanche(count, forcedIngredient = null, options = {}) {
   const ingredients = ["cheese", "lettuce", "beef", "salsa"];
   for (let i = 0; i < count; i += 1) {
     const point = randomArenaPointNearThreat(260, 70);
     hazards.push({
       type: "ingredientDrop",
-      ingredient: ingredients[(i + Math.floor(Math.random() * ingredients.length)) % ingredients.length],
+      ingredient: forcedIngredient || ingredients[(i + Math.floor(Math.random() * ingredients.length)) % ingredients.length],
       x: point.x,
       y: point.y,
       r: 24 + Math.random() * 12,
@@ -1311,12 +2828,13 @@ function spawnIngredientAvalanche(count) {
       ttl: 1.32 + i * 0.1,
       damage: 8,
       hit: false,
+      tacoPuzzleIngredient: options.puzzle ? forcedIngredient : null,
     });
   }
   log("Ingredient avalanche.");
 }
 
-function spawnTacoShellSlam() {
+function spawnTacoShellSlam(options = {}) {
   const target = bossAimTarget(boss);
   hazards.push({
     type: "tacoSlam",
@@ -1329,10 +2847,11 @@ function spawnTacoShellSlam() {
     ttl: 1.35,
     damage: boss.phase >= 2 ? 14 : 12,
     hit: false,
+    tacoPuzzleIngredient: options.puzzle ? "shell" : null,
   });
 }
 
-function spawnLettuceFan() {
+function spawnLettuceFan(options = {}) {
   const target = bossAimTarget(boss);
   const baseAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
   const count = boss.phase >= 3 ? 13 : boss.phase >= 2 ? 10 : 7;
@@ -1349,15 +2868,60 @@ function spawnLettuceFan() {
       r: 13,
       ttl: 3.1,
       damage: 8,
+      tacoPuzzleIngredient: options.puzzle ? "lettuce" : null,
     });
   }
 }
 
-function spawnTacoSalsaPools(count) {
+function spawnTacoSalsaPools(count, options = {}) {
   for (let i = 0; i < count; i += 1) {
     const point = randomArenaPointNearThreat(220, 80);
-    hazards.push({ type: "tacoSalsa", x: point.x, y: point.y, r: 48, warn: 0.55, ttl: 5.2, damage: 10, damageTimer: 0 });
+    hazards.push({ type: "tacoSalsa", x: point.x, y: point.y, r: 48, warn: 0.55, ttl: 5.2, damage: 10, damageTimer: 0, tacoPuzzleIngredient: options.puzzle ? "salsa" : null });
   }
+}
+
+function spawnTacoLettuceCleanseZone(delay = 0.2) {
+  const point = randomArenaPointNearThreat(190, 90);
+  hazards.push({
+    type: "lettuceCleanseZone",
+    x: point.x,
+    y: point.y,
+    r: 58,
+    warn: delay,
+    ttl: 4.8,
+    pulse: 0,
+  });
+}
+
+function markTacoPuzzleFailure(ingredient) {
+  if (boss.kind !== "taco" || !boss.tacoPuzzleActive) return;
+  if (boss.tacoCurrentIngredient !== ingredient) return;
+  boss.tacoPuzzleFailed = true;
+}
+
+function markTacoPuzzleProgress(ingredient) {
+  if (boss.kind !== "taco" || !boss.tacoPuzzleActive) return;
+  if (boss.tacoCurrentIngredient !== ingredient) return;
+  boss.tacoPuzzleProgress = true;
+}
+
+function updateTacoLettuceProgress() {
+  const zone = hazards.find((hazard) => hazard.type === "lettuceCleanseZone" && hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r);
+  if (zone) markTacoPuzzleProgress("lettuce");
+}
+
+function updateTacoShellProgress() {
+  const slam = hazards.find((hazard) => hazard.type === "tacoSlam" && hazard.tacoPuzzleIngredient === "shell");
+  if (!slam || slam.warn > 0) return;
+  const dist = distance(player, slam);
+  const angleToPlayer = Math.atan2(player.y - slam.y, player.x - slam.x);
+  const inGap = Math.abs(angleDifference(angleToPlayer, slam.gapAngle)) < 0.46;
+  if ((dist < slam.r && dist > slam.inner && inGap) || dist <= slam.inner) markTacoPuzzleProgress("shell");
+}
+
+function updateTacoSalsaProgress(dt) {
+  boss.tacoSalsaSafeTimer = Math.max(0, (boss.tacoSalsaSafeTimer || 0) - dt);
+  if (boss.tacoSalsaSafeTimer <= 0 && !boss.tacoPuzzleFailed) boss.tacoPuzzleProgress = true;
 }
 
 function addStuffedStack() {
@@ -1388,7 +2952,7 @@ function updateDonutDonald(dt) {
   }
   if (boss.attackTimer <= 0) {
     spawnDonutPattern();
-    boss.attackTimer = boss.enraged ? 1.05 : isDonutHolePhase() ? 1.34 : 1.62;
+    boss.attackTimer = boss.enraged ? attackInterval("donut") : isDonutHolePhase() ? combatTuning.attackIntervals.donut.holes : attackInterval("donut");
   }
 }
 
@@ -1397,7 +2961,7 @@ function updateDonutPhase() {
   if (hpPercent <= 0.84 && boss.phase === 1) {
     boss.phase = 2;
     boss.donutHoles = createDonutHoles(2);
-    boss.attackTimer = 0.25;
+    boss.attackTimer = combatTuning.phaseDelay.medium;
     log("Phase 2: Donut Donald calls the donut holes.");
   }
   if (hpPercent <= 0.67 && boss.phase === 2 && !boss.donutGauntletCompleted) {
@@ -1407,7 +2971,7 @@ function updateDonutPhase() {
   if (hpPercent <= 0.42 && boss.phase === 4) {
     boss.phase = 5;
     boss.donutHoles = createDonutHoles(2);
-    boss.attackTimer = 0.25;
+    boss.attackTimer = combatTuning.phaseDelay.medium;
     log("Phase 5: Donut Donald repeats the donut hole pressure.");
     showFloat("Phase 5");
   }
@@ -1415,7 +2979,7 @@ function updateDonutPhase() {
     boss.phase = 6;
     boss.enraged = true;
     boss.donutHoles = createDonutHoles(4);
-    boss.attackTimer = 0.25;
+    boss.attackTimer = combatTuning.phaseDelay.medium;
     log("Phase 6: Grand Finale.");
     showFloat("Grand Finale");
   }
@@ -1423,18 +2987,18 @@ function updateDonutPhase() {
 
 function startDonutGauntlet() {
   boss.donutGauntletActive = true;
-  boss.donutGauntletTimer = 30;
-  boss.donutGauntletSpawnTimer = 0.45;
+  boss.donutGauntletTimer = combatTuning.donut.gauntletDuration;
+  boss.donutGauntletSpawnTimer = 0.75;
   boss.donutHoles = [];
   boss.donutMinions = [];
   boss.attackTimer = 99;
   boss.glazeRingLockTimer = 0;
   boss.x = world.arena.x + world.arena.w / 2;
   boss.y = world.arena.y - 180;
-  boss.invulnerableTimer = 30.5;
+  boss.invulnerableTimer = combatTuning.donut.gauntletDuration + 0.5;
   log("Phase 3: Donut onslaught.");
   ui.status.textContent = "Donut Donald leaps away. Survive the donut onslaught!";
-  showFloat("Survive 30 seconds");
+  showFloat(`Survive ${combatTuning.donut.gauntletDuration} seconds`);
 }
 
 function updateDonutGauntlet(dt) {
@@ -1443,7 +3007,7 @@ function updateDonutGauntlet(dt) {
   boss.donutGauntletSpawnTimer -= dt;
   if (boss.donutGauntletSpawnTimer <= 0) {
     spawnDonutMinionWave();
-    boss.donutGauntletSpawnTimer = boss.donutGauntletTimer > 15 ? 2.4 : 1.75;
+    boss.donutGauntletSpawnTimer = boss.donutGauntletTimer > combatTuning.donut.gauntletDuration / 2 ? combatTuning.donut.gauntletEarlySpawn : combatTuning.donut.gauntletLateSpawn;
   }
   if (boss.donutGauntletTimer <= 0) {
     finishDonutGauntlet();
@@ -1460,7 +3024,7 @@ function finishDonutGauntlet() {
   boss.donutHoles = [];
   boss.x = world.arena.x + world.arena.w - 230;
   boss.y = world.arena.y + world.arena.h / 2;
-  boss.attackTimer = 1.1;
+  boss.attackTimer = combatTuning.phaseDelay.medium;
   hazards = hazards.filter((hazard) => !hazard.donutMinionHazard);
   log("Phase 4: Donut Donald returns.");
   showFloat("Donald returns");
@@ -1475,26 +3039,27 @@ function isDonutFinalPhase() {
 }
 
 function createDonutHoles(count) {
+  const holeHp = Math.round((isDonutFinalPhase() ? 58 : 78) * 1.35);
   return Array.from({ length: count }, (_, index) => ({
     angle: (Math.PI * 2 * index) / count,
     r: 18,
     fireTimer: 0.95 + index * 0.22,
-    hp: isDonutFinalPhase() ? 58 : 78,
-    maxHp: isDonutFinalPhase() ? 58 : 78,
+    hp: holeHp,
+    maxHp: holeHp,
   }));
 }
 
 function updateDonutHoles(dt) {
   boss.donutHoles = boss.donutHoles.filter((hole) => hole.hp > 0);
   boss.donutHoles.forEach((hole, index) => {
-    hole.angle += (boss.enraged ? 1.25 : 0.9) * dt;
+    hole.angle += (boss.enraged ? 1.16 : 0.92) * dt;
     const orbit = isDonutFinalPhase() ? 128 : 112;
     hole.x = boss.x + Math.cos(hole.angle) * orbit;
     hole.y = boss.y + Math.sin(hole.angle) * orbit * 0.72;
     hole.fireTimer -= dt;
     if (hole.fireTimer <= 0) {
       spawnDonutHoleSprinkles(hole);
-      hole.fireTimer = boss.enraged ? 1.2 + index * 0.08 : 1.55 + index * 0.1;
+      hole.fireTimer = boss.enraged ? 1.2 + index * 0.08 : 1.48 + index * 0.1;
     }
   });
 }
@@ -1535,7 +3100,7 @@ function updateDonutMinions(dt) {
 }
 
 function spawnDonutMinionWave() {
-  const elapsed = 30 - boss.donutGauntletTimer;
+  const elapsed = combatTuning.donut.gauntletDuration - boss.donutGauntletTimer;
   const count = elapsed > 20 ? 4 : elapsed > 10 ? 3 : 2;
   for (let i = 0; i < count; i += 1) {
     spawnDonutMinion(i, elapsed);
@@ -1548,9 +3113,9 @@ function spawnDonutMinion(index, elapsed) {
   const types = elapsed > 16 ? ["crawler", "shooter", "glazer"] : elapsed > 8 ? ["crawler", "crawler", "shooter"] : ["crawler", "shooter"];
   const kind = types[(index + Math.floor(Math.random() * types.length)) % types.length];
   const stats = {
-    crawler: { r: 22, hp: 45, speed: 105, color: "#c7834f" },
-    shooter: { r: 20, hp: 38, speed: 42, color: "#f7b7d3" },
-    glazer: { r: 24, hp: 56, speed: 34, color: "#ffe36e" },
+    crawler: { r: 22, hp: 64, speed: 106, color: "#c7834f" },
+    shooter: { r: 20, hp: 58, speed: 44, color: "#f7b7d3" },
+    glazer: { r: 24, hp: 78, speed: 36, color: "#ffe36e" },
   }[kind];
   boss.donutMinions.push({
     kind,
@@ -1624,8 +3189,8 @@ function spawnGlazeRing(count) {
   if (boss.glazeRingLockTimer > 0) return;
   const playerAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
   const baseOffset = (Math.random() > 0.5 ? 1 : -1) * (isDonutFinalPhase() ? 0.72 : 0.62);
-  const stagger = isDonutFinalPhase() ? 0.9 : 0.5;
-  boss.glazeRingLockTimer = 0.36 + (count - 1) * stagger + 0.35;
+  const stagger = isDonutFinalPhase() ? combatTuning.donut.glazeFinalStagger : combatTuning.donut.glazeNormalStagger;
+  boss.glazeRingLockTimer = 0.46 + (count - 1) * stagger + 0.7;
   for (let i = 0; i < count; i += 1) {
     const alternatingOffset = baseOffset * (i % 2 === 0 ? 1 : -1);
     const drift = (i - (count - 1) / 2) * 0.16;
@@ -1636,13 +3201,13 @@ function spawnGlazeRing(count) {
       radiusNow: 34,
       maxRadius: 520,
       gapAngle: playerAngle + alternatingOffset + drift,
-      gapWidth: isDonutFinalPhase() ? 0.82 : 1.02,
-      speed: boss.enraged ? 230 : 195,
-      spinSpeed: boss.enraged ? 0.58 : 0.36,
+      gapWidth: isDonutFinalPhase() ? 0.94 : 1.08,
+      speed: boss.enraged ? 226 : 198,
+      spinSpeed: boss.enraged ? 0.5 : 0.34,
       delay: i * stagger,
-      warn: 0.36 + i * stagger,
-      ttl: 3.15 + i * stagger,
-      damage: boss.enraged ? 26 : 20,
+      warn: 0.46 + i * stagger,
+      ttl: 3.35 + i * stagger,
+      damage: boss.enraged ? 26 : 21,
       hit: false,
     });
   }
@@ -1650,7 +3215,7 @@ function spawnGlazeRing(count) {
 }
 
 function spawnSprinkleSpiral() {
-  const count = boss.enraged ? 18 : isDonutHolePhase() ? 15 : 12;
+  const count = boss.enraged ? 18 : isDonutHolePhase() ? 15 : 13;
   const twist = Math.random() > 0.5 ? 1 : -1;
   for (let i = 0; i < count; i += 1) {
     const angle = (Math.PI * 2 * i) / count + boss.animationTime * 0.8;
@@ -1663,7 +3228,7 @@ function spawnSprinkleSpiral() {
       turn: twist * 0.24,
       r: 7,
       ttl: 3.2,
-      damage: 8,
+      damage: boss.enraged ? 9 : 8,
       color: i % 3 === 0 ? "#ff79aa" : i % 3 === 1 ? "#8ec7ff" : "#ffe36e",
     });
   }
@@ -1698,7 +3263,7 @@ function spawnFrostingRibbon() {
     angle,
     length: 740,
     width: isDonutFinalPhase() ? 54 : 42,
-    warn: 0.6,
+    warn: 0.76,
     ttl: 3.2,
     damageTimer: 0,
     damage: 12,
@@ -1725,12 +3290,12 @@ function spawnRoyalRoll() {
     prevY: startY,
     angle,
     length: actualLength,
-    width: isDonutFinalPhase() ? 92 : 74,
-    warn: boss.enraged ? 0.78 : 0.95,
-    ttl: boss.enraged ? 1.68 : 1.92,
+    width: isDonutFinalPhase() ? 86 : 70,
+    warn: boss.enraged ? 0.9 : 1.05,
+    ttl: boss.enraged ? 1.82 : 2.06,
     rollAge: 0,
-    rollDuration: boss.enraged ? 0.72 : 0.86,
-    damage: boss.enraged ? 28 : 23,
+    rollDuration: boss.enraged ? 0.82 : 0.96,
+    damage: boss.enraged ? 29 : 24,
     hit: false,
   });
   boss.animation = "royalRollWindup";
@@ -1955,9 +3520,9 @@ function startSoyWhirlpool() {
 function pullPlayerToward(x, y, amount) {
   if (player.dead || player.won) return;
   const angle = Math.atan2(y - player.y, x - player.x);
-  player.x += Math.cos(angle) * amount;
-  player.y += Math.sin(angle) * amount;
-  const point = constrainToRoom(player.x, player.y);
+  const nextX = player.x + Math.cos(angle) * amount;
+  const nextY = player.y + Math.sin(angle) * amount;
+  const point = constrainToRoom(nextX, nextY, player.x, player.y);
   player.x = point.x;
   player.y = point.y;
 }
@@ -2121,6 +3686,14 @@ function clampArenaPoint(x, y, radius) {
   };
 }
 
+function clampCombatPoint(x, y, radius) {
+  const bounds = currentBounds();
+  return {
+    x: clamp(x, bounds.x + radius + 24, bounds.x + bounds.w - radius - 24),
+    y: clamp(y, bounds.y + radius + 24, bounds.y + bounds.h - radius - 24),
+  };
+}
+
 function coopThreatTargets() {
   const targets = [];
   if (player.room === "arena" && !player.dead) {
@@ -2155,24 +3728,30 @@ function randomArenaPointNearThreat(spread, minDistance = 0) {
 }
 
 function shootAt(x, y) {
+  if (mazeState?.rewardPending) return;
   if (player.attackCooldown > 0) return;
-  const dx = x - player.x;
-  const dy = y - player.y;
+  const targetPoint = player.room === "starter" ? trainingDummy : { x, y };
+  const dx = targetPoint.x - player.x;
+  const dy = targetPoint.y - player.y;
   if (Math.hypot(dx, dy) < 6) return;
-  startFight();
+  if (player.room === "arena") startFight();
   player.facing = getFacing(dx, dy);
-  firePlayerProjectile(Math.atan2(dy, dx));
+  const projectile = firePlayerProjectile(Math.atan2(dy, dx));
+  if (player.room === "starter" && projectile) {
+    projectile.hitTargets = [trainingDummy];
+    damageTrainingDummy(trainingDummy, projectile.damage, "Training Hit");
+  }
 }
 
 function firePlayerProjectile(angle) {
-  if (player.attackCooldown > 0) return;
+  if (player.attackCooldown > 0) return null;
   const weapon = gear.weapon[player.gear.weapon];
   const speed = projectileSpeedForWeapon(weapon.tag);
   const magicAttack = weapon.tag === "Magic";
   const rangedAttack = weapon.tag === "Ranged";
   const meleeAttack = isWarriorTag(weapon.tag);
   const rogueAttack = weapon.tag === "Rogue";
-  playerProjectiles.push({
+  const projectile = {
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
@@ -2184,7 +3763,9 @@ function firePlayerProjectile(angle) {
     age: 0,
     heavy: magicAttack,
     tag: weapon.tag,
-  });
+    room: player.room,
+  };
+  playerProjectiles.push(projectile);
   if (magicAttack) {
     player.castTimer = 0.36;
     player.castMoveLockTimer = 0.3;
@@ -2203,7 +3784,7 @@ function firePlayerProjectile(angle) {
     player.rogueAttackTimer = 0.24;
     player.rogueAttackAngle = angle;
   }
-  player.attackCooldown = weapon.speed;
+  player.attackCooldown = basicAttackCooldown(weapon);
   ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
   multiplayer.attackSeq += 1;
   sendMultiplayerEvent({
@@ -2216,6 +3797,7 @@ function firePlayerProjectile(angle) {
     color: magicAttack ? "#48efe4" : weapon.color,
     heavy: magicAttack,
   });
+  return projectile;
 }
 
 function projectileSpeedForWeapon(tag) {
@@ -2230,15 +3812,21 @@ function projectileTravelTime(weapon, speed) {
   return (player.stats.range + rangeBonus) / speed;
 }
 
+function basicAttackCooldown(weapon) {
+  return weapon.speed * (1 - (runState.mazeBuffs.attackSpeed || 0));
+}
+
 function useAbility(index) {
-  if (player.dead || player.won || player.room !== "arena") return;
+  if (mazeState?.rewardPending) return;
+  if (player.dead || player.won || (player.room !== "arena" && player.room !== "starter" && player.room !== "maze")) return;
   const ability = currentAbilities()[index];
   if (!ability || player.abilityCooldowns[index] > 0) return;
-  startFight();
+  if (player.room === "arena") startFight();
   if (currentClassKey() === "melee") useMeleeAbility(index, ability);
   if (currentClassKey() === "ranger") useRangerAbility(index, ability);
   if (currentClassKey() === "mage") useMageAbility(index, ability);
   if (currentClassKey() === "rogue") useRogueAbility(index, ability);
+  if (currentClassKey() === "paladin") usePaladinAbility(index, ability);
 }
 
 function abilityIndexForKey(event) {
@@ -2247,7 +3835,7 @@ function abilityIndexForKey(event) {
 }
 
 function spendAbility(index, ability) {
-  player.abilityCooldowns[index] = ability.cooldown * (playerInTimeWarp() ? 0.5 : 1);
+  player.abilityCooldowns[index] = ability.cooldown * talentAbilityCooldownMultiplier(index);
   ui.status.textContent = `${ability.name}.`;
   showFloat(ability.name);
 }
@@ -2260,13 +3848,19 @@ function useMeleeAbility(index, ability) {
   }
   if (index === 1) {
     spendAbility(index, ability);
+    groundbreaker();
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
     whirlwindDash();
     return;
   }
   spendAbility(index, ability);
   player.shieldWallTimer = 10;
+  if (hasTalent("melee_iron_wall")) player.shieldWallTimer += 3;
   abilityEffects = abilityEffects.filter((effect) => effect.type !== "shieldWall");
-  abilityEffects.push({ type: "shieldWall", x: player.x, y: player.y, r: 52, ttl: 10, maxTtl: 10 });
+  abilityEffects.push({ type: "shieldWall", x: player.x, y: player.y, r: 52, ttl: player.shieldWallTimer, maxTtl: player.shieldWallTimer });
 }
 
 function shieldBash() {
@@ -2274,16 +3868,34 @@ function shieldBash() {
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   player.meleeAttackTimer = 0.3;
   player.meleeAttackAngle = angle;
-  const range = 138;
+  const range = hasTalent("melee_earth_bash") ? 176 : 138;
   const halfAngle = Math.PI * 0.36;
-  const hit = damageTargetsInCone(player.x, player.y, angle, range, halfAngle, Math.round(player.stats.damage * 0.72), "Shield Bash");
+  const hit = damageEnemiesInCone(player.x, player.y, angle, range, halfAngle, Math.round(player.stats.damage * (hasTalent("melee_earth_bash") ? 0.92 : 0.72)), "Shield Bash");
   hit.forEach((target) => {
     interruptTarget(target);
     shoveTarget(target, player.x, player.y, 54);
   });
   const blocked = destroyProjectilesInCone(player.x, player.y, angle, range + 22, halfAngle + 0.08);
+  if (blocked > 0 && hasTalent("melee_iron_heal")) player.hp = Math.min(player.maxHp, player.hp + blocked * 2);
   if (blocked > 0) particles.push({ x: player.x, y: player.y - 48, text: `blocked ${blocked}`, color: "#f0d47c", ttl: 0.7 });
   abilityEffects.push({ type: "shieldBash", x: player.x, y: player.y, angle, range, ttl: 0.24, maxTtl: 0.24 });
+}
+
+function groundbreaker() {
+  player.meleeAttackTimer = 0.4;
+  player.meleeAttackAngle = movementOrAimAngle();
+  const radius = 142 + (hasTalent("melee_earth_radius") ? 28 : 0);
+  const hits = damageEnemiesInRadius(player.x, player.y, radius, Math.round(player.stats.damage * 1.18), "Groundbreaker");
+  hits.forEach((target) => {
+    interruptTarget(target);
+    shoveTarget(target, player.x, player.y, 42);
+    if (hasTalent("melee_blood_hemo") && target.bleedTimer > 0) damageBossTarget(target, Math.round(player.stats.damage * 0.38), "Hemorrhage");
+  });
+  if (hasTalent("melee_earth_after")) {
+    abilityEffects.push({ type: "aftershock", x: player.x, y: player.y, r: radius * 0.8, ttl: 0.42, maxTtl: 0.42, pulseTimer: 0.28 });
+  }
+  if (hasTalent("melee_earth_cap")) destroyProjectilesInRadius(player.x, player.y, radius + 24);
+  abilityEffects.push({ type: "groundbreaker", x: player.x, y: player.y, r: radius, ttl: 0.48, maxTtl: 0.48 });
 }
 
 function whirlwindDash() {
@@ -2320,6 +3932,11 @@ function useRangerAbility(index, ability) {
   }
   if (index === 1) {
     spendAbility(index, ability);
+    arrowStorm();
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
     tumbleShot(angle);
     return;
   }
@@ -2328,12 +3945,12 @@ function useRangerAbility(index, ability) {
     type: "volleyTrap",
     x: player.x,
     y: player.y,
-    r: 36,
+    r: 36 + (hasTalent("ranger_trap_size") ? 20 : 0),
     ttl: 4,
     maxTtl: 4,
     triggerTimer: 0.6,
     shotTimer: 0,
-    shotsRemaining: 5,
+    shotsRemaining: 5 + (hasTalent("ranger_trap_cap") ? 4 : 0),
   });
 }
 
@@ -2353,7 +3970,37 @@ function tumbleShot(angle) {
     color: "#f6c46d",
     ttl: 0.65,
   });
+  if (hasTalent("ranger_deadeye_tumble")) player.deadeyeTimer = 4;
+  if (hasTalent("ranger_trap_tumble")) {
+    abilityEffects.push({
+      type: "volleyTrap",
+      x: player.x,
+      y: player.y,
+      r: 28,
+      ttl: 2.4,
+      maxTtl: 2.4,
+      triggerTimer: 0.2,
+      shotTimer: 0,
+      shotsRemaining: 3,
+    });
+  }
   abilityEffects.push({ type: "tumbleShot", x: player.x, y: player.y, angle: rollAngle, ttl: 0.32, maxTtl: 0.32 });
+}
+
+function arrowStorm() {
+  const target = clampCombatPoint(mouseWorld.x, mouseWorld.y, 72);
+  abilityEffects.push({
+    type: "arrowStorm",
+    x: target.x,
+    y: target.y,
+    r: 128 + (hasTalent("ranger_storm_radius") ? 30 : 0),
+    ttl: 3.2 + (hasTalent("ranger_storm_duration") ? 1.2 : 0),
+    maxTtl: 3.2 + (hasTalent("ranger_storm_duration") ? 1.2 : 0),
+    pulseTimer: 0.15,
+    shotTimer: 0.08,
+    pulseInterval: hasTalent("ranger_storm_pulses") ? 0.32 : 0.45,
+    damageMultiplier: hasTalent("ranger_storm_cap") ? 0.57 : 0.42,
+  });
 }
 
 function fireAbilityArrow(angle, options) {
@@ -2386,29 +4033,79 @@ function useMageAbility(index, ability) {
   }
   if (index === 1) {
     spendAbility(index, ability);
+    meteorField();
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
     blinkStep(angle);
     return;
   }
   spendAbility(index, ability);
   abilityEffects = abilityEffects.filter((effect) => effect.type !== "timeWarp");
-  abilityEffects.push({ type: "timeWarp", x: player.x, y: player.y, r: 132, ttl: 7.5, maxTtl: 7.5 });
+  const ttl = 7.5 + (hasTalent("mage_chrono_duration") ? 2 : 0);
+  abilityEffects.push({ type: "timeWarp", x: player.x, y: player.y, r: 132 + (hasTalent("mage_chrono_radius") ? 35 : 0), ttl, maxTtl: ttl });
+}
+
+function meteorField() {
+  const target = clampCombatPoint(mouseWorld.x, mouseWorld.y, 96);
+  player.castTimer = 0.36;
+  player.castMoveLockTimer = 0.28;
+  player.castAngle = aimAngle();
+  abilityEffects.push({
+    type: "meteorField",
+    x: target.x,
+    y: target.y,
+    r: 150 + (hasTalent("mage_meteor_radius") ? 30 : 0),
+    ttl: 3.1 + (hasTalent("mage_meteor_duration") ? 1.2 : 0),
+    maxTtl: 3.1 + (hasTalent("mage_meteor_duration") ? 1.2 : 0),
+    impactTimer: 0.12,
+    impactInterval: hasTalent("mage_meteor_speed") ? 0.24 : 0.32,
+  });
 }
 
 function useRogueAbility(index, ability) {
   if (index === 0) {
     spendAbility(index, ability);
-    shadowStep();
+    backstabStrike();
     return;
   }
   if (index === 1) {
     spendAbility(index, ability);
-    backstabStrike();
+    poisonCloud();
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
+    shadowStep();
     return;
   }
   spendAbility(index, ability);
-  abilityEffects.push({ type: "smokeBomb", x: player.x, y: player.y, r: 92, ttl: 4.2, maxTtl: 4.2, wasInside: true });
+  const smokeTtl = 4.2 + (hasTalent("rogue_smoke_duration") ? 1.5 : 0);
+  abilityEffects.push({ type: "smokeBomb", x: player.x, y: player.y, r: 92 + (hasTalent("rogue_smoke_size") ? 30 : 0), ttl: smokeTtl, maxTtl: smokeTtl, wasInside: true, pulseTimer: 0 });
+  if (hasTalent("rogue_smoke_cap")) destroyProjectilesInRadius(player.x, player.y, 132);
   player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.35);
   player.smokeSpeedGranted = false;
+}
+
+function usePaladinAbility(index, ability) {
+  if (index === 0) {
+    spendAbility(index, ability);
+    radiantSmite();
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    consecration();
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
+    aegisStep();
+    return;
+  }
+  spendAbility(index, ability);
+  divineBulwark();
 }
 
 function shadowStep() {
@@ -2419,7 +4116,7 @@ function shadowStep() {
   player.y = destination.y;
   player.slide = null;
   player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.32);
-  player.backstabTimer = 2;
+  player.backstabTimer = 2 + (hasTalent("rogue_shadow_step") ? 1.5 : 0);
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   abilityEffects.push({ type: "shadowStep", x: origin.x, y: origin.y, x2: player.x, y2: player.y, ttl: 0.42, maxTtl: 0.42 });
   particles.push({ x: player.x, y: player.y - 36, text: "backstab ready", color: "#c8ff9a", ttl: 0.85 });
@@ -2429,16 +4126,88 @@ function backstabStrike() {
   const angle = aimAngle();
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   const empowered = player.backstabTimer > 0;
-  const targets = damageTargetsInCone(player.x, player.y, angle, 122, Math.PI * 0.52, Math.round(player.stats.damage * (empowered ? 1.85 : 1.05)), empowered ? "Backstab" : "Twin Cut");
+  const targets = damageEnemiesInCone(player.x, player.y, angle, 122, Math.PI * 0.52, Math.round(player.stats.damage * (empowered ? (hasTalent("rogue_shadow_backstab") ? 2.22 : 1.85) : 1.05)), empowered ? "Backstab" : "Twin Cut");
   targets.forEach((target) => {
     applyBleed(target);
     if (target.poisonStacks > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
+    if (empowered && hasTalent("rogue_shadow_cap") && target.exposedStacks > 0) damageBossTarget(target, target.exposedStacks * 12, "Deathblow");
     if (empowered) consumeExposed(target);
   });
   player.backstabTimer = 0;
   player.rogueAttackTimer = 0.3;
   player.rogueAttackAngle = angle;
   abilityEffects.push({ type: "backstab", x: player.x, y: player.y, angle, range: 126, empowered, ttl: 0.28, maxTtl: 0.28 });
+}
+
+function poisonCloud() {
+  const target = clampCombatPoint(mouseWorld.x, mouseWorld.y, 90);
+  abilityEffects.push({
+    type: "poisonCloud",
+    x: target.x,
+    y: target.y,
+    r: 118 + (hasTalent("rogue_venom_cloud") ? 28 : 0),
+    ttl: 5.2 + (hasTalent("rogue_venom_cloud") ? 1.2 : 0),
+    maxTtl: 5.2 + (hasTalent("rogue_venom_cloud") ? 1.2 : 0),
+    pulseTimer: 0,
+  });
+}
+
+function radiantSmite() {
+  const angle = aimAngle();
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  player.meleeAttackTimer = 0.34;
+  player.meleeAttackAngle = angle;
+  const target = pointFromAngle(player.x, player.y, angle, 98);
+  const radius = 96 + (hasTalent("paladin_judgment_radius") ? 24 : 0);
+  const hits = damageEnemiesInRadius(target.x, target.y, radius, Math.round(player.stats.damage * (hasTalent("paladin_judgment_damage") ? 1.34 : 1.12)), "Radiant Smite");
+  hits.forEach((enemy) => {
+    interruptTarget(enemy);
+    if (hasTalent("paladin_judgment_cap") && enemy.judgmentTimer > 0) damageBossTarget(enemy, Math.round(player.stats.damage * 0.7), "Final Judgment");
+    if (hasTalent("paladin_judgment_mark")) {
+      enemy.judgmentTimer = 5;
+      particles.push({ x: enemy.x, y: enemy.y - enemy.radius - 42, text: "judged", color: "#fff0bf", ttl: 0.7 });
+    }
+  });
+  abilityEffects.push({ type: "radiantSmite", x: target.x, y: target.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
+}
+
+function consecration() {
+  const ttl = 6 + (hasTalent("paladin_consecrate_duration") ? 2 : 0);
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "consecration");
+  abilityEffects.push({
+    type: "consecration",
+    x: player.x,
+    y: player.y,
+    r: 128 + (hasTalent("paladin_consecrate_size") ? 28 : 0),
+    ttl,
+    maxTtl: ttl,
+    pulseTimer: 0,
+    healTimer: 0,
+  });
+  player.consecrationTimer = ttl;
+}
+
+function aegisStep() {
+  const angle = movementOrAimAngle();
+  const origin = { x: player.x, y: player.y };
+  const target = constrainToRoom(player.x + Math.cos(angle) * 150, player.y + Math.sin(angle) * 150);
+  player.x = target.x;
+  player.y = target.y;
+  player.slide = null;
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.38);
+  player.guardSpeedTimer = Math.max(player.guardSpeedTimer, 0.7);
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  abilityEffects.push({ type: "aegisStep", x: origin.x, y: origin.y, x2: player.x, y2: player.y, ttl: 0.42, maxTtl: 0.42 });
+}
+
+function divineBulwark() {
+  player.shieldWallTimer = 8;
+  player.consecrationTimer = Math.max(player.consecrationTimer, 2.5);
+  player.hp = Math.min(player.maxHp, player.hp + Math.ceil(player.maxHp * (hasTalent("paladin_guard_heal") ? 0.33 : 0.18)));
+  abilityEffects = abilityEffects.filter((effect) => effect.type !== "divineBulwark");
+  abilityEffects.push({ type: "divineBulwark", x: player.x, y: player.y, r: 92, ttl: 8, maxTtl: 8 });
+  if (hasTalent("paladin_guard_projectiles")) destroyProjectilesInRadius(player.x, player.y, 148);
+  particles.push({ x: player.x, y: player.y - 42, text: "warded", color: "#fff0bf", ttl: 0.8 });
 }
 
 function blinkStep(angle) {
@@ -2449,18 +4218,19 @@ function blinkStep(angle) {
   player.slide = null;
   player.castTimer = 0.22;
   player.castAngle = angle;
-  abilityEffects.push({ type: "blinkRune", x: origin.x, y: origin.y, r: 72, ttl: 1.15, maxTtl: 1.15, pulseTimer: 0 });
+  abilityEffects.push({ type: "blinkRune", x: origin.x, y: origin.y, r: 72 + (hasTalent("mage_chrono_blink") ? 28 : 0), ttl: 1.15, maxTtl: 1.15, pulseTimer: 0 });
   particles.push({ x: player.x, y: player.y - 35, text: "blink", color: "#bafcff", ttl: 0.65 });
 }
 
 function fireFireBlast(angle) {
+  const blastMultiplier = 3 + (hasTalent("mage_pyro_damage") ? 0.6 : 0) + (hasTalent("mage_pyro_cap") ? 0.9 : 0);
   playerProjectiles.push({
     x: player.x + Math.cos(angle) * 30,
     y: player.y + Math.sin(angle) * 30,
     vx: Math.cos(angle) * 520,
     vy: Math.sin(angle) * 520,
     r: 18,
-    damage: Math.round(player.stats.damage * 3),
+    damage: Math.round(player.stats.damage * blastMultiplier),
     color: "#ff8a32",
     ttl: 1.05,
     age: 0,
@@ -2468,7 +4238,8 @@ function fireFireBlast(angle) {
     tag: "Magic",
     ability: true,
     fireBlast: true,
-    explosionRadius: 132,
+    explosionRadius: 132 + (hasTalent("mage_pyro_radius") ? 28 : 0) + (hasTalent("mage_pyro_cap") ? 50 : 0),
+    room: player.room,
   });
   abilityEffects.push({ type: "fireBlastCast", x: player.x, y: player.y - 12, angle, ttl: 0.28, maxTtl: 0.28 });
 }
@@ -2505,6 +4276,28 @@ function damageDonutMinionsInRadius(x, y, radius, amount, source, hitTargets = [
   });
 }
 
+function damageEnemiesInRadius(x, y, radius, amount, source, hitTargets = []) {
+  const bossHits = damageTargetsInRadius(x, y, radius, amount, source, hitTargets);
+  const donutHits = damageDonutMinionsInRadius(x, y, radius, amount, source, hitTargets);
+  return bossHits.concat(donutHits);
+}
+
+function damageEnemiesInCone(x, y, angle, range, halfAngle, amount, source) {
+  const hits = damageTargetsInCone(x, y, angle, range, halfAngle, amount, source);
+  if (boss.kind === "donut" && boss.donutMinions?.length) {
+    boss.donutMinions.forEach((minion) => {
+      if (minion.hp <= 0) return;
+      const dx = minion.x - x;
+      const dy = minion.y - y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > range + minion.r) return;
+      if (Math.abs(angleDifference(Math.atan2(dy, dx), angle)) > halfAngle) return;
+      if (damageDonutMinion(minion, amount, source)) hits.push(minion);
+    });
+  }
+  return hits;
+}
+
 function destroyProjectilesInCone(x, y, angle, range, halfAngle) {
   let blocked = 0;
   hazards = hazards.filter((hazard) => {
@@ -2526,9 +4319,16 @@ function isDestroyableProjectile(hazard) {
 }
 
 function shoveTarget(target, x, y, amount) {
-  if (target.kind !== "ketchup" && target.kind !== "mayo" && target.kind !== "mustard") return;
+  if (!target.mazeEnemy && target.kind !== "ketchup" && target.kind !== "mayo" && target.kind !== "mustard") return;
   const angle = Math.atan2(target.y - y, target.x - x);
-  const point = clampArenaPoint(target.x + Math.cos(angle) * amount, target.y + Math.sin(angle) * amount, target.radius);
+  const rawPoint = { x: target.x + Math.cos(angle) * amount, y: target.y + Math.sin(angle) * amount };
+  if (target.mazeEnemy) {
+    if (!mazeState || !isMazeCircleWalkable(rawPoint.x, rawPoint.y, target.radius)) return;
+    target.x = rawPoint.x;
+    target.y = rawPoint.y;
+    return;
+  }
+  const point = clampArenaPoint(rawPoint.x, rawPoint.y, target.radius);
   target.x = point.x;
   target.y = point.y;
   target.destination = null;
@@ -2550,7 +4350,7 @@ function spawnBossPattern() {
   spawnFloorSlam();
   const pattern = boss.phase === 1 ? Math.random() : Math.random() * 1.2;
   if (pattern < 0.72) {
-    const count = boss.enraged ? 14 : boss.phase === 2 ? 11 : 8;
+    const count = boss.enraged ? 12 : boss.phase === 2 ? 10 : 8;
     const volleyOffset = Math.random() * Math.PI * 2;
     for (let i = 0; i < count; i += 1) {
       const lane = (Math.PI * 2 * i) / count;
@@ -2564,12 +4364,12 @@ function spawnBossPattern() {
         vy: Math.sin(angle) * speed,
         r: 12,
         ttl: 2.75 + Math.random() * 0.55,
-        damage: 14,
+        damage: 12,
       });
     }
     log("Floor slam and arc bolts incoming.");
   } else {
-    for (let i = 0; i < 7; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       hazards.push({
         type: "vent",
         x: world.arena.x + 140 + Math.random() * (world.arena.w - 280),
@@ -2577,7 +4377,7 @@ function spawnBossPattern() {
         r: 28,
         warn: 0.75 + i * 0.04,
         ttl: 1.3 + i * 0.04,
-        damage: 17,
+        damage: 14,
       });
     }
     log("Floor slam and furnace vents primed.");
@@ -2624,7 +4424,7 @@ function spawnPizzaDash() {
     width: boss.phase >= 2 ? 48 : 40,
     warn: boss.enraged ? 0.55 : 0.72,
     ttl: boss.enraged ? 0.95 : 1.15,
-    damage: boss.enraged ? 36 : 30,
+    damage: boss.enraged ? 32 : 26,
     hit: false,
     dashed: false,
   });
@@ -2646,7 +4446,7 @@ function spawnPepperoniVolley(count, spread) {
       vy: Math.sin(angle) * speed,
       r: 11,
       ttl: 3,
-      damage: boss.enraged ? 13 : 10,
+      damage: boss.enraged ? 12 : 9,
       color: "#b93a2f",
     });
   }
@@ -2736,7 +4536,7 @@ function spawnOvenZones(count) {
       r: boss.enraged ? 62 : 54,
       warn: boss.enraged ? 0.82 : 1.05,
       ttl: boss.enraged ? 1.22 : 1.45,
-      damage: boss.enraged ? 38 : 32,
+      damage: boss.enraged ? 30 : 24,
       hit: false,
     });
   }
@@ -2759,7 +4559,7 @@ function spawnPizzaBoxSlam() {
     y: world.arena.y + world.arena.h / 2,
     warn: 0.9,
     ttl: 1.18,
-    damage: boss.enraged ? 82 : 68,
+    damage: boss.enraged ? 54 : 44,
     hit: false,
   });
 }
@@ -2830,7 +4630,7 @@ function spawnColaBubbles(count) {
       vy: Math.sin(angle) * speed,
       r: 15 + Math.random() * 8,
       ttl: 4,
-      damage: boss.enraged ? 36 : 27,
+      damage: boss.enraged ? 30 : 24,
     });
   }
 }
@@ -2843,9 +4643,9 @@ function spawnStrawSnipe() {
     x: boss.x,
     y: boss.y,
     angle,
-    warn: boss.enraged ? 0.45 : 0.65,
-    ttl: boss.enraged ? 0.8 : 1,
-    damage: boss.enraged ? 84 : 66,
+    warn: boss.enraged ? 0.58 : 0.78,
+    ttl: boss.enraged ? 0.94 : 1.14,
+    damage: boss.enraged ? 58 : 46,
     hit: false,
   });
 }
@@ -2856,9 +4656,9 @@ function spawnFizzBurst() {
     x: boss.x,
     y: boss.y,
     r: boss.enraged ? 225 : boss.phase === 2 ? 205 : 185,
-    warn: 1,
-    ttl: 1.25,
-    damage: boss.enraged ? 72 : 54,
+    warn: boss.enraged ? 1.05 : 1.15,
+    ttl: boss.enraged ? 1.32 : 1.42,
+    damage: boss.enraged ? 54 : 42,
     hit: false,
   });
   log("Big Cola pressure is about to burst.");
@@ -2922,7 +4722,7 @@ function ensureNachoCheeseWave() {
     y: clamp(targetPlayer.y, world.arena.y + 100, world.arena.y + world.arena.h - 100),
     r: 76,
     ttl: Number.POSITIVE_INFINITY,
-    damage: 1000,
+    damage: boss.enraged ? 36 : 28,
     damageTimer: 0,
   });
   boss.cheeseWaveActive = true;
@@ -3464,10 +5264,62 @@ function spawnFloorSlam() {
   });
 }
 
+function isPlayerInMazeWall(hazard) {
+  const halfLong = hazard.length / 2;
+  const halfShort = hazard.width / 2 + player.radius;
+  const dx = Math.abs(player.x - hazard.x);
+  const dy = Math.abs(player.y - hazard.y);
+  if (hazard.vertical) return dx < halfShort && dy < halfLong + player.radius;
+  return dy < halfShort && dx < halfLong + player.radius;
+}
+
 function updateHazards(dt) {
   const spawnedHazards = [];
   hazards = hazards.filter((hazard) => {
-    if (hazard.type === "grease") {
+    if (hazard.mazeHazard && player.room !== "maze") {
+      return false;
+    }
+    if (hazard.type === "mazeShot") {
+      hazard.ttl -= dt;
+      const previousX = hazard.x;
+      const previousY = hazard.y;
+      if (hazard.turn) {
+        const speed = Math.hypot(hazard.vx, hazard.vy);
+        const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
+        hazard.vx = Math.cos(angle) * speed;
+        hazard.vy = Math.sin(angle) * speed;
+      }
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      if (!mazeState || !isMazeSegmentWalkable(previousX, previousY, hazard.x, hazard.y, hazard.r || 0)) return false;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, hazard.source || "Maze shot");
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "mazeCircle") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        if (hazard.lingering) {
+          hazard.damageTimer -= dt;
+          if (hazard.damageTimer <= 0) {
+            damagePlayer(hazard.damage, hazard.source || "Maze hazard");
+            hazard.damageTimer = 0.48;
+          }
+        } else if (!hazard.hit) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, hazard.source || "Maze hazard");
+          if (hazard.chill) addChillStack();
+        }
+      }
+    } else if (hazard.type === "mazeWall") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit && isPlayerInMazeWall(hazard)) {
+        hazard.hit = true;
+        damagePlayer(hazard.damage, "Maze wall");
+      }
+    } else if (hazard.type === "grease") {
       hazard.ttl -= dt;
       hazard.explodeTimer = Math.max(0, (hazard.explodeTimer ?? 0) - dt);
       if (!hazard.exploded && hazard.explodeTimer <= 0) {
@@ -3487,8 +5339,8 @@ function updateHazards(dt) {
           hazard.fireTimer += boss.enraged ? 0.045 : 0.048;
         }
         if (isPlayerInMachineGun(hazard) && hazard.damageTimer <= 0) {
-          damagePlayer(boss.enraged ? 16 : 14, "French fry machine gun");
-          hazard.damageTimer = boss.enraged ? 0.14 : 0.12;
+          damagePlayer(boss.enraged ? 13 : 11, "French fry machine gun");
+          hazard.damageTimer = boss.enraged ? 0.18 : 0.2;
         }
       }
     } else if (hazard.type === "pico") {
@@ -3741,6 +5593,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+          if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           addStuffedStack();
           damagePlayer(hazard.damage, "Crunch Charge");
           knockPlayerFrom(hazard.x, hazard.y, 260);
@@ -3755,6 +5608,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
         hazard.damageTimer -= dt;
         if (hazard.damageTimer <= 0) {
+          if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           damagePlayer(hazard.damage, "Shell shard");
           hazard.damageTimer = 0.55;
         }
@@ -3765,10 +5619,23 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (distance(player, hazard) < player.radius + hazard.r) {
+          if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           if (hazard.ingredient === "cheese") player.freezeTimer = Math.max(player.freezeTimer, 0.35);
           if (hazard.ingredient === "lettuce") knockPlayerFrom(hazard.x, hazard.y, 220);
           addStuffedStack();
           damagePlayer(hazard.ingredient === "beef" ? 18 : 12, `${hazard.ingredient} drop`);
+        }
+        if (hazard.ingredient === "beef") {
+          hazard.type = "tacoGrease";
+          hazard.r = Math.max(46, hazard.r + 14);
+          hazard.ttl = 4.4;
+          hazard.damageTimer = 0;
+        }
+        if (hazard.ingredient === "cheese") {
+          hazard.type = "tacoCheese";
+          hazard.r = Math.max(44, hazard.r + 12);
+          hazard.ttl = 4.0;
+          hazard.damageTimer = 0;
         }
         if (hazard.ingredient === "salsa") {
           hazard.type = "tacoSalsa";
@@ -3783,6 +5650,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
         hazard.damageTimer -= dt;
         if (hazard.damageTimer <= 0) {
+          if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           addStuffedStack();
           damagePlayer(hazard.damage, "Salsa pool");
           hazard.damageTimer = 0.45;
@@ -3797,6 +5665,7 @@ function updateHazards(dt) {
         const angleToPlayer = Math.atan2(player.y - hazard.y, player.x - hazard.x);
         const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < 0.42;
         if (dist < hazard.r && dist > hazard.inner && !inGap) {
+          if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           addStuffedStack();
           damagePlayer(hazard.damage, "Shell Slam");
         }
@@ -3809,9 +5678,26 @@ function updateHazards(dt) {
       hazard.x += (hazard.vx + Math.cos(angle) * side) * dt;
       hazard.y += (hazard.vy + Math.sin(angle) * side) * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
         addStuffedStack();
         damagePlayer(hazard.damage, "Lettuce fan");
         hazard.ttl = 0;
+      }
+    } else if (hazard.type === "lettuceCleanseZone") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      hazard.pulse = (hazard.pulse || 0) + dt;
+      if (hazard.warn <= 0 && distance(player, hazard) < player.radius + hazard.r) {
+        player.freezeTimer = 0;
+        player.stuffedStacks = Math.max(0, (player.stuffedStacks || 0) - 1);
+        markTacoPuzzleProgress("lettuce");
+      }
+    } else if (hazard.type === "tacoGrease" || hazard.type === "tacoCheese") {
+      hazard.ttl -= dt;
+      hazard.warn = Math.max(0, (hazard.warn || 0) - dt);
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        if (hazard.type === "tacoGrease") player.tacoGreaseTimer = Math.max(player.tacoGreaseTimer || 0, 0.1);
+        if (hazard.type === "tacoCheese") player.freezeTimer = Math.max(player.freezeTimer, 0.08);
       }
     } else if (hazard.type === "tacoIngredientFlood") {
       hazard.ttl -= dt;
@@ -3863,7 +5749,7 @@ function updateHazards(dt) {
     } else if (hazard.type === "royalRoll") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
-      boss.attackTimer = Math.max(boss.attackTimer, 0.35);
+      boss.attackTimer = Math.max(boss.attackTimer, 0.65);
       if (hazard.warn <= 0) {
         boss.animation = "royalRoll";
         hazard.rollAge += dt;
@@ -3998,8 +5884,12 @@ function updateHazards(dt) {
     if (hazard.type === "chocolateBar") return hazard.ttl > 0 && (hazard.warn > 0 || chocolateBarTouchesArena(hazard));
     if (hazard.type === "wasabiWave") return hazard.ttl > 0 && wasabiWaveTouchesArena(hazard);
     if (hazard.type === "tacoIngredientFlood") return hazard.ttl > 0;
-    return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
-  });
+      if (hazard.mazeHazard) {
+        if (hazard.type === "mazeShot") return hazard.ttl > 0 && Boolean(mazeState);
+        return hazard.ttl > 0 && Boolean(mazeState);
+      }
+      return hazard.ttl > 0 && pointInRect(hazard.x, hazard.y, world.arena);
+    });
   hazards.push(...spawnedHazards);
 }
 
@@ -4253,12 +6143,48 @@ function damagePlayer(amount, source, options = {}) {
     return;
   }
   let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
-  if (player.shieldWallTimer > 0) hit = Math.max(1, Math.ceil(hit * 0.5));
+  const now = performance.now();
+  if (player.lastDamageAt && now - player.lastDamageAt < combatTuning.overlapDamageWindowMs && !options.ignoreOverlapGrace) {
+    hit = Math.max(1, Math.ceil(hit * combatTuning.overlapDamageMultiplier));
+  }
+  if (player.shieldWallTimer > 0) hit = Math.max(1, Math.ceil(hit * (hasTalent("melee_iron_wall") || hasTalent("paladin_guard_mitigation") ? 0.4 : 0.5)));
+  if (player.consecrationTimer > 0) hit = Math.max(1, Math.ceil(hit * 0.78));
+  if (hit >= player.hp && triggerTalentLethalSave(source)) return;
   player.hp = Math.max(0, player.hp - hit);
+  player.lastDamageAt = now;
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
     enterDeathState(source);
   }
+}
+
+function triggerTalentLethalSave(source) {
+  player.talentSaves = player.talentSaves || {};
+  if (hasTalent("melee_iron_last") && currentClassKey() === "melee" && !player.talentSaves.lastStand) {
+    player.talentSaves.lastStand = true;
+    player.hp = Math.max(1, Math.ceil(player.maxHp * 0.25));
+    player.shieldWallTimer = Math.max(player.shieldWallTimer, 2.5);
+    particles.push({ x: player.x, y: player.y - 45, text: "Last Stand", color: "#f0d47c", ttl: 1 });
+    log(`Last Stand saved you from ${source}.`);
+    return true;
+  }
+  if (hasTalent("mage_chrono_cap") && currentClassKey() === "mage" && !player.talentSaves.timeLoop) {
+    player.talentSaves.timeLoop = true;
+    player.hp = Math.max(1, Math.ceil(player.maxHp * 0.35));
+    player.invulnerableTimer = Math.max(player.invulnerableTimer, 1.1);
+    particles.push({ x: player.x, y: player.y - 45, text: "Time Loop", color: "#bafcff", ttl: 1 });
+    log(`Time Loop rewound ${source}.`);
+    return true;
+  }
+  if (hasTalent("paladin_guard_cap") && currentClassKey() === "paladin" && !player.talentSaves.unfallen) {
+    player.talentSaves.unfallen = true;
+    player.hp = Math.max(1, Math.ceil(player.maxHp * 0.3));
+    player.shieldWallTimer = Math.max(player.shieldWallTimer, 3);
+    particles.push({ x: player.x, y: player.y - 45, text: "Unfallen", color: "#fff0bf", ttl: 1 });
+    log(`Unfallen saved you from ${source}.`);
+    return true;
+  }
+  return false;
 }
 
 function enterDeathState(source) {
@@ -4289,6 +6215,25 @@ function drinkPotion() {
   log("Potion restored health.");
 }
 
+function nextProgressionBoss(kind) {
+  if (kind === "sauce") return "shake";
+  const index = progressionBosses.indexOf(kind);
+  if (index < 0 || index >= progressionBosses.length - 1) return null;
+  return progressionBosses[index + 1];
+}
+
+function prepareNextBoss(kind, defeatedName) {
+  grantTalentPoints(2, defeatedName);
+  loadBoss(kind);
+  player.hp = player.maxHp;
+  player.potions = 3;
+  sendPlayerToStarterRoom();
+  ui.status.textContent = `${defeatedName} defeated. +2 Talent Points. Next Boss: ${boss.name}.`;
+  showScreenBanner(`${defeatedName} Defeated`, `Next Boss: ${boss.name}`, "victory", 2.8);
+  showFloat(`Next boss: ${boss.name}`);
+  sendMultiplayerState(true);
+}
+
 function winFight() {
   selectedBoss = null;
   hazards = [];
@@ -4298,7 +6243,7 @@ function winFight() {
   const seconds = fightStartedAt ? Math.max(1, Math.round((performance.now() - fightStartedAt) / 1000)) : 0;
   if (boss.kind === "shake" && boss.phase < boss.totalPhases) {
     boss.phase += 1;
-    boss.maxHp = boss.phase === 2 ? 650 : 750;
+    boss.maxHp = scaledBossHp("shake", boss.phase === 2 ? 650 : 750);
     boss.hp = boss.maxHp;
     boss.enraged = false;
     boss.attackTimer = 1.2;
@@ -4315,93 +6260,22 @@ function winFight() {
     return;
   }
   log(`Victory in ${seconds}s.`);
-  if (boss.kind === "cola") {
-    boss = createBoss("burger");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Big Cola defeated. Big Burger enters next.";
-    showFloat("Next boss: Big Burger");
+  const defeatedName = boss.name;
+  const nextBoss = nextProgressionBoss(boss.kind);
+  if (nextBoss) {
+    prepareNextBoss(nextBoss, defeatedName);
     return;
   }
-  if (boss.kind === "burger") {
-    boss = createBoss("fries");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Big Burger defeated. Curly Fries enters next.";
-    showFloat("Next boss: Curly Fries");
-    return;
-  }
-  if (boss.kind === "fries") {
-    boss = createBoss("trio");
-    condimentBosses = createCondimentBosses();
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Curly Fries defeated. Condiment Trio enters next.";
-    showFloat("Next boss: Condiment Trio");
-    return;
-  }
-  if (boss.kind === "sauce") {
-    boss = createBoss("shake");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Special Sauce defeated. Peanut Buster Shake enters next.";
-    showFloat("Next boss: Peanut Buster Shake");
-    return;
-  }
-  if (boss.kind === "shake") {
-    boss = createBoss("nacho");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Peanut Buster Shake defeated. Nacho Libre enters next.";
-    showFloat("Next boss: Nacho Libre");
-    return;
-  }
-  if (boss.kind === "nacho") {
-    boss = createBoss("pizza");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Nacho Libre defeated. Pizza Phantom enters next.";
-    showFloat("Next boss: Pizza Phantom");
-    return;
-  }
-  if (boss.kind === "pizza") {
-    boss = createBoss("donut");
-    condimentBosses = [];
-    fightStartedAt = 0;
-    player.hp = player.maxHp;
-    player.potions = 3;
-    player.destination = null;
-    player.slide = null;
-    ui.status.textContent = "Pizza Phantom defeated. Donut Donald enters next.";
-    showFloat("Next boss: Donut Donald");
-    return;
-  }
+  grantTalentPoints(2, defeatedName);
+  clearEncounterState();
   player.won = true;
-  ui.status.textContent = "Victory. Reset to test another build.";
-  showFloat("Boss defeated");
+  runState.active = false;
+  runState.buildLocked = false;
+  player.destination = null;
+  player.slide = null;
+  ui.status.textContent = "Victory. You cleared the full boss run.";
+  showScreenBanner("Run Cleared", "All bosses defeated", "victory", 4);
+  showFloat("Run complete");
 }
 
 function updateAbilities(dt) {
@@ -4409,8 +6283,11 @@ function updateAbilities(dt) {
   player.invulnerableTimer = Math.max(0, player.invulnerableTimer - dt);
   player.tumbleTimer = Math.max(0, player.tumbleTimer - dt);
   player.shieldWallTimer = Math.max(0, player.shieldWallTimer - dt);
+  player.consecrationTimer = Math.max(0, player.consecrationTimer - dt);
   player.guardSpeedTimer = Math.max(0, player.guardSpeedTimer - dt);
+  player.tacoGreaseTimer = Math.max(0, (player.tacoGreaseTimer || 0) - dt);
   player.backstabTimer = Math.max(0, player.backstabTimer - dt);
+  player.deadeyeTimer = Math.max(0, (player.deadeyeTimer || 0) - dt);
 
   livingBosses().forEach((target) => {
     target.markedTimer = Math.max(0, (target.markedTimer || 0) - dt);
@@ -4436,6 +6313,15 @@ function updateAbilities(dt) {
     if (effect.type === "volleyTrap") updateVolleyTrap(effect, dt);
     if (effect.type === "blinkRune") updateBlinkRune(effect, dt);
     if (effect.type === "smokeBomb") updateSmokeBomb(effect, dt);
+    if (effect.type === "arrowStorm") updateArrowStorm(effect, dt);
+    if (effect.type === "meteorField") updateMeteorField(effect, dt);
+    if (effect.type === "poisonCloud") updatePoisonCloud(effect, dt);
+    if (effect.type === "consecration") updateConsecration(effect, dt);
+    if (effect.type === "aftershock") updateAftershock(effect, dt);
+    if (effect.type === "divineBulwark") {
+      effect.x = player.x;
+      effect.y = player.y;
+    }
     return effect.ttl > 0;
   });
   applyTimeWarpSlow(dt);
@@ -4459,11 +6345,20 @@ function updateRogueDebuffs(target, dt) {
     target.bleedTickTimer = (target.bleedTickTimer || 0.5) - dt;
     if (target.bleedTickTimer <= 0) {
       target.bleedTickTimer += 0.5;
-      damageBossTarget(target, 4, "Bleed");
+      damageBossTarget(target, hasTalent("melee_blood_deep") ? 6 : 4, "Bleed");
+    }
+  }
+  target.burnTimer = Math.max(0, (target.burnTimer || 0) - dt);
+  if (target.burnTimer > 0) {
+    target.burnTickTimer = (target.burnTickTimer || 0.5) - dt;
+    if (target.burnTickTimer <= 0) {
+      target.burnTickTimer += 0.5;
+      damageBossTarget(target, Math.round(player.stats.damage * 0.12), "Burn");
     }
   }
   target.exposedTimer = Math.max(0, (target.exposedTimer || 0) - dt);
   if (target.exposedTimer <= 0) target.exposedStacks = 0;
+  target.judgmentTimer = Math.max(0, (target.judgmentTimer || 0) - dt);
 }
 
 function updateVolleyTrap(effect, dt) {
@@ -4484,7 +6379,7 @@ function updateVolleyTrap(effect, dt) {
     vx: Math.cos(angle) * 710,
     vy: Math.sin(angle) * 710,
     r: 6,
-    damage: Math.round(player.stats.damage * 0.5),
+    damage: Math.round(player.stats.damage * (hasTalent("ranger_trap_damage") ? 0.68 : 0.5)),
     color: "#ffd782",
     ttl: 0.8,
     age: 0,
@@ -4493,6 +6388,73 @@ function updateVolleyTrap(effect, dt) {
   });
   effect.shotsRemaining -= 1;
   effect.shotTimer = 0.13;
+}
+
+function updateArrowStorm(effect, dt) {
+  effect.pulseTimer -= dt;
+  effect.shotTimer -= dt;
+  while (effect.shotTimer <= 0) {
+    effect.shotTimer += 0.12;
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.sqrt(Math.random()) * effect.r;
+    particles.push({ x: effect.x + Math.cos(angle) * radius, y: effect.y + Math.sin(angle) * radius - 20, text: "arrow", color: "#ffd782", ttl: 0.35 });
+  }
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = effect.pulseInterval || 0.45;
+  damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * (effect.damageMultiplier || 0.42)), "Arrow Storm");
+}
+
+function updateMeteorField(effect, dt) {
+  effect.impactTimer -= dt;
+  if (effect.impactTimer > 0) return;
+  effect.impactTimer = effect.impactInterval || 0.32;
+  const angle = Math.random() * Math.PI * 2;
+  const radius = Math.sqrt(Math.random()) * effect.r;
+  const x = effect.x + Math.cos(angle) * radius;
+  const y = effect.y + Math.sin(angle) * radius;
+  damageEnemiesInRadius(x, y, 58 + (hasTalent("mage_meteor_cap") ? 20 : 0), Math.round(player.stats.damage * (hasTalent("mage_meteor_cap") ? 0.98 : 0.75)), "Meteor Field");
+  particles.push({ x, y: y - 20, text: "meteor", color: "#ff8a32", ttl: 0.4 });
+}
+
+function updatePoisonCloud(effect, dt) {
+  effect.pulseTimer -= dt;
+  hazards.forEach((hazard) => {
+    if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
+    if (distance(effect, hazard) < effect.r + (hazard.r || 0)) {
+      hazard.vx *= Math.pow(0.68, dt);
+      hazard.vy *= Math.pow(0.68, dt);
+    }
+  });
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = 0.55;
+  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.34), "Poison Cloud");
+  hits.forEach((target) => {
+    if (target.kind) applyPoisonStack(target);
+  });
+}
+
+function updateConsecration(effect, dt) {
+  effect.x = player.x;
+  effect.y = player.y;
+  player.consecrationTimer = Math.max(player.consecrationTimer, 0.08);
+  effect.pulseTimer -= dt;
+  effect.healTimer -= dt;
+  if (effect.pulseTimer <= 0) {
+    effect.pulseTimer = 0.5;
+    damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * (hasTalent("paladin_consecrate_damage") ? 0.5 : 0.38)), "Consecration");
+  }
+  if (effect.healTimer <= 0) {
+    effect.healTimer = 1;
+    player.hp = Math.min(player.maxHp, player.hp + 3);
+  }
+}
+
+function updateAftershock(effect, dt) {
+  effect.pulseTimer -= dt;
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = 999;
+  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.7), "Aftershock");
+  hits.forEach((target) => shoveTarget(target, effect.x, effect.y, 24));
 }
 
 function volleyTrapTarget(effect) {
@@ -4506,7 +6468,7 @@ function updateBlinkRune(effect, dt) {
   if (effect.pulseTimer > 0) return;
   effect.pulseTimer = 0.35;
   livingBosses().forEach((target) => {
-    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, 8, "Blink Rune");
+    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, hasTalent("mage_chrono_blink") ? 14 : 8, "Blink Rune");
   });
   hazards.forEach((hazard) => {
     if (!hazard.r || hazard.r > 11 || !Number.isFinite(hazard.ttl)) return;
@@ -4540,6 +6502,13 @@ function updateSmokeBomb(effect, dt) {
       }
     }
   });
+  if (hasTalent("rogue_smoke_poison")) {
+    effect.pulseTimer = (effect.pulseTimer || 0) - dt;
+    if (effect.pulseTimer <= 0) {
+      effect.pulseTimer = 0.7;
+      damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.18), "Noxious Smoke").forEach((target) => applyPoisonStack(target));
+    }
+  }
 }
 
 function applyTimeWarpSlow(dt) {
@@ -4566,12 +6535,15 @@ function playerInTimeWarp() {
 
 function update(dt) {
   movePlayer(dt);
+  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
   player.castTimer = Math.max(0, player.castTimer - dt);
   player.rangerAttackTimer = Math.max(0, player.rangerAttackTimer - dt);
   player.meleeAttackTimer = Math.max(0, player.meleeAttackTimer - dt);
   player.rogueAttackTimer = Math.max(0, player.rogueAttackTimer - dt);
   updateAbilities(dt);
+  updateTrainingDummy(dt);
   updateRoom(dt);
+  updateMazeCombat(dt);
   updateCombat(dt);
   updateHazards(dt);
   updatePlayerProjectiles(dt);
@@ -4583,18 +6555,36 @@ function update(dt) {
   });
   floatTimer -= dt;
   if (floatTimer <= 0) ui.floatText.textContent = "";
+  if (screenBanner) {
+    screenBanner.timer -= dt;
+    if (screenBanner.timer <= 0) screenBanner = null;
+  }
   updateMultiplayer(dt);
   camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
   camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+}
+
+function updateTrainingDummy(dt) {
+  if (!trainingDummy) return;
+  if (trainingDummy.hp <= 0 || (trainingDummy.lastHitAt && performance.now() - trainingDummy.lastHitAt > 4500)) {
+    const oldTotal = trainingDummy.damageTotal || 0;
+    trainingDummy = createTrainingDummy();
+    if (oldTotal > 0 && player.room === "starter") showFloat("Dummy reset");
+    return;
+  }
 }
 
 function updateRemoteProjectiles(dt) {
   remoteProjectiles = remoteProjectiles.filter((projectile) => {
     projectile.ttl -= dt;
     projectile.age = (projectile.age || 0) + dt;
+    const previousX = projectile.x;
+    const previousY = projectile.y;
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
-    return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, world.arena);
+    if (projectile.room === "maze") return projectile.ttl > 0 && mazeState && isMazeSegmentWalkable(previousX, previousY, projectile.x, projectile.y, projectile.r || 0);
+    const bounds = projectile.room === "starter" ? world.starter : world.arena;
+    return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, bounds);
   });
 }
 
@@ -4602,9 +6592,37 @@ function updatePlayerProjectiles(dt) {
   playerProjectiles = playerProjectiles.filter((projectile) => {
     projectile.ttl -= dt;
     projectile.age = (projectile.age || 0) + dt;
+    const previousX = projectile.x;
+    const previousY = projectile.y;
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
     projectile.hitTargets = projectile.hitTargets || [];
+    if (projectile.room === "maze") {
+      if (!mazeState || !isMazeSegmentWalkable(previousX, previousY, projectile.x, projectile.y, projectile.r || 0)) return false;
+      const hitMazeEnemy = mazeState.enemies.find((target) => target.hp > 0 && !projectile.hitTargets.includes(target) && distance(projectile, target) < target.radius + projectile.r);
+      if (hitMazeEnemy) {
+        projectile.hitTargets.push(hitMazeEnemy);
+        if (projectile.fireBlast) {
+          explodeFireBlast(projectile);
+          return false;
+        }
+        if (projectile.markedShot) {
+          markBossTarget(hitMazeEnemy);
+          damageBossTarget(hitMazeEnemy, projectile.damage, "Marked Shot");
+        } else {
+          const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitMazeEnemy.markedTimer > 0 && hitMazeEnemy.markedShots > 0;
+          const damage = markedBonus ? Math.ceil(projectile.damage * 1.45) : projectile.damage;
+          if (markedBonus) hitMazeEnemy.markedShots -= 1;
+          damageBossTarget(hitMazeEnemy, damage, projectile.ability ? "Ability" : "Shot");
+          if (projectile.tag === "Rogue" && !projectile.ability) {
+            applyPoisonStack(hitMazeEnemy);
+            applyExposedStack(hitMazeEnemy, projectile);
+          }
+        }
+        return projectile.piercing && projectile.ttl > 0;
+      }
+      return projectile.ttl > 0;
+    }
     if (boss.kind === "donut" && hitDonutMinion(projectile)) {
       if (projectile.fireBlast) {
         explodeFireBlast(projectile);
@@ -4630,7 +6648,7 @@ function updatePlayerProjectiles(dt) {
         damageBossTarget(hitBoss, projectile.damage, "Marked Shot");
       } else {
         const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitBoss.markedTimer > 0 && hitBoss.markedShots > 0;
-        const damage = markedBonus ? Math.ceil(projectile.damage * 1.45) : projectile.damage;
+        const damage = markedBonus ? Math.ceil(projectile.damage * (hasTalent("ranger_deadeye_damage") ? 1.7 : 1.45)) : projectile.damage;
         if (markedBonus) {
           hitBoss.markedShots -= 1;
           particles.push({ x: hitBoss.x, y: hitBoss.y - 58, text: "mark", color: "#ffd782", ttl: 0.65 });
@@ -4649,22 +6667,27 @@ function updatePlayerProjectiles(dt) {
 
 function explodeFireBlast(projectile) {
   const radius = projectile.explosionRadius || 132;
-  const hitTargets = projectile.hitTargets || [];
-  damageTargetsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast", hitTargets);
-  damageDonutMinionsInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast", hitTargets);
+  const hitTargets = [];
+  damageEnemiesInRadius(projectile.x, projectile.y, radius, projectile.damage, "Fire Blast", hitTargets);
+  if (hasTalent("mage_pyro_burn")) {
+    livingBosses().forEach((target) => {
+      if (distance(projectile, target) < radius + target.radius) applyBurn(target);
+    });
+  }
   abilityEffects.push({ type: "fireBlastExplosion", x: projectile.x, y: projectile.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
   particles.push({ x: projectile.x, y: projectile.y - 24, text: "boom", color: "#ffb14a", ttl: 0.55 });
 }
 
 function markBossTarget(target) {
-  target.markedTimer = 5;
-  target.markedShots = 4;
+  target.markedTimer = 5 + (hasTalent("ranger_deadeye_cap") ? 8 : 0);
+  target.markedShots = 4 + (hasTalent("ranger_deadeye_mark") ? 2 : 0) + (hasTalent("ranger_deadeye_cap") ? 4 : 0);
   selectedBoss = target;
   particles.push({ x: target.x, y: target.y - target.radius - 36, text: "marked", color: "#ffd782", ttl: 0.95 });
 }
 
 function damageBossTarget(target, amount, source, options = {}) {
   if (!target || target.hp <= 0) return false;
+  if (target.kind === "trainingDummy") return damageTrainingDummy(target, amount, source);
   if (target.kind === "donut" && target.donutGauntletActive) {
     particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + 70, text: "offscreen", color: "#ffd7e8", ttl: 0.7 });
     return false;
@@ -4673,9 +6696,21 @@ function damageBossTarget(target, amount, source, options = {}) {
     particles.push({ x: target.x, y: target.y - 44, text: "immune", color: "#fff2c6", ttl: 0.75 });
     return false;
   }
-  const damage = target.shieldTimer > 0 ? Math.ceil(amount * 0.5) : amount;
+  let tunedAmount = amount;
+  if (!options.poison && source === "Shot" && hasTalent("melee_blood_bleed") && currentClassKey() === "melee") applyBleed(target);
+  if (!options.poison && target.judgmentTimer > 0) tunedAmount = Math.ceil(tunedAmount * 1.12);
+  if (!options.poison && source === "Shot" && player.deadeyeTimer > 0) {
+    tunedAmount = Math.ceil(tunedAmount * 1.4);
+    player.deadeyeTimer = 0;
+    particles.push({ x: target.x, y: target.y - 60, text: "deadeye", color: "#ffd782", ttl: 0.7 });
+  }
+  let damage = target.shieldTimer > 0 ? Math.ceil(tunedAmount * 0.5) : tunedAmount;
+  if (target.kind === "taco" && !options.tacoBypassGuard) {
+    if (target.shellGuardActive && target.exposedFillingTimer <= 0) damage = Math.max(1, Math.ceil(damage * 0.32));
+    if (target.exposedFillingTimer > 0) damage = Math.ceil(damage * 2.35);
+  }
   target.hp = Math.max(0, target.hp - damage);
-  if (source !== "Co-op" && !options.remote) {
+  if (!target.mazeEnemy && source !== "Co-op" && !options.remote) {
     sendMultiplayerEvent({
       kind: "damage",
       bossKind: boss.kind,
@@ -4689,21 +6724,55 @@ function damageBossTarget(target, amount, source, options = {}) {
   return true;
 }
 
+function damageTrainingDummy(target, amount, source) {
+  const now = performance.now();
+  if (!target.lastHitAt || now - target.lastHitAt > 4500) {
+    target.damageTotal = 0;
+    target.dpsWindowStart = now;
+    target.hp = target.maxHp;
+  }
+  const damage = Math.max(1, Math.round(amount));
+  target.hp = Math.max(0, target.hp - damage);
+  target.damageTotal += damage;
+  target.lastHitAt = now;
+  target.lastDamage = damage;
+  const seconds = Math.max(1, (now - target.dpsWindowStart) / 1000);
+  const dps = Math.round(target.damageTotal / seconds);
+  particles.push({ x: target.x, y: target.y - 44, text: `-${damage}`, color: "#ffe08a", ttl: 0.8 });
+  particles.push({ x: target.x, y: target.y - 66, text: `${dps} dps`, color: "#92d4ff", ttl: 0.7 });
+  ui.status.textContent = `${source}: ${damage} damage. Dummy DPS ${dps}.`;
+  if (target.hp <= 0) {
+    particles.push({ x: target.x, y: target.y - 86, text: "reset", color: "#f0d47c", ttl: 0.9 });
+  }
+  return true;
+}
+
 function applyPoisonStack(target) {
-  target.poisonStacks = Math.min(5, (target.poisonStacks || 0) + 1);
+  const maxStacks = hasTalent("rogue_venom_stacks") ? 7 : 5;
+  const oldStacks = target.poisonStacks || 0;
+  target.poisonStacks = Math.min(maxStacks, oldStacks + 1);
   target.poisonTimer = 5;
   if (!target.poisonTickTimer || target.poisonTickTimer <= 0) target.poisonTickTimer = 1;
+  if (hasTalent("rogue_venom_cap") && oldStacks < maxStacks && target.poisonStacks >= maxStacks) {
+    damageBossTarget(target, Math.round(player.stats.damage * 0.65), "Venom Nova");
+  }
   particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
 }
 
 function roguePoisonDamagePerStack() {
-  return isRogueBuild() && player.gear.armor === "channelerRobe" ? 2 : 1;
+  return (isRogueBuild() && player.gear.armor === "channelerRobe" ? 2 : 1) + (hasTalent("rogue_venom_damage") ? 1 : 0);
 }
 
 function applyBleed(target) {
-  target.bleedTimer = 4;
+  target.bleedTimer = 4 + (hasTalent("melee_blood_deep") ? 2 : 0);
   target.bleedTickTimer = 0.5;
   particles.push({ x: target.x, y: target.y - target.radius - 44, text: "bleed", color: "#ff6e7f", ttl: 0.65 });
+}
+
+function applyBurn(target) {
+  target.burnTimer = 3.5;
+  target.burnTickTimer = 0.5;
+  particles.push({ x: target.x, y: target.y - target.radius - 50, text: "burn", color: "#ff8a32", ttl: 0.65 });
 }
 
 function applyExposedStack(target, projectile) {
@@ -4712,7 +6781,7 @@ function applyExposedStack(target, projectile) {
   const angledHit = Math.abs(angleDifference(strikeAngle, targetToPlayer)) < Math.PI * 0.62;
   if (!angledHit && player.backstabTimer <= 0) return;
   target.exposedStacks = Math.min(3, (target.exposedStacks || 0) + 1);
-  target.exposedTimer = 4;
+  target.exposedTimer = 4 + (hasTalent("rogue_shadow_exposed") ? 2 : 0);
   particles.push({ x: target.x, y: target.y - target.radius - 58, text: `exposed ${target.exposedStacks}`, color: "#c8ff9a", ttl: 0.65 });
 }
 
@@ -4725,14 +6794,67 @@ function consumeExposed(target) {
 }
 
 function handleBossDefeated(target) {
+  if (target.mazeEnemy) {
+    handleMazeEnemyDefeated(target);
+    return;
+  }
   particles.push({ x: target.x, y: target.y - 62, text: `${target.name} down`, color: "#ffd27a", ttl: 1.2 });
   if (target === selectedBoss) selectedBoss = null;
   if (target.kind === "ketchup") clearKetchupHazards();
   if (target.kind === "mayo") makeKetchupPuddlesPermanent();
   if (livingBosses().length === 0) {
-    if (boss.kind === "trio") spawnSpecialSauce();
+    if (boss.kind === "trio") prepareNextBoss("sauce", "Condiment Trio");
     else winFight();
   }
+}
+
+function handleMazeEnemyDefeated(target) {
+  particles.push({ x: target.x, y: target.y - 42, text: target.miniBoss ? "warden down" : "cleared", color: "#ffd27a", ttl: 1.0 });
+  if (!target.miniBoss || !mazeState) return;
+  mazeState.cleared = true;
+  mazeState.rewardPending = true;
+  selectedBoss = null;
+  playerProjectiles = [];
+  hazards = hazards.filter((hazard) => !hazard.mazeHazard);
+  showMazeRewardChoices();
+}
+
+function showMazeRewardChoices() {
+  if (!ui.mazeRewardOverlay || !ui.mazeRewardCards || !mazeState) return;
+  ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
+  ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => `
+    <button class="reward-card" type="button" data-reward="${reward.id}">
+      <strong>${escapeHtml(reward.name)}</strong>
+      <span>${escapeHtml(reward.description)}</span>
+    </button>
+  `).join("");
+  ui.mazeRewardOverlay.hidden = false;
+  ui.status.textContent = "Choose one gauntlet reward to open the boss gate.";
+  showFloat("Choose a reward");
+}
+
+function chooseMazeReward(rewardId) {
+  if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen) return;
+  const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
+  if (!reward) return;
+  const oldMaxHp = player.maxHp;
+  Object.entries(reward.values).forEach(([key, value]) => {
+    if (key === "potion") {
+      player.potions = Math.min(4, player.potions + value);
+      return;
+    }
+    runState.mazeBuffs[key] = (runState.mazeBuffs[key] || 0) + value;
+  });
+  applyGear();
+  if (player.maxHp > oldMaxHp) player.hp = Math.min(player.maxHp, player.hp + player.maxHp - oldMaxHp);
+  mazeState.rewardPending = false;
+  mazeState.rewardChosen = true;
+  mazeState.exitOpen = true;
+  if (ui.mazeRewardOverlay) ui.mazeRewardOverlay.hidden = true;
+  ui.status.textContent = `${reward.name} gained. The boss gate is open.`;
+  showScreenBanner(reward.name, "Gauntlet exit unlocked", "victory", 2.2);
+  showFloat("Exit open");
+  sendMultiplayerState(true);
 }
 
 function clearKetchupHazards() {
@@ -4770,7 +6892,8 @@ function draw() {
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
   drawRooms();
-  drawStands();
+  drawTrainingDummy();
+  drawMazeEnemies();
   drawBoss();
   drawHazards();
   drawAbilityEffects();
@@ -4780,28 +6903,209 @@ function draw() {
   drawRemotePlayers();
   drawParticles();
   ctx.restore();
+  drawTacoObjectiveText();
   drawAbilityBar();
+  drawRunCompleteOverlay();
+  drawScreenBanner();
 }
 
 function drawRooms() {
   ctx.fillStyle = "#141917";
   ctx.fillRect(0, 0, world.width, world.height);
   drawRoom(world.starter, "#27362f", "#a6b9a2");
-  drawRoom(world.arena, "#30292b", "#c89b62");
-  ctx.fillStyle = "#755b36";
+  if (player.room === "maze" && mazeState) drawMaze();
+  else drawRoom(world.arena, "#30292b", "#c89b62");
+  const gateLocked = runState.buildLocked;
+  ctx.fillStyle = gateLocked ? "#4a3422" : "#80623a";
   ctx.fillRect(world.gate.x, world.gate.y, world.gate.w, world.gate.h);
+  ctx.strokeStyle = gateLocked ? "#ff6f61" : "#f0d47c";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(world.gate.x + 3, world.gate.y + 3, world.gate.w - 6, world.gate.h - 6);
   ctx.fillStyle = "#d8c693";
-  ctx.font = "16px sans-serif";
-  ctx.fillText("GATE", world.gate.x + 24, world.gate.y + 72);
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(gateLocked ? "BUILD" : "READY", world.gate.x + world.gate.w / 2, world.gate.y + 58);
+  ctx.fillText(gateLocked ? "LOCKED" : "GATE", world.gate.x + world.gate.w / 2, world.gate.y + 82);
+  ctx.textAlign = "left";
   drawStarterRoomLabels();
 
-  ctx.fillStyle = "rgba(238, 228, 188, 0.1)";
-  for (let x = world.arena.x + 70; x < world.arena.x + world.arena.w; x += 92) {
-    ctx.fillRect(x, world.arena.y + 30, 2, world.arena.h - 60);
+  if (player.room !== "maze") {
+    ctx.fillStyle = "rgba(238, 228, 188, 0.1)";
+    for (let x = world.arena.x + 70; x < world.arena.x + world.arena.w; x += 92) {
+      ctx.fillRect(x, world.arena.y + 30, 2, world.arena.h - 60);
+    }
+    for (let y = world.arena.y + 70; y < world.arena.y + world.arena.h; y += 92) {
+      ctx.fillRect(world.arena.x + 30, y, world.arena.w - 60, 2);
+    }
   }
-  for (let y = world.arena.y + 70; y < world.arena.y + world.arena.h; y += 92) {
-    ctx.fillRect(world.arena.x + 30, y, world.arena.w - 60, 2);
+}
+
+function drawMaze() {
+  if (mazeState.encounterType === "gauntlet") {
+    drawGauntletRoom();
+    return;
   }
+  const theme = mazeState.theme;
+  drawRoom(world.maze, theme.floor, theme.trim);
+  ctx.save();
+  ctx.fillStyle = theme.floor;
+  ctx.fillRect(mazeState.bounds.x, mazeState.bounds.y, mazeState.bounds.w, mazeState.bounds.h);
+  for (let y = 0; y < mazeState.rows; y += 1) {
+    for (let x = 0; x < mazeState.cols; x += 1) {
+      const rect = mazeCellRect(mazeState, x, y);
+      if (mazeState.grid[y][x]) {
+        ctx.fillStyle = "#050505";
+        mazeWallVisualRects({ x, y }).forEach((wall) => {
+          ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        });
+      } else if ((x + y) % 5 === 0) {
+        ctx.fillStyle = "rgba(244, 232, 203, 0.06)";
+        ctx.fillRect(rect.x + rect.w * 0.35, rect.y + rect.h * 0.35, rect.w * 0.3, rect.h * 0.3);
+      }
+    }
+  }
+  if (mazeState.miniBossCell) {
+    const room = mazeCellRect(mazeState, mazeState.miniBossCell.x - 1, mazeState.miniBossCell.y - 1);
+    ctx.strokeStyle = "rgba(240, 212, 124, 0.45)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(room.x + 4, room.y + 4, mazeState.cellSize * 3 - 8, mazeState.cellSize * 3 - 8);
+  }
+  ctx.fillStyle = "rgba(155, 224, 111, 0.32)";
+  ctx.strokeStyle = "#9be06f";
+  ctx.lineWidth = 3;
+  ctx.fillRect(mazeState.entrance.x + 5, mazeState.entrance.y + 5, mazeState.entrance.w - 10, mazeState.entrance.h - 10);
+  ctx.strokeRect(mazeState.entrance.x + 5, mazeState.entrance.y + 5, mazeState.entrance.w - 10, mazeState.entrance.h - 10);
+  ctx.fillStyle = mazeState.exitOpen ? "rgba(240, 212, 124, 0.36)" : "rgba(255, 111, 97, 0.28)";
+  ctx.strokeStyle = mazeState.exitOpen ? "#f0d47c" : "#ff6f61";
+  ctx.fillRect(mazeState.exit.x + 5, mazeState.exit.y + 5, mazeState.exit.w - 10, mazeState.exit.h - 10);
+  ctx.strokeRect(mazeState.exit.x + 5, mazeState.exit.y + 5, mazeState.exit.w - 10, mazeState.exit.h - 10);
+  ctx.fillStyle = theme.trim;
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(theme.name, world.maze.x + world.maze.w / 2, world.maze.y + 42);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "13px sans-serif";
+  ctx.fillText(mazeState.exitOpen ? "Exit open" : "Defeat the warden", world.maze.x + world.maze.w / 2, world.maze.y + 64);
+  ctx.textAlign = "left";
+  ctx.restore();
+}
+
+function drawGauntletRoom() {
+  const theme = mazeState.theme;
+  const bounds = mazeState.bounds;
+  drawRoom(world.maze, theme.floor, theme.trim);
+  ctx.save();
+  ctx.fillStyle = theme.floor;
+  ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  ctx.strokeStyle = "rgba(247, 239, 217, 0.10)";
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 6; i += 1) {
+    const y = bounds.y + (bounds.h / 6) * i;
+    ctx.beginPath();
+    ctx.moveTo(bounds.x + 16, y);
+    ctx.lineTo(bounds.x + bounds.w - 16, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = `${theme.decor}22`;
+  for (let i = 0; i < 5; i += 1) {
+    const x = bounds.x + 70 + i * 128;
+    ctx.fillRect(x, bounds.y + 18 + (i % 2) * 32, 42, bounds.h - 58);
+  }
+  ctx.strokeStyle = theme.trim;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  ctx.fillStyle = "rgba(155, 224, 111, 0.28)";
+  ctx.strokeStyle = "#9be06f";
+  ctx.fillRect(mazeState.entrance.x, mazeState.entrance.y, mazeState.entrance.w, mazeState.entrance.h);
+  ctx.strokeRect(mazeState.entrance.x, mazeState.entrance.y, mazeState.entrance.w, mazeState.entrance.h);
+  ctx.fillStyle = mazeState.exitOpen ? "rgba(240, 212, 124, 0.36)" : "rgba(255, 111, 97, 0.24)";
+  ctx.strokeStyle = mazeState.exitOpen ? "#f0d47c" : "#ff6f61";
+  ctx.fillRect(mazeState.exit.x, mazeState.exit.y, mazeState.exit.w, mazeState.exit.h);
+  ctx.strokeRect(mazeState.exit.x, mazeState.exit.y, mazeState.exit.w, mazeState.exit.h);
+  mazeState.spawnMarkers?.forEach((marker, index) => {
+    ctx.strokeStyle = index < 4 ? "rgba(247, 239, 217, 0.18)" : "rgba(240, 212, 124, 0.20)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(marker.x, marker.y, 20, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  if (mazeState.miniBossEnemy) {
+    ctx.strokeStyle = "rgba(240, 212, 124, 0.38)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(mazeState.miniBossEnemy.spawnX, mazeState.miniBossEnemy.spawnY, 78, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  mazeState.obstacles?.forEach(drawGauntletObstacle);
+  drawGauntletPickups();
+  ctx.fillStyle = theme.trim;
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(theme.name, world.maze.x + world.maze.w / 2, world.maze.y + 42);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "13px sans-serif";
+  ctx.fillText(gauntletObjectiveText(), world.maze.x + world.maze.w / 2, world.maze.y + 64);
+  ctx.textAlign = "left";
+  ctx.restore();
+}
+
+function gauntletObjectiveText() {
+  if (!mazeState) return "";
+  if (mazeState.exitOpen) return "Exit open";
+  if (mazeState.rewardPending) return "Choose a reward";
+  if (mazeState.miniBossSpawned) return "Defeat the warden";
+  if (mazeState.waveIndex < 0) return "Wave 1 incoming";
+  return `Clear wave ${mazeState.waveIndex + 1}/${mazeState.waves?.length || 2}`;
+}
+
+function drawGauntletObstacle(obstacle) {
+  ctx.save();
+  ctx.fillStyle = obstacle.color;
+  ctx.strokeStyle = obstacle.outline;
+  ctx.lineWidth = 3;
+  if (obstacle.type === "circle") {
+    ctx.beginPath();
+    ctx.arc(obstacle.x, obstacle.y, obstacle.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(247, 239, 217, 0.18)";
+    ctx.beginPath();
+    ctx.arc(obstacle.x - obstacle.r * 0.25, obstacle.y - obstacle.r * 0.25, obstacle.r * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.roundRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(247, 239, 217, 0.14)";
+    ctx.fillRect(obstacle.x + 10, obstacle.y + 8, Math.max(12, obstacle.w - 20), 5);
+  }
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "bold 10px sans-serif";
+  ctx.textAlign = "center";
+  const labelX = obstacle.type === "circle" ? obstacle.x : obstacle.x + obstacle.w / 2;
+  const labelY = obstacle.type === "circle" ? obstacle.y + 4 : obstacle.y + obstacle.h / 2 + 4;
+  ctx.fillText(obstacle.label.toUpperCase(), labelX, labelY);
+  ctx.restore();
+}
+
+function drawGauntletPickups() {
+  if (!mazeState?.pickupDrops?.length) return;
+  mazeState.pickupDrops.forEach((pickup) => {
+    const pulse = Math.sin(performance.now() / 180) * 2;
+    ctx.fillStyle = pickup.type === "potion" ? "#77c6ff" : "#9be06f";
+    ctx.strokeStyle = "#f7efd9";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pickup.x, pickup.y, pickup.r + pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#173018";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(pickup.type === "potion" ? "P" : "+", pickup.x, pickup.y + 5);
+    ctx.textAlign = "left";
+  });
 }
 
 function drawRoom(rect, fill, trim) {
@@ -4820,10 +7124,34 @@ function drawStarterRoomLabels() {
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
   ctx.shadowBlur = 4;
   ctx.font = "bold 24px sans-serif";
-  ctx.fillText("Choose a class", centerX, world.starter.y + 72);
-  ctx.font = "bold 22px sans-serif";
-  ctx.fillText("Choose your armor", centerX, world.starter.y + 332);
+  ctx.fillText(runState.buildLocked ? "Build locked for this run" : "Choose class and armor", centerX, world.starter.y + 72);
+  ctx.font = "15px sans-serif";
+  ctx.fillText(starterObjectiveText(), centerX, world.starter.y + 104);
+  ctx.shadowBlur = 0;
+  const panelW = 292;
+  const panelX = world.gate.x - panelW - 22;
+  ctx.fillStyle = "rgba(9, 12, 10, 0.72)";
+  ctx.strokeStyle = runState.buildLocked ? "rgba(255, 111, 97, 0.8)" : "rgba(240, 212, 124, 0.8)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(panelX, world.gate.y - 78, panelW, 58, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = runState.buildLocked ? "#ffb4aa" : "#f0d47c";
+  ctx.font = "bold 15px sans-serif";
+  ctx.fillText(runState.buildLocked ? "Build Locked" : "Starter Objective", panelX + panelW / 2, world.gate.y - 54);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "13px sans-serif";
+  ctx.fillText(runState.buildLocked ? `Defeat ${boss.name}` : "Test dummy, then cross gate", panelX + panelW / 2, world.gate.y - 32);
   ctx.restore();
+}
+
+function starterObjectiveText() {
+  if (player.won) return "Run cleared. Reset when you want to start over.";
+  if (!runState.active) return "Pick a mode to begin a run.";
+  if (runState.mode === "dev") return `Boss Test: ${boss.name}. Cross the gate when ready.`;
+  if (runState.buildLocked) return `${boss.name} is active. Fight until it falls.`;
+  return `Next Boss: ${boss.name}. Test damage, then cross the gate.`;
 }
 
 function drawStands() {
@@ -4844,7 +7172,49 @@ function drawStands() {
   });
 }
 
+function drawMazeEnemies() {
+  if (player.room !== "maze" || !mazeState) return;
+  mazeState.enemies.forEach((enemy) => {
+    if (enemy.hp <= 0) return;
+    const pulse = Math.sin(enemy.moveTimer * 6) * (enemy.miniBoss ? 3 : 1.5);
+    ctx.save();
+    ctx.translate(enemy.x, enemy.y);
+    if (selectedBoss === enemy) drawRing(0, 0, enemy.radius + 8, "#ffe082");
+    ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
+    ctx.beginPath();
+    ctx.ellipse(0, enemy.radius + 8, enemy.radius * 0.9, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = enemy.color;
+    ctx.strokeStyle = enemy.miniBoss ? mazeState.theme.trim : "#171313";
+    ctx.lineWidth = enemy.miniBoss ? 4 : 3;
+    ctx.beginPath();
+    if (enemy.ranged) ctx.roundRect(-enemy.radius, -enemy.radius - pulse, enemy.radius * 2, enemy.radius * 2.1, 8);
+    else ctx.arc(0, 0, enemy.radius + pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#171313";
+    ctx.beginPath();
+    ctx.arc(-enemy.radius * 0.32, -enemy.radius * 0.18, 3.5, 0, Math.PI * 2);
+    ctx.arc(enemy.radius * 0.32, -enemy.radius * 0.18, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    const hpWidth = enemy.miniBoss ? 92 : 48;
+    ctx.fillStyle = "rgba(10, 12, 11, 0.82)";
+    ctx.fillRect(-hpWidth / 2, -enemy.radius - 20, hpWidth, 6);
+    ctx.fillStyle = enemy.miniBoss ? "#f0d47c" : "#9be06f";
+    ctx.fillRect(-hpWidth / 2, -enemy.radius - 20, hpWidth * clamp(enemy.hp / enemy.maxHp, 0, 1), 6);
+    if (enemy.miniBoss) {
+      ctx.fillStyle = "#f7efd9";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(enemy.name, 0, -enemy.radius - 30);
+      ctx.textAlign = "left";
+    }
+    ctx.restore();
+  });
+}
+
 function drawBoss() {
+  if (player.room !== "arena") return;
   if (boss.kind === "trio") {
     condimentBosses.forEach(drawCondimentBoss);
     return;
@@ -4896,24 +7266,206 @@ function drawCondimentBoss(target) {
   if (target.hp <= 0) return;
   if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
   if (target.kind === "mustard" && target.state === "winding") drawRing(target.x, target.y, target.radius + 18, "#fff08a");
-  ctx.fillStyle = target.color;
-  ctx.beginPath();
-  ctx.roundRect(target.x - target.radius * 0.7, target.y - target.radius, target.radius * 1.4, target.radius * 2, 12);
-  ctx.fill();
-  ctx.fillStyle = target.kind === "mayo" ? "#443b31" : "#fff2c6";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(target.name, target.x, target.y - target.radius - 28);
-  if (target.kind === "mustard" && target.state === "winding") {
-    ctx.fillStyle = "#fff08a";
-    ctx.fillText("Aiming", target.x, target.y + target.radius + 22);
-  }
-  ctx.fillStyle = "#141414";
-  ctx.fillRect(target.x - 38, target.y - target.radius - 18, 76, 7);
-  ctx.fillStyle = target.shieldTimer > 0 ? "#f6f0df" : "#f2d087";
-  ctx.fillRect(target.x - 38, target.y - target.radius - 18, 76 * (target.hp / target.maxHp), 7);
+  if (target.kind === "ketchup") drawKetchupBoss(target);
+  else if (target.kind === "mustard") drawMustardBoss(target);
+  else drawMayoBoss(target);
+  drawCondimentHealth(target);
   if (target.shieldTimer > 0) drawRing(target.x, target.y, target.radius + 16, "#f6f0df");
   ctx.textAlign = "left";
+}
+
+function drawKetchupBoss(target) {
+  const bob = Math.sin(target.moveTimer * 8 + performance.now() / 220) * 2;
+  ctx.save();
+  ctx.translate(target.x, target.y + bob);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(0, 35, 34, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#b92d28";
+  ctx.strokeStyle = "#461413";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(-27, -32, 54, 74, 16);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ef4a3e";
+  ctx.beginPath();
+  ctx.roundRect(-18, -25, 18, 58, 8);
+  ctx.fill();
+
+  ctx.fillStyle = "#f4ead7";
+  ctx.strokeStyle = "#461413";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-18, -8, 36, 25, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#b92d28";
+  ctx.font = "bold 10px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("K", 0, 8);
+
+  ctx.fillStyle = "#f2d087";
+  ctx.strokeStyle = "#461413";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-18, -50, 36, 18, 7);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#cf3b2f";
+  ctx.beginPath();
+  ctx.moveTo(-10, -50);
+  ctx.lineTo(10, -50);
+  ctx.lineTo(0, -66);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  drawCondimentFace(0, -9, "#2c1715", "#fff2c6", true);
+  ctx.restore();
+}
+
+function drawMustardBoss(target) {
+  const winding = target.state === "winding";
+  const pulse = winding ? Math.sin(performance.now() / 70) * 2 : 0;
+  ctx.save();
+  ctx.translate(target.x, target.y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(0, 35, 35, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = winding ? "#f4d45a" : "#e3bf34";
+  ctx.strokeStyle = "#5e4818";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(-25 - pulse, -28 - pulse, 50 + pulse * 2, 70 + pulse * 2, 13);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fff08a";
+  ctx.beginPath();
+  ctx.roundRect(-15, -20, 14, 54, 6);
+  ctx.fill();
+
+  ctx.strokeStyle = "#7b5d19";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(-34, -2);
+  ctx.quadraticCurveTo(-48, 12, -35, 30);
+  ctx.moveTo(34, -2);
+  ctx.quadraticCurveTo(48, 12, 35, 30);
+  ctx.stroke();
+
+  ctx.fillStyle = "#f4ead7";
+  ctx.strokeStyle = "#5e4818";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-17, -47, 34, 18, 7);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#e3bf34";
+  ctx.beginPath();
+  ctx.moveTo(-7, -47);
+  ctx.lineTo(7, -47);
+  ctx.lineTo(0, -66);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (winding) {
+    ctx.strokeStyle = "rgba(255, 240, 138, 0.65)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 3, 44 + pulse * 2, -0.45, 0.45);
+    ctx.stroke();
+  }
+  drawCondimentFace(0, -7, "#33260c", "#fff9c7", false);
+  ctx.restore();
+}
+
+function drawMayoBoss(target) {
+  const panic = target.hp / target.maxHp < 0.45;
+  const wobble = Math.sin(performance.now() / 95) * (panic ? 4 : 2);
+  ctx.save();
+  ctx.translate(target.x, target.y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.beginPath();
+  ctx.ellipse(0, 36, 36, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#f3ead2";
+  ctx.strokeStyle = "#4c4030";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(-30, -23 + wobble * 0.2, 60, 66, 18);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+  ctx.beginPath();
+  ctx.roundRect(-20, -14, 18, 48, 8);
+  ctx.fill();
+
+  ctx.fillStyle = "#d9d0bd";
+  ctx.strokeStyle = "#4c4030";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-26, -42, 52, 18, 7);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ebe1cc";
+  ctx.beginPath();
+  ctx.ellipse(0, -27, 30, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = panic ? "#cf3b2f" : "#4c4030";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-35, 0);
+  ctx.quadraticCurveTo(-49, 12 + wobble, -31, 25);
+  ctx.moveTo(35, 0);
+  ctx.quadraticCurveTo(49, 12 - wobble, 31, 25);
+  ctx.stroke();
+
+  drawCondimentFace(0, -4, "#443b31", "#fff7e8", false, panic);
+  ctx.restore();
+}
+
+function drawCondimentFace(x, y, dark, light, grin, worried = false) {
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.ellipse(x - 10, y - 4, 5, 6, -0.15, 0, Math.PI * 2);
+  ctx.ellipse(x + 10, y - 4, 5, 6, 0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = light;
+  ctx.beginPath();
+  ctx.arc(x - 8, y - 6, 1.6, 0, Math.PI * 2);
+  ctx.arc(x + 12, y - 6, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (worried) {
+    ctx.arc(x, y + 13, 10, Math.PI * 1.12, Math.PI * 1.88);
+  } else if (grin) {
+    ctx.arc(x, y + 4, 13, 0.15, Math.PI - 0.15);
+  } else {
+    ctx.moveTo(x - 10, y + 9);
+    ctx.quadraticCurveTo(x, y + 15, x + 10, y + 9);
+  }
+  ctx.stroke();
+}
+
+function drawCondimentHealth(target) {
+  ctx.fillStyle = "#fff2c6";
+  ctx.font = "bold 13px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(target.name, target.x, target.y - target.radius - 34);
+  ctx.fillStyle = "#141414";
+  ctx.fillRect(target.x - 38, target.y - target.radius - 22, 76, 7);
+  ctx.fillStyle = target.shieldTimer > 0 ? "#f6f0df" : "#f2d087";
+  ctx.fillRect(target.x - 38, target.y - target.radius - 22, 76 * (target.hp / target.maxHp), 7);
 }
 
 function drawBurgerBoss() {
@@ -4929,7 +7481,7 @@ function drawTacoTitanBoss() {
   const crack = boss.phase >= 2 ? Math.sin(boss.animationTime * 12) * 3 : 0;
   ctx.save();
   ctx.translate(boss.x, boss.y);
-  ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
+  ctx.fillStyle = boss.exposedFillingTimer > 0 ? "#ffb15a" : boss.enraged ? boss.enrageColor : boss.color;
   ctx.strokeStyle = "#4f2d16";
   ctx.lineWidth = 6;
   ctx.beginPath();
@@ -4939,6 +7491,23 @@ function drawTacoTitanBoss() {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  if (boss.shellGuardActive) {
+    ctx.strokeStyle = "rgba(255, 244, 196, 0.78)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, -6, boss.radius + 14 + Math.sin(boss.animationTime * 5) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (boss.exposedFillingTimer > 0) {
+    ctx.shadowColor = "#ff8a32";
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = "#fff4c4";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, -4, boss.radius + 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
   ctx.fillStyle = "#6d3a1f";
   ctx.fillRect(-44, -10, 88, 22);
   ctx.fillStyle = "#6fbf55";
@@ -4972,10 +7541,41 @@ function drawTacoTitanBoss() {
     ctx.fillStyle = "#f5f5e6";
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("STAND ON NAPKIN", boss.napkinZone.x, boss.napkinZone.y + 4);
+    ctx.fillText("SAFE NAPKIN", boss.napkinZone.x, boss.napkinZone.y - 4);
+    ctx.font = "bold 11px sans-serif";
+    ctx.fillText(`${Math.ceil(Math.max(0, boss.tacoFloodCountdown || boss.napkinTimer || 0))}s`, boss.napkinZone.x, boss.napkinZone.y + 14);
     ctx.textAlign = "left";
     return;
   }
+  ctx.restore();
+}
+
+function drawTacoObjectiveText() {
+  if (boss.kind !== "taco" || player.room !== "arena" || player.dead || player.won) return;
+  const x = canvas.clientWidth / 2;
+  const y = 92;
+  const current = boss.tacoCurrentIngredient ? tacoIngredientName(boss.tacoCurrentIngredient) : "Ready";
+  const progress = boss.tacoIngredientQueue?.length ? `${Math.min((boss.tacoPuzzleStep || 0) + 1, boss.tacoIngredientQueue.length)}/${boss.tacoIngredientQueue.length}` : "-";
+  const state = boss.exposedFillingTimer > 0
+    ? `Exposed Filling ${Math.ceil(boss.exposedFillingTimer)}s`
+    : boss.shellGuardActive
+      ? "Shell Guard"
+      : "Shell Cracked";
+  ctx.save();
+  ctx.fillStyle = "rgba(16, 12, 8, 0.78)";
+  ctx.strokeStyle = boss.exposedFillingTimer > 0 ? "#ffb15a" : "#f0d47c";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x - 230, y - 38, 460, 72, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = boss.exposedFillingTimer > 0 ? "#ffd782" : "#fff4c4";
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillText(`${state} | ${current} ${progress}`, x, y - 12);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "13px sans-serif";
+  ctx.fillText(boss.tacoObjectiveText || "Solve ingredient combos to crack the shell.", x, y + 12);
   ctx.restore();
 }
 
@@ -5221,6 +7821,60 @@ function drawSushiSerpentBoss() {
   }
 }
 
+function drawTrainingDummy() {
+  if (player.room !== "starter") return;
+  if (!trainingDummy) return;
+  const target = trainingDummy;
+  ctx.save();
+  drawRing(target.x, target.y, target.radius + 9, "#f0d47c");
+  ctx.fillStyle = "#8b5a35";
+  ctx.strokeStyle = "#f0d47c";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(target.x - 24, target.y - 46, 48, 78, 12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#2a1c15";
+  ctx.fillRect(target.x - 30, target.y + 32, 60, 11);
+  ctx.fillStyle = "#d8c693";
+  ctx.beginPath();
+  ctx.arc(target.x, target.y - 18, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#2a1c15";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(target.x - 14, target.y - 2);
+  ctx.lineTo(target.x + 14, target.y - 2);
+  ctx.moveTo(target.x, target.y - 30);
+  ctx.lineTo(target.x, target.y + 18);
+  ctx.stroke();
+  const width = 92;
+  const hpPercent = clamp(target.hp / target.maxHp, 0, 1);
+  ctx.fillStyle = "rgba(10, 12, 11, 0.8)";
+  ctx.fillRect(target.x - width / 2 - 2, target.y - 74, width + 4, 10);
+  ctx.fillStyle = "#4a241c";
+  ctx.fillRect(target.x - width / 2, target.y - 72, width, 6);
+  ctx.fillStyle = "#f0d47c";
+  ctx.fillRect(target.x - width / 2, target.y - 72, width * hpPercent, 6);
+  const seconds = target.dpsWindowStart ? Math.max(1, (performance.now() - target.dpsWindowStart) / 1000) : 1;
+  const dps = target.damageTotal ? Math.round(target.damageTotal / seconds) : 0;
+  ctx.fillStyle = "#fff2c6";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Training Dummy", target.x, target.y - 88);
+  ctx.fillStyle = "rgba(10, 12, 11, 0.74)";
+  ctx.beginPath();
+  ctx.roundRect(target.x - 76, target.y + 52, 152, 46, 8);
+  ctx.fill();
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "bold 13px sans-serif";
+  ctx.fillText(target.lastDamage ? `Last Hit: ${target.lastDamage}` : "Click to test damage", target.x, target.y + 69);
+  ctx.fillStyle = dps ? "#92d4ff" : "#d0c6b4";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText(dps ? `Dummy DPS: ${dps}` : "Dummy DPS: --", target.x, target.y + 87);
+  ctx.restore();
+}
+
 function strokeSmoothSushiPath(points) {
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
@@ -5241,30 +7895,59 @@ function strokeSmoothSushiPath(points) {
 
 function drawSpecialSauceBoss() {
   const colors = ["#cf3b2f", "#e3bf34", "#f3ead2"];
+  const wobble = Math.sin(boss.animationTime * 5) * 4;
+  ctx.save();
+  ctx.translate(boss.x, boss.y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(0, 54, 58, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#4a241b";
+  ctx.lineWidth = 5;
   for (let i = 0; i < 3; i += 1) {
+    const angle = boss.animationTime * 2 + i * 2.09;
     ctx.fillStyle = colors[i];
     ctx.beginPath();
-    ctx.arc(
-      boss.x + Math.cos(boss.animationTime * 2 + i * 2.09) * 18,
-      boss.y + Math.sin(boss.animationTime * 2 + i * 2.09) * 14,
-      boss.radius - i * 9,
+    ctx.ellipse(
+      Math.cos(angle) * 18,
+      Math.sin(angle) * 14 + wobble * 0.25,
+      boss.radius - i * 7,
+      boss.radius * 0.72 - i * 5,
+      angle * 0.25,
       0,
       Math.PI * 2,
     );
     ctx.fill();
+    if (i === 0) ctx.stroke();
   }
-  ctx.fillStyle = "rgba(40, 24, 18, 0.72)";
+
+  for (let i = 0; i < 9; i += 1) {
+    const angle = boss.animationTime * 1.7 + i * 0.7;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.arc(Math.cos(angle) * (48 + (i % 3) * 5), Math.sin(angle) * 34, 5 + (i % 2), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "rgba(40, 24, 18, 0.78)";
   ctx.beginPath();
-  ctx.arc(boss.x, boss.y + 8, 28, 0, Math.PI * 2);
+  ctx.arc(0, 8, 28, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = "#fff2c6";
+  ctx.beginPath();
+  ctx.arc(-10, 0, 4, 0, Math.PI * 2);
+  ctx.arc(10, 0, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#fff2c6";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 9, 13, 0.15, Math.PI - 0.15);
+  ctx.stroke();
+  ctx.restore();
   if (boss.shieldTimer > 0) drawRing(boss.x, boss.y, boss.radius + 16, "#f6f0df");
   if (boss.state === "winding") {
     drawRing(boss.x, boss.y, boss.radius + 24, "#fff08a");
-    ctx.fillStyle = "#fff08a";
-    ctx.font = "bold 14px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Aiming", boss.x, boss.y + boss.radius + 24);
-    ctx.textAlign = "left";
   }
 }
 
@@ -5495,6 +8178,41 @@ function drawNachoWalls() {
 
 function drawHazards() {
   hazards.forEach((hazard) => {
+    if (hazard.type === "mazeShot") {
+      ctx.fillStyle = hazard.color || "#f0d47c";
+      ctx.shadowColor = hazard.color || "#f0d47c";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      return;
+    }
+    if (hazard.type === "mazeCircle") {
+      const warning = hazard.warn > 0;
+      const progress = warning ? 1 - clamp(hazard.warn / 0.75, 0, 1) : 1;
+      ctx.fillStyle = warning ? "rgba(255, 255, 255, 0.07)" : `${hexToRgba(hazard.color || "#f0d47c", hazard.lingering ? 0.28 : 0.2)}`;
+      ctx.strokeStyle = hazard.color || "#f0d47c";
+      ctx.lineWidth = warning ? 3 : 2;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r * (warning ? 0.55 + progress * 0.45 : 1), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "mazeWall") {
+      const active = hazard.warn <= 0;
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      if (!hazard.vertical) ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = active ? hexToRgba(hazard.color || "#f0d47c", 0.42) : "rgba(255, 255, 255, 0.08)";
+      ctx.strokeStyle = hazard.color || "#f0d47c";
+      ctx.lineWidth = active ? 4 : 2;
+      ctx.fillRect(-hazard.width / 2, -hazard.length / 2, hazard.width, hazard.length);
+      ctx.strokeRect(-hazard.width / 2, -hazard.length / 2, hazard.width, hazard.length);
+      ctx.restore();
+      return;
+    }
     if (hazard.type === "grease") {
       ctx.fillStyle = "rgba(219, 174, 72, 0.24)";
       ctx.strokeStyle = "rgba(255, 226, 118, 0.65)";
@@ -5986,6 +8704,32 @@ function drawHazards() {
       ctx.stroke();
       return;
     }
+    if (hazard.type === "tacoGrease" || hazard.type === "tacoCheese" || hazard.type === "lettuceCleanseZone") {
+      const warning = hazard.warn > 0;
+      const isGrease = hazard.type === "tacoGrease";
+      const isCheese = hazard.type === "tacoCheese";
+      ctx.fillStyle = warning
+        ? "rgba(255, 244, 196, 0.12)"
+        : isGrease
+          ? "rgba(122, 63, 36, 0.34)"
+          : isCheese
+            ? "rgba(255, 216, 90, 0.36)"
+            : "rgba(111, 191, 85, 0.3)";
+      ctx.strokeStyle = isGrease ? "#7a3f24" : isCheese ? "#ffd85a" : "#aaff96";
+      ctx.lineWidth = hazard.type === "lettuceCleanseZone" ? 4 : 3;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.68, Math.sin((hazard.pulse || hazard.x) * 2) * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (hazard.type === "lettuceCleanseZone") {
+        ctx.fillStyle = "#d8ffd0";
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("CLEANSE", hazard.x, hazard.y + 4);
+        ctx.textAlign = "left";
+      }
+      return;
+    }
     if (hazard.type === "tacoSlam") {
       const warning = hazard.warn > 0;
       ctx.fillStyle = warning ? "rgba(255, 218, 107, 0.1)" : "rgba(240, 91, 50, 0.25)";
@@ -6215,6 +8959,30 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (effect.type === "groundbreaker" || effect.type === "radiantSmite") {
+      const holy = effect.type === "radiantSmite";
+      const ring = effect.r * (0.35 + progress * 0.75);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = holy ? "rgba(255, 240, 191, 0.18)" : "rgba(240, 212, 124, 0.16)";
+      ctx.strokeStyle = holy ? "rgba(255, 244, 210, 0.92)" : "rgba(255, 238, 178, 0.86)";
+      ctx.shadowColor = holy ? "#fff0bf" : "#f0d47c";
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, ring, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      for (let i = 0; i < (holy ? 8 : 6); i += 1) {
+        const angle = i * Math.PI * 2 / (holy ? 8 : 6);
+        ctx.beginPath();
+        ctx.moveTo(effect.x + Math.cos(angle) * ring * 0.25, effect.y + Math.sin(angle) * ring * 0.25);
+        ctx.lineTo(effect.x + Math.cos(angle) * ring, effect.y + Math.sin(angle) * ring);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
     if (effect.type === "projectileBlock") {
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = "rgba(255, 238, 178, 0.88)";
@@ -6251,6 +9019,51 @@ function drawAbilityEffects() {
           0.82 + Math.sin((effect.age || 0) * 6 + i) * 0.08,
         );
       }
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "arrowStorm" || effect.type === "meteorField" || effect.type === "poisonCloud" || effect.type === "consecration" || effect.type === "divineBulwark") {
+      const configs = {
+        arrowStorm: ["rgba(255, 215, 130, 0.12)", "rgba(255, 215, 130, 0.72)", "#ffd782"],
+        meteorField: ["rgba(255, 122, 43, 0.13)", "rgba(255, 138, 50, 0.78)", "#ff8a32"],
+        poisonCloud: ["rgba(112, 210, 90, 0.16)", "rgba(155, 224, 111, 0.62)", "#9be06f"],
+        consecration: ["rgba(255, 240, 191, 0.14)", "rgba(255, 240, 191, 0.82)", "#fff0bf"],
+        divineBulwark: ["rgba(255, 240, 191, 0.09)", "rgba(255, 240, 191, 0.62)", "#fff0bf"],
+      };
+      const [fill, stroke, glow] = configs[effect.type];
+      const spin = (effect.age || 0) * (effect.type === "poisonCloud" ? 0.8 : 1.6);
+      ctx.globalAlpha = effect.ttl < 0.7 ? alpha : 1;
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = effect.type === "divineBulwark" ? 4 : 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash(effect.type === "poisonCloud" ? [10, 12] : []);
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.r * (0.38 + i * 0.18), spin + i, spin + i + Math.PI * 1.2);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "aegisStep") {
+      ctx.globalAlpha = alpha * 0.78;
+      ctx.strokeStyle = "#fff0bf";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.x2, effect.y2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 240, 191, 0.24)";
+      ctx.beginPath();
+      ctx.arc(effect.x2, effect.y2, 48 * (0.5 + progress), 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
       return;
     }
@@ -6735,6 +9548,7 @@ function remotePlayerColor(tag) {
   if (tag === "Magic") return "#8ec7ff";
   if (tag === "Ranged") return "#9bd07b";
   if (tag === "Rogue") return "#9be06f";
+  if (tag === "Paladin") return "#f0d47c";
   if (tag === "Warrior") return "#f0c36a";
   return "#d8d1c4";
 }
@@ -6772,11 +9586,15 @@ function isRangedBuild() {
 }
 
 function isMeleeBuild() {
-  return player.gear.weapon === "ironBlade";
+  return player.gear.weapon === "ironBlade" || player.gear.weapon === "dawnHammer";
 }
 
 function isRogueBuild() {
   return player.gear.weapon === "shadowDaggers";
+}
+
+function isPaladinBuild() {
+  return player.gear.weapon === "dawnHammer";
 }
 
 function playerOutfitSprite() {
@@ -7345,7 +10163,7 @@ function drawAbilityBar() {
   abilities.forEach((ability, index) => {
     const x = startX + index * (slotW + gap);
     const cooldown = player.abilityCooldowns[index] || 0;
-    const ready = cooldown <= 0 && player.room === "arena" && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
+    const ready = cooldown <= 0 && (player.room === "arena" || player.room === "starter" || player.room === "maze") && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
     ctx.fillStyle = ready ? "rgba(25, 24, 22, 0.88)" : "rgba(15, 15, 14, 0.82)";
     ctx.strokeStyle = ready ? "rgba(226, 189, 114, 0.82)" : "rgba(244, 232, 203, 0.22)";
     ctx.lineWidth = 2;
@@ -7393,12 +10211,64 @@ function drawAbilityBar() {
   ctx.restore();
 }
 
+function drawScreenBanner() {
+  if (!screenBanner) return;
+  const progress = clamp(screenBanner.timer / screenBanner.duration, 0, 1);
+  const alpha = clamp(Math.min(progress * 2.4, 1), 0, 1);
+  const y = 96 - (1 - alpha) * 18;
+  const w = Math.min(canvas.clientWidth - 44, 620);
+  const x = canvas.clientWidth / 2 - w / 2;
+  const accent = screenBanner.tone === "victory" ? "#9be06f" : screenBanner.tone === "danger" ? "#ff6f61" : "#f0d47c";
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "rgba(12, 10, 9, 0.88)";
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 108, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.font = "bold 34px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(screenBanner.title, canvas.clientWidth / 2, y + 43);
+  if (screenBanner.subtitle) {
+    ctx.fillStyle = "#f7efd9";
+    ctx.font = "bold 15px sans-serif";
+    ctx.fillText(screenBanner.subtitle, canvas.clientWidth / 2, y + 76);
+  }
+  ctx.restore();
+}
+
+function drawRunCompleteOverlay() {
+  if (!player.won) return;
+  ctx.save();
+  ctx.fillStyle = "rgba(5, 9, 7, 0.72)";
+  ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#9be06f";
+  ctx.font = "bold 66px sans-serif";
+  ctx.fillText("Run Cleared", canvas.clientWidth / 2, canvas.clientHeight / 2 - 34);
+  ctx.fillStyle = "#f7efd9";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("All bosses defeated", canvas.clientWidth / 2, canvas.clientHeight / 2 + 24);
+  ctx.fillStyle = "#d0c6b4";
+  ctx.font = "15px sans-serif";
+  ctx.fillText("Use Reset Fight to return to a clean run state.", canvas.clientWidth / 2, canvas.clientHeight / 2 + 58);
+  ctx.restore();
+}
+
 function renderUi() {
-  ui.roomText.textContent = player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.won ? "Victory" : "Boss Arena";
+  ui.roomText.textContent = player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
   ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
   const bossHp = bossHealthSummary();
-  ui.bossHpText.textContent = boss.kind === "shake"
+  const mazeHpLabel = mazeState?.miniBossSpawned ? "Warden" : "Wave";
+  ui.bossHpText.textContent = player.room === "maze"
+    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} ${mazeHpLabel}`
+    : boss.kind === "shake"
     ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
     : boss.kind === "donut"
       ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/6`
@@ -7409,33 +10279,101 @@ function renderUi() {
   ui.potionButton.textContent = `Potion (${player.potions})`;
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
+  const activeBuffs = Object.values(runState.mazeBuffs).filter((value) => value > 0).length;
   ui.buildPanel.innerHTML = `
+    <div><span>Class</span><strong>${currentClassOption().name}</strong></div>
     <div><span>Weapon</span><strong>${weapon.name}</strong></div>
     <div><span>Armor</span><strong>${armor.name}</strong></div>
     <div><span>Damage</span><strong>${player.stats.damage}</strong></div>
     <div><span>Range</span><strong>${player.stats.range}</strong></div>
     <div><span>Armor</span><strong>${player.stats.armor}</strong></div>
     <div><span>Speed</span><strong>${player.stats.speed}</strong></div>
+    <div><span>Run Buffs</span><strong>${activeBuffs}</strong></div>
   `;
+  if (ui.classMenuButton) {
+    const label = runState.buildLocked ? `${currentClassOption().name} - Locked for this run` : `${currentClassOption().name} - Select Class`;
+    if (ui.classMenuButton.textContent !== label) ui.classMenuButton.textContent = label;
+    ui.classMenuButton.disabled = runState.buildLocked;
+    ui.classMenuButton.title = runState.buildLocked ? "Class is locked for this run" : "Select class";
+  }
+  if (ui.armorMenuButton) {
+    const label = runState.buildLocked ? `${armor.name} - Locked for this run` : `${armor.name} - Select Armor`;
+    if (ui.armorMenuButton.textContent !== label) ui.armorMenuButton.textContent = label;
+    ui.armorMenuButton.disabled = runState.buildLocked;
+    ui.armorMenuButton.title = runState.buildLocked ? "Armor is locked for this run" : "Select armor";
+  }
+  if (ui.skillsButton) {
+    const label = `Skills (${runState.talentPoints})`;
+    if (ui.skillsButton.textContent !== label) ui.skillsButton.textContent = label;
+    ui.skillsButton.classList.toggle("has-points", runState.talentPoints > 0);
+    ui.skillsButton.title = runState.buildLocked
+      ? `${talentClassNames[activeTalentClass()] || "Class"} talents`
+      : "Talents lock to your class when the run starts";
+  }
+  if (ui.bossMenuButton) {
+    const label = `${boss.name} - Select Boss`;
+    if (ui.bossMenuButton.textContent !== label) ui.bossMenuButton.textContent = label;
+    ui.bossMenuButton.disabled = runState.mode !== "dev";
+  }
+  if (ui.bossTestPanel) {
+    ui.bossTestPanel.hidden = runState.mode !== "dev";
+  }
+  if (ui.classSelector) {
+    const signature = `${player.gear.weapon}:${classOptions.map((option) => `${option.id}:${option.locked ? 1 : 0}`).join("|")}`;
+    if (signature !== classSelectorSignature) {
+      classSelectorSignature = signature;
+      ui.classSelector.innerHTML = classOptions.map((option) => {
+        const selected = option.weapon === player.gear.weapon;
+        const locked = Boolean(option.locked);
+        return `<button class="choice ${selected ? "selected" : ""} ${locked ? "locked" : ""}" type="button" data-class="${option.id}" ${locked ? "disabled aria-disabled=\"true\"" : ""}><span>${option.name}</span><small>${locked ? "Locked" : option.note}</small></button>`;
+      }).join("");
+    }
+  }
+  if (ui.armorSelector) {
+    const signature = player.gear.armor;
+    if (signature !== armorSelectorSignature) {
+      armorSelectorSignature = signature;
+      ui.armorSelector.innerHTML = Object.entries(gear.armor).map(([id, item]) => {
+        const selected = player.gear.armor === id;
+        return `<button class="choice ${selected ? "selected" : ""}" type="button" data-armor="${id}"><span>${item.name}</span><small>${item.tag}</small></button>`;
+      }).join("");
+    }
+  }
   if (ui.armory) {
     ui.armory.innerHTML = [...Object.values(gear.weapon), ...Object.values(gear.armor)].map((item) => {
       const selected = player.gear[item.slot] && gear[item.slot][player.gear[item.slot]].name === item.name;
       return `<button class="choice ${selected ? "selected" : ""}" data-slot="${item.slot}" data-name="${item.name}"><span>${item.name}</span><small>${item.tag}</small></button>`;
     }).join("");
   }
-  ui.bossSelector.querySelectorAll("[data-boss]").forEach((button) => {
-    button.classList.toggle("selected", button.dataset.boss === boss.kind);
-    const locked = lockedBosses.has(button.dataset.boss);
-    button.disabled = locked;
-    button.classList.toggle("locked", locked);
-    button.setAttribute("aria-disabled", String(locked));
-  });
+  if (ui.bossSelector) {
+    const signature = `${boss.kind}:${bossTestOptions.map((option) => `${option.id}:${lockedBosses.has(option.id) ? 1 : 0}`).join("|")}`;
+    if (signature !== bossSelectorSignature) {
+      bossSelectorSignature = signature;
+      ui.bossSelector.innerHTML = bossTestOptions.map((option) => {
+        const selected = option.id === boss.kind;
+        const locked = lockedBosses.has(option.id);
+        return `<button class="choice ${selected ? "selected" : ""} ${locked ? "locked" : ""}" type="button" data-boss="${option.id}" ${locked ? "disabled aria-disabled=\"true\"" : ""}><span>${option.name}</span><small>${locked ? "Locked" : "Test"}</small></button>`;
+      }).join("");
+    }
+  }
+  if (ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) renderTalentTree();
   if (ui.deathScreen) {
     ui.deathScreen.hidden = !player.dead;
   }
 }
 
 function bossHealthSummary() {
+  if (player.room === "maze" && mazeState) {
+    const mini = mazeState.enemies.find((enemy) => enemy.miniBoss) || mazeState.miniBossEnemy;
+    if (mini && (mazeState.miniBossSpawned || mazeState.encounterType !== "gauntlet")) {
+      return { hp: Math.max(0, mini.hp), maxHp: mini.maxHp };
+    }
+    if (mazeState.encounterType === "gauntlet" && mazeState.waveIndex < 0) {
+      return { hp: 0, maxHp: mazeState.waves?.[0]?.enemies.length || 1 };
+    }
+    const trashAlive = mazeState.enemies.filter((enemy) => enemy.hp > 0 && !enemy.miniBoss).length;
+    return { hp: trashAlive, maxHp: Math.max(1, mazeState.waves?.[mazeState.waveIndex]?.enemies.length || trashAlive || 1) };
+  }
   if (boss.kind !== "trio") return { hp: boss.hp, maxHp: boss.maxHp };
   return {
     hp: condimentBosses.reduce((total, target) => total + Math.max(0, target.hp), 0),
@@ -7536,7 +10474,6 @@ function handleMultiplayerMessage(message) {
     multiplayer.peers.clear();
     const spawn = (message.spawns || []).find((item) => item.id === multiplayer.id);
     startMultiplayerFight(message.bossKind, spawn);
-    setTimeout(() => startFight(), Math.max(0, (message.startAt || Date.now()) - Date.now()));
     return;
   }
   if (message.type === "error") {
@@ -7701,10 +10638,11 @@ function setCoopStatus(text, count) {
 
 function showMenuScreen(screen) {
   ui.menuOverlay?.classList.remove("hidden");
-  [ui.mainMenu, ui.multiplayerMenu, ui.roomLobby].forEach((panel) => panel?.classList.remove("active"));
+  [ui.mainMenu, ui.multiplayerMenu, ui.roomLobby, ui.devMenu].forEach((panel) => panel?.classList.remove("active"));
   if (screen === "main") ui.mainMenu?.classList.add("active");
   if (screen === "multiplayer") ui.multiplayerMenu?.classList.add("active");
   if (screen === "lobby") ui.roomLobby?.classList.add("active");
+  if (screen === "dev") ui.devMenu?.classList.add("active");
 }
 
 function hideMenus() {
@@ -7725,6 +10663,27 @@ function setMenuStatus(text) {
 
 function setLobbyStatus(text) {
   if (ui.lobbyStatus) ui.lobbyStatus.textContent = text;
+}
+
+function showDevPasswordScreen() {
+  showMenuScreen("dev");
+  if (ui.devPasswordInput) {
+    ui.devPasswordInput.value = "";
+    ui.devPasswordInput.focus();
+  }
+  if (ui.devStatus) ui.devStatus.textContent = "Enter the dev password.";
+}
+
+function startDevTestFromPassword() {
+  if ((ui.devPasswordInput?.value || "") !== "a") {
+    if (ui.devStatus) ui.devStatus.textContent = "Wrong password.";
+    showFloat("Wrong password");
+    return;
+  }
+  runState.devUnlocked = true;
+  multiplayer.mode = "dev";
+  closeMultiplayerSocket();
+  beginRun("dev", boss.kind || "cola");
 }
 
 function renderRoomList() {
@@ -7754,7 +10713,7 @@ function renderLobby() {
       <div class="lobby-player">
         <div>
           <strong>${escapeHtml(peer.name)}${peer.host ? " - Host" : ""}</strong>
-          <span>${peer.ready ? "Ready" : peer.host ? "Picking boss" : "Not ready"}</span>
+          <span>${peer.ready ? "Ready" : peer.host ? "Host" : "Not ready"}</span>
         </div>
         <span>${peer.id === multiplayer.id ? "You" : ""}</span>
       </div>
@@ -7774,7 +10733,7 @@ function renderLobby() {
   if (ui.startRoomButton) {
     ui.startRoomButton.disabled = !isHost;
   }
-  setLobbyStatus(isHost ? "Choose a boss, then start when everyone is ready." : "Ready up when your build is set.");
+  setLobbyStatus(isHost ? "Start when everyone is ready. The run begins at Big Cola." : "Ready up when your build is set.");
 }
 
 function escapeHtml(value) {
@@ -7802,6 +10761,172 @@ function showFloat(text) {
   floatTimer = 1.7;
 }
 
+function openClassMenu() {
+  if (runState.buildLocked) {
+    showFloat("Build locked");
+    return;
+  }
+  if (ui.classMenuOverlay) ui.classMenuOverlay.hidden = false;
+}
+
+function closeClassMenu() {
+  if (ui.classMenuOverlay) ui.classMenuOverlay.hidden = true;
+}
+
+function openArmorMenu() {
+  if (runState.buildLocked) {
+    showFloat("Build locked");
+    return;
+  }
+  if (ui.armorMenuOverlay) ui.armorMenuOverlay.hidden = false;
+}
+
+function closeArmorMenu() {
+  if (ui.armorMenuOverlay) ui.armorMenuOverlay.hidden = true;
+}
+
+function openTalentMenu() {
+  if (ui.talentMenuOverlay) ui.talentMenuOverlay.hidden = false;
+  renderTalentTree(true);
+}
+
+function closeTalentMenu() {
+  if (ui.talentMenuOverlay) ui.talentMenuOverlay.hidden = true;
+}
+
+function openBossMenu() {
+  if (runState.mode !== "dev") {
+    showFloat("Dev Test only");
+    return;
+  }
+  if (ui.bossMenuOverlay) ui.bossMenuOverlay.hidden = false;
+}
+
+function closeBossMenu() {
+  if (ui.bossMenuOverlay) ui.bossMenuOverlay.hidden = true;
+}
+
+function renderTalentTree(force = false) {
+  if (!ui.talentTree) return;
+  const classKey = activeTalentClass();
+  const learned = Array.from(runState.learnedTalents || []).sort().join(",");
+  const signature = `${classKey}:${runState.talentPoints}:${learned}`;
+  if (!force && signature === talentTreeSignature) return;
+  talentTreeSignature = signature;
+  if (ui.talentMenuTitle) ui.talentMenuTitle.textContent = `${talentClassNames[classKey] || "Class"} Talents`;
+  if (ui.talentMenuPoints) ui.talentMenuPoints.textContent = `Talent Points: ${runState.talentPoints}`;
+  const branches = [...new Set(talentsForActiveClass().map((talent) => talent.branch))];
+  ui.talentTree.innerHTML = branches.map((branch) => {
+    const nodes = talentsForActiveClass()
+      .filter((talent) => talent.branch === branch)
+      .sort((a, b) => a.row - b.row);
+    return `
+      <section class="talent-branch">
+        <h2>${branch}</h2>
+        ${nodes.map((talent) => {
+          const learnedNode = hasTalent(talent.id);
+          const available = canLearnTalent(talent.id);
+          const parentNames = talent.parents.map((parentId) => talentById.get(parentId)?.name || parentId).join(", ");
+          const state = learnedNode ? "learned" : available ? "available" : "locked";
+          const req = learnedNode ? "Learned" : available ? "Click to learn" : talent.parents.length ? `Requires ${parentNames}` : runState.talentPoints > 0 ? "Available" : "Need Talent Points";
+          return `<button class="talent-node ${state} ${talent.type} ${talent.row === 0 ? "root" : ""}" type="button" data-talent="${talent.id}" ${available ? "" : "disabled aria-disabled=\"true\""}><strong>${talent.name}</strong><span>${talent.description}</span><small>${talent.type} - ${req}</small></button>`;
+        }).join("")}
+      </section>
+    `;
+  }).join("");
+}
+
+function closestElementTarget(event, selector) {
+  const target = event.target?.nodeType === Node.ELEMENT_NODE ? event.target : event.target?.parentElement;
+  return target?.closest?.(selector) || null;
+}
+
+function handleSelectorPointer(event) {
+  const classMenuButton = closestElementTarget(event, "#classMenuButton");
+  if (classMenuButton) {
+    event.preventDefault();
+    openClassMenu();
+    return true;
+  }
+  const armorMenuButton = closestElementTarget(event, "#armorMenuButton");
+  if (armorMenuButton) {
+    event.preventDefault();
+    openArmorMenu();
+    return true;
+  }
+  const bossMenuButton = closestElementTarget(event, "#bossMenuButton");
+  if (bossMenuButton) {
+    event.preventDefault();
+    openBossMenu();
+    return true;
+  }
+  const skillsButton = closestElementTarget(event, "#skillsButton");
+  if (skillsButton) {
+    event.preventDefault();
+    openTalentMenu();
+    return true;
+  }
+
+  const classButton = closestElementTarget(event, "[data-class]");
+  if (classButton && ui.classMenuOverlay && !ui.classMenuOverlay.hidden) {
+    event.preventDefault();
+    if (!classButton.disabled) {
+      equipClass(classButton.dataset.class);
+      closeClassMenu();
+    }
+    return true;
+  }
+  const armorButton = closestElementTarget(event, "[data-armor]");
+  if (armorButton && ui.armorMenuOverlay && !ui.armorMenuOverlay.hidden) {
+    event.preventDefault();
+    equipGear("armor", armorButton.dataset.armor);
+    closeArmorMenu();
+    return true;
+  }
+  const bossButton = closestElementTarget(event, "[data-boss]");
+  if (bossButton && ui.bossMenuOverlay && !ui.bossMenuOverlay.hidden) {
+    event.preventDefault();
+    if (!bossButton.disabled && !lockedBosses.has(bossButton.dataset.boss)) {
+      selectBoss(bossButton.dataset.boss);
+      closeBossMenu();
+    }
+    return true;
+  }
+  const talentButton = closestElementTarget(event, "[data-talent]");
+  if (talentButton && ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) {
+    event.preventDefault();
+    learnTalent(talentButton.dataset.talent);
+    renderTalentTree(true);
+    return true;
+  }
+
+  const classCloseButton = closestElementTarget(event, "#classMenuClose");
+  if (classCloseButton) {
+    event.preventDefault();
+    closeClassMenu();
+    return true;
+  }
+  const armorCloseButton = closestElementTarget(event, "#armorMenuClose");
+  if (armorCloseButton) {
+    event.preventDefault();
+    closeArmorMenu();
+    return true;
+  }
+  const bossCloseButton = closestElementTarget(event, "#bossMenuClose");
+  if (bossCloseButton) {
+    event.preventDefault();
+    closeBossMenu();
+    return true;
+  }
+  const talentCloseButton = closestElementTarget(event, "#talentMenuClose");
+  if (talentCloseButton) {
+    event.preventDefault();
+    closeTalentMenu();
+    return true;
+  }
+  return false;
+}
+
 function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
@@ -7811,10 +10936,24 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
-canvas.addEventListener("click", (event) => {
+function handleCanvasPointerAttack(event) {
   const rect = canvas.getBoundingClientRect();
   mouseWorld = { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
   handleCanvasClick(mouseWorld.x, mouseWorld.y);
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  lastCanvasPointerAttackAt = performance.now();
+  handleCanvasPointerAttack(event);
+});
+
+canvas.addEventListener("click", (event) => {
+  if (performance.now() - lastCanvasPointerAttackAt < 350) {
+    return;
+  }
+  handleCanvasPointerAttack(event);
 });
 
 canvas.addEventListener("mousemove", (event) => {
@@ -7833,8 +10972,74 @@ if (ui.armory) {
   });
 }
 
+ui.classSelector?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-class]");
+  if (!button || button.disabled) return;
+  equipClass(button.dataset.class);
+  closeClassMenu();
+});
+
+ui.classMenuButton?.addEventListener("click", openClassMenu);
+
+ui.classMenuClose?.addEventListener("click", closeClassMenu);
+
+ui.classMenuOverlay?.addEventListener("click", (event) => {
+  if (event.target === ui.classMenuOverlay) closeClassMenu();
+});
+
+document.addEventListener("click", (event) => {
+  handleSelectorPointer(event);
+}, true);
+
+ui.armorSelector?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-armor]");
+  if (!button) return;
+  equipGear("armor", button.dataset.armor);
+  closeArmorMenu();
+});
+
+ui.armorMenuButton?.addEventListener("click", openArmorMenu);
+ui.armorMenuClose?.addEventListener("click", closeArmorMenu);
+ui.armorMenuOverlay?.addEventListener("click", (event) => {
+  if (event.target === ui.armorMenuOverlay) closeArmorMenu();
+});
+
+ui.skillsButton?.addEventListener("click", openTalentMenu);
+ui.talentMenuClose?.addEventListener("click", closeTalentMenu);
+ui.talentMenuOverlay?.addEventListener("click", (event) => {
+  if (event.target === ui.talentMenuOverlay) closeTalentMenu();
+});
+ui.talentTree?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-talent]");
+  if (!button || button.disabled) return;
+  learnTalent(button.dataset.talent);
+  renderTalentTree(true);
+});
+
+ui.bossSelector?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-boss]");
+  if (!button || button.disabled || lockedBosses.has(button.dataset.boss)) return;
+  event.preventDefault();
+  selectBoss(button.dataset.boss);
+  closeBossMenu();
+});
+
+ui.bossMenuButton?.addEventListener("click", openBossMenu);
+ui.bossMenuClose?.addEventListener("click", closeBossMenu);
+ui.bossMenuOverlay?.addEventListener("click", (event) => {
+  if (event.target === ui.bossMenuOverlay) closeBossMenu();
+});
+
 ui.singlePlayerButton?.addEventListener("click", startSinglePlayer);
 ui.multiplayerButton?.addEventListener("click", startMultiplayerFlow);
+ui.devTestButton?.addEventListener("click", showDevPasswordScreen);
+ui.backFromDevButton?.addEventListener("click", () => showMenuScreen("main"));
+ui.startDevButton?.addEventListener("click", startDevTestFromPassword);
+ui.devPasswordInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  startDevTestFromPassword();
+});
 ui.backToMainButton?.addEventListener("click", () => {
   closeMultiplayerSocket();
   showMenuScreen("main");
@@ -7870,16 +11075,14 @@ ui.lobbyBossSelector?.addEventListener("click", (event) => {
   sendServer({ type: "select-boss", bossKind: button.dataset.boss });
 });
 
-ui.bossSelector.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-boss]");
-  if (!button || button.disabled || lockedBosses.has(button.dataset.boss)) return;
-  event.preventDefault();
-  selectBoss(button.dataset.boss);
-});
-
 ui.potionButton.addEventListener("click", drinkPotion);
+ui.mazeRewardCards?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-reward]");
+  if (!button) return;
+  chooseMazeReward(button.dataset.reward);
+});
 ui.resetButton.addEventListener("click", () => resetFight(false));
-ui.deathResetButton?.addEventListener("click", () => resetFight(false));
+ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
 window.addEventListener("keydown", (event) => {
   if (isTypingTarget(document.activeElement)) return;
   const key = event.key.toLowerCase();

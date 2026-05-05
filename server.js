@@ -57,7 +57,7 @@ const bossNames = {
   sushi: "Sushi Serpent",
 };
 
-const lockedBosses = new Set(["taco", "sushi"]);
+const lockedBosses = new Set();
 
 function sendFrame(socket, payload) {
   if (socket.destroyed) return;
@@ -172,7 +172,7 @@ function createRoom(peer, message) {
     id,
     name: sanitizeText(message.name, 26) || `${peer.name}'s Room`,
     hostId: peer.id,
-    bossKind: bossNames[message.bossKind] && !lockedBosses.has(message.bossKind) ? message.bossKind : "cola",
+    bossKind: "cola",
     state: "lobby",
     maxPlayers: 4,
     startAt: 0,
@@ -236,8 +236,7 @@ function setReady(peer, message) {
 function selectBoss(peer, message) {
   const room = rooms.get(peer.roomId);
   if (!room || room.hostId !== peer.id || room.state !== "lobby") return;
-  if (!bossNames[message.bossKind] || lockedBosses.has(message.bossKind)) return;
-  room.bossKind = message.bossKind;
+  room.bossKind = "cola";
   broadcastRoomUpdate(room);
 }
 
@@ -254,7 +253,7 @@ function startGame(peer) {
   broadcastRoom(room, {
     type: "game-start",
     room: roomSnapshot(room),
-    bossKind: room.bossKind,
+    bossKind: "cola",
     startAt: room.startAt,
     spawns: players.map((player, index) => ({ id: player.id, ...spawnForIndex(index) })),
   });
