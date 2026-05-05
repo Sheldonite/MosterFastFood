@@ -194,6 +194,10 @@ function joinRoom(peer, message) {
     send(peer, { type: "error", message: "Room is full." });
     return;
   }
+  if (room.state !== "lobby") {
+    send(peer, { type: "error", message: "That run is already in progress." });
+    return;
+  }
   leaveRoom(peer);
   room.players.add(peer.id);
   peer.roomId = room.id;
@@ -219,8 +223,20 @@ function leaveRoom(peer) {
   }
   if (room.hostId === peer.id) {
     room.hostId = [...room.players][0];
-    const host = peers.get(room.hostId);
-    if (host) host.ready = false;
+    room.players.forEach((peerId) => {
+      const remaining = peers.get(peerId);
+      if (!remaining) return;
+      remaining.ready = false;
+      if (room.state === "inGame") remaining.state = null;
+    });
+    if (room.state === "inGame") {
+      room.state = "lobby";
+      room.startAt = 0;
+      broadcastRoom(room, { type: "run-ended", room: roomSnapshot(room), message: "Host left. The co-op run was stopped." });
+    } else {
+      const host = peers.get(room.hostId);
+      if (host) host.ready = false;
+    }
   }
   broadcastRoomUpdate(room);
 }
