@@ -2595,7 +2595,25 @@ function recoverGauntletWaveAdvance(reason = "watchdog") {
   return false;
 }
 
+function safeRecoverGauntletWaveAdvance(reason = "watchdog") {
+  try {
+    return recoverGauntletWaveAdvance(reason);
+  } catch (error) {
+    reportRuntimeError(error, { area: "recoverGauntletWaveAdvance", reason });
+    return false;
+  }
+}
+
 function spawnGauntletWave(index) {
+  try {
+    return spawnGauntletWaveInner(index);
+  } catch (error) {
+    reportRuntimeError(error, { area: "spawnGauntletWave", index });
+    return fallbackSpawnGauntletWave(index);
+  }
+}
+
+function spawnGauntletWaveInner(index) {
   if (!mazeState?.waves?.[index]) return;
   const wave = mazeState.waves[index];
   if (wave.spawned) return;
@@ -2609,6 +2627,33 @@ function spawnGauntletWave(index) {
   showScreenBanner(`Wave ${index + 1}`, "Keep moving and clear the room", "neutral", 1.6);
   sendMultiplayerState(true);
   sendGauntletSync(true);
+}
+
+function fallbackSpawnGauntletWave(index) {
+  if (!mazeState?.waves?.[index]) return false;
+  ensureGauntletRuntimeState();
+  const wave = mazeState.waves[index];
+  const existingIds = new Set(mazeState.enemies.map((enemy) => enemy.id).filter(Boolean));
+  const addedEnemies = (wave.enemies || []).filter((enemy) => !enemy.id || !existingIds.has(enemy.id));
+  wave.spawned = true;
+  wave.cleared = false;
+  mazeState.nextWaveDueAt = 0;
+  mazeState.waveIndex = index;
+  if (addedEnemies.length) mazeState.enemies.push(...addedEnemies);
+  recordDebugEvent("gauntlet-wave-fallback-spawn", {
+    index,
+    enemies: addedEnemies.length,
+    phaseSeq: multiplayer.phaseSeq,
+    sequence: mazeState.sequence,
+  });
+  try {
+    if (ui.status) ui.status.textContent = `${mazeState.theme?.name || "Gauntlet"}: clear wave ${index + 1}.`;
+  } catch {
+    // UI text is not allowed to block the authoritative host sim.
+  }
+  sendGauntletSync(true);
+  sendMultiplayerState(true);
+  return true;
 }
 
 function spawnGauntletMiniBoss() {
@@ -11441,7 +11486,14 @@ function connectMultiplayer() {
     }
   });
 
-  socket.addEventListener("close", () => {
+  socket.addEventListener("close", (event) => {
+    recordDebugEvent("ws-close", {
+      code: event.code,
+      reason: event.reason,
+      wasClean: event.wasClean,
+      phase: multiplayer.partyPhase,
+      room: player.room,
+    });
     multiplayer.connected = false;
     multiplayer.socket = null;
     multiplayer.peers.clear();
@@ -11463,6 +11515,11 @@ function connectMultiplayer() {
   });
 
   socket.addEventListener("error", () => {
+    recordDebugEvent("ws-error", {
+      phase: multiplayer.partyPhase,
+      room: player.room,
+      readyState: socket.readyState,
+    });
     socket.close();
   });
 }
@@ -11550,7 +11607,7 @@ function updateMultiplayer(dt) {
     beginMultiplayerFightNow(pending.bossKind);
   }
   if (multiplayer.gauntletSyncTimer > 0) multiplayer.gauntletSyncTimer -= dt;
-  if (shouldBroadcastGauntletSync()) recoverGauntletWaveAdvance("multiplayer-watchdog");
+  if (shouldBroadcastGauntletSync()) safeRecoverGauntletWaveAdvance("multiplayer-watchdog");
   checkStaleGauntletSync();
   if (shouldBroadcastGauntletSync()) sendGauntletSync(false);
   multiplayer.sendTimer -= dt;
@@ -11589,7 +11646,7 @@ function multiplayerWatchdogTick() {
   try {
     if (!multiplayer.enabled) return;
     if (shouldBroadcastGauntletSync()) {
-      recoverGauntletWaveAdvance("interval-watchdog");
+      safeRecoverGauntletWaveAdvance("interval-watchdog");
       sendGauntletSync(true);
     }
     checkStaleGauntletSync();
@@ -11606,13 +11663,21 @@ function sendMultiplayerState(force) {
   if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
   if (multiplayer.pendingStart) return;
   if (!force && document.hidden) return;
-  sendServer({ type: "state", state: multiplayerSnapshot() });
+  try {
+    sendServer({ type: "state", state: multiplayerSnapshot() });
+  } catch (error) {
+    reportRuntimeError(error, { area: "sendMultiplayerState", force, room: player.room, phase: multiplayer.partyPhase });
+  }
 }
 
 function sendMultiplayerEvent(event) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
   if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
-  sendServer({ type: "event", event });
+  try {
+    sendServer({ type: "event", event });
+  } catch (error) {
+    reportRuntimeError(error, { area: "sendMultiplayerEvent", eventKind: event?.kind, phase: multiplayer.partyPhase });
+  }
 }
 
 function sendServer(payload) {
@@ -12666,8 +12731,8 @@ function recordPeerSnapshot(peerId, state) {
 }
 
 function multiplayerSnapshot() {
-  const weapon = gear.weapon[player.gear.weapon];
-  const armor = gear.armor[player.gear.armor];
+  const weapon = gear.weapon[player.gear.weapon] || gear.weapon.mage || {};
+  const armor = gear.armor[player.gear.armor] || gear.armor.cloth || {};
   const snapshot = {
     x: Math.round(player.x),
     y: Math.round(player.y),
@@ -12681,8 +12746,8 @@ function multiplayerSnapshot() {
     animationTime: player.animationTime,
     weapon: player.gear.weapon,
     armor: player.gear.armor,
-    weaponTag: weapon.tag,
-    armorTag: armor.tag,
+    weaponTag: weapon.tag || "Magic",
+    armorTag: armor.tag || "Cloth",
     bossKind: boss.kind,
     partyPhase: multiplayer.partyPhase,
     phaseSeq: multiplayer.phaseSeq,

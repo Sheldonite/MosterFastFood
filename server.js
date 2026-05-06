@@ -36,7 +36,10 @@ const server = http.createServer((request, response) => {
       response.end("Not found");
       return;
     }
-    response.writeHead(200, { "Content-Type": types[path.extname(requestedPath)] || "application/octet-stream" });
+    const extension = path.extname(requestedPath);
+    const headers = { "Content-Type": types[extension] || "application/octet-stream" };
+    if ([".html", ".js", ".css"].includes(extension)) headers["Cache-Control"] = "no-cache";
+    response.writeHead(200, headers);
     response.end(data);
   });
 });
