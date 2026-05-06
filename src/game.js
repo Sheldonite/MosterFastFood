@@ -423,12 +423,14 @@ let screenBanner = null;
 let fightStartedAt = 0;
 let lastTime = performance.now();
 let lastRuntimeErrorAt = 0;
-let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
+let logLines = ["Choose gear, use WASD to cross the gate, hold click to attack."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
 let bossSelectorSignature = "";
 let talentTreeSignature = "";
 let lastCanvasPointerAttackAt = 0;
+let primaryAttackHeld = false;
+let primaryAttackPointerId = null;
 const multiplayer = {
   socket: null,
   id: null,
@@ -4602,6 +4604,22 @@ function basicAttackCooldown(weapon) {
   return weapon.speed * (1 - (runState.mazeBuffs.attackSpeed || 0));
 }
 
+function updateHeldPrimaryAttack() {
+  if (!primaryAttackHeld) return;
+  if (player.dead || player.won) {
+    stopHeldPrimaryAttack();
+    return;
+  }
+  if (player.attackCooldown > 0) return;
+  shootAt(mouseWorld.x, mouseWorld.y);
+}
+
+function stopHeldPrimaryAttack(pointerId = null) {
+  if (pointerId !== null && primaryAttackPointerId !== null && pointerId !== primaryAttackPointerId) return;
+  primaryAttackHeld = false;
+  primaryAttackPointerId = null;
+}
+
 function useAbility(index) {
   if (mazeState?.rewardPending) return;
   if (player.dead || player.won || (player.room !== "arena" && player.room !== "starter" && player.room !== "maze")) return;
@@ -7436,6 +7454,7 @@ function update(dt) {
     player.meleeAttackTimer = Math.max(0, player.meleeAttackTimer - dt);
     player.rogueAttackTimer = Math.max(0, player.rogueAttackTimer - dt);
   });
+  runUpdateStep("heldPrimaryAttack", updateHeldPrimaryAttack);
   runUpdateStep("updateAbilities", () => updateAbilities(dt));
   runUpdateStep("updateTrainingDummy", () => updateTrainingDummy(dt));
   runUpdateStep("updateRoom", () => updateRoom(dt));
@@ -13182,8 +13201,28 @@ function handleCanvasPointerAttack(event) {
 canvas.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return;
   event.preventDefault();
+  primaryAttackHeld = true;
+  primaryAttackPointerId = event.pointerId;
+  try {
+    canvas.setPointerCapture(event.pointerId);
+  } catch {
+    // Pointer capture is a convenience for held attacks, not a requirement.
+  }
   lastCanvasPointerAttackAt = performance.now();
   handleCanvasPointerAttack(event);
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  stopHeldPrimaryAttack(event.pointerId);
+  try {
+    canvas.releasePointerCapture(event.pointerId);
+  } catch {
+    // Some browsers release pointer capture automatically.
+  }
+});
+
+canvas.addEventListener("pointercancel", (event) => {
+  stopHeldPrimaryAttack(event.pointerId);
 });
 
 canvas.addEventListener("click", (event) => {
@@ -13372,7 +13411,9 @@ window.addEventListener("blur", () => {
   Object.keys(movementKeys).forEach((direction) => {
     movementKeys[direction] = false;
   });
+  stopHeldPrimaryAttack();
 });
+window.addEventListener("mouseup", () => stopHeldPrimaryAttack());
 window.addEventListener("resize", resizeCanvas);
 
 loadGame();
