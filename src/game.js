@@ -93,6 +93,7 @@ const gear = {
     pulseStaff: { slot: "weapon", name: "Staff", tag: "Magic", damage: 46, range: 170, speed: 1.55, color: "#8ec7ff" },
     shadowDaggers: { slot: "weapon", name: "Daggers", tag: "Rogue", damage: 32, range: 82, speed: 0.62, moveSpeedBonus: 36, color: "#9be06f" },
     dawnHammer: { slot: "weapon", name: "Dawn Hammer", tag: "Paladin", damage: 38, range: 74, speed: 1.08, moveSpeedBonus: 10, color: "#f0d47c" },
+    oakLute: { slot: "weapon", name: "Oak Lute", tag: "Bard", damage: 34, range: 190, speed: 0.88, moveSpeedBonus: 20, color: "#f6c46d" },
   },
   armor: {
     duelistCoat: { slot: "armor", name: "Light Armor", tag: "Light", armor: 2, maxHp: 115, speed: 250, color: "#557d61" },
@@ -107,6 +108,7 @@ const classOptions = [
   { id: "mage", name: "Mage", weapon: "pulseStaff", tag: "Magic", note: "Burst spells" },
   { id: "rogue", name: "Rogue", weapon: "shadowDaggers", tag: "Rogue", note: "Fast poison" },
   { id: "paladin", name: "Paladin", weapon: "dawnHammer", tag: "Holy", note: "Wards and AoE" },
+  { id: "bard", name: "Bard", weapon: "oakLute", tag: "Support", note: "Songs and chords" },
   { id: "priest", name: "Priest", tag: "Soon", note: "Locked", locked: true },
   { id: "warlock", name: "Warlock", tag: "Soon", note: "Locked", locked: true },
   { id: "druid", name: "Druid", tag: "Soon", note: "Locked", locked: true },
@@ -229,6 +231,12 @@ const abilityLoadouts = {
     { key: "Space", name: "Aegis Step", cooldown: 9 },
     { key: "R", name: "Divine Bulwark", cooldown: 16 },
   ],
+  bard: [
+    { key: "Q", name: "Power Chord", cooldown: 5.2 },
+    { key: "E", name: "Battle Hymn", cooldown: 12 },
+    { key: "Space", name: "Quickstep Verse", cooldown: 9 },
+    { key: "R", name: "Healing Ballad", cooldown: 15 },
+  ],
 };
 
 const talentClassNames = {
@@ -237,6 +245,7 @@ const talentClassNames = {
   mage: "Mage",
   rogue: "Rogue",
   paladin: "Paladin",
+  bard: "Bard",
 };
 
 function buildTalentBranch(classKey, branch, column, nodes) {
@@ -345,6 +354,24 @@ const talentDefinitions = [
     { id: "paladin_judgment_mark", name: "Marked Guilty", description: "Radiant Smite marks enemies to take more damage.", effect: "Judgment mark" },
     { id: "paladin_judgment_cap", name: "Final Judgment", description: "Radiant Smite bursts marked enemies for bonus damage.", type: "capstone", effect: "Judgment burst" },
   ]),
+  ...buildTalentBranch("bard", "Power Chord", 0, [
+    { id: "bard_chord_damage", name: "Louder Chord", description: "Power Chord deals more base damage.", effect: "+Chord damage" },
+    { id: "bard_chord_harmonic", name: "Harmonic Strike", description: "Power Chord gains more damage per active song.", effect: "+Song scaling" },
+    { id: "bard_chord_extend", name: "Resonant Finale", description: "Power Chord hits extend active songs slightly.", effect: "Extend songs" },
+    { id: "bard_chord_cap", name: "Grand Finale", description: "Power Chord gains a large bonus when all three songs are active.", type: "capstone", effect: "All-song burst" },
+  ]),
+  ...buildTalentBranch("bard", "Battle Hymn", 1, [
+    { id: "bard_hymn_damage", name: "Brave Tempo", description: "Battle Hymn grants a stronger damage buff.", effect: "+Damage buff" },
+    { id: "bard_hymn_speed", name: "Fast Rhythm", description: "Battle Hymn grants more attack speed.", effect: "+Attack speed" },
+    { id: "bard_hymn_radius", name: "Wide Chorus", description: "Battle Hymn radius is larger.", effect: "+Song radius" },
+    { id: "bard_hymn_cap", name: "War Anthem", description: "Battle Hymn lasts longer and gives Power Chord extra scaling.", type: "capstone", effect: "Longer anthem" },
+  ]),
+  ...buildTalentBranch("bard", "Healing Verse", 2, [
+    { id: "bard_heal_power", name: "Warm Notes", description: "Healing Ballad heals more.", effect: "+Healing" },
+    { id: "bard_heal_duration", name: "Lingering Melody", description: "Healing Ballad lasts longer.", effect: "+Duration" },
+    { id: "bard_heal_armor", name: "Shared Breath", description: "Healing Ballad also grants minor armor.", effect: "+Armor aura" },
+    { id: "bard_heal_cap", name: "Encore Recovery", description: "Once per fight at low HP, automatically play a short Healing Ballad.", type: "capstone", effect: "Auto ballad" },
+  ]),
 ];
 
 const talentById = new Map(talentDefinitions.map((talent) => [talent.id, talent]));
@@ -355,6 +382,7 @@ const stands = [
   { x: 405, y: 270, type: "weapon", id: "pulseStaff" },
   { x: 525, y: 270, type: "weapon", id: "shadowDaggers" },
   { x: 585, y: 395, type: "weapon", id: "dawnHammer" },
+  { x: 105, y: 395, type: "weapon", id: "oakLute" },
   { x: 205, y: 520, type: "armor", id: "duelistCoat" },
   { x: 340, y: 520, type: "armor", id: "bulwarkPlate" },
   { x: 475, y: 520, type: "armor", id: "channelerRobe" },
@@ -390,6 +418,12 @@ let cleanedRogueSprite = null;
 rogueSprite.src = "./assets/rogue-spritesheet.png";
 rogueSprite.addEventListener("load", () => {
   cleanedRogueSprite = createTransparentSprite(rogueSprite);
+});
+const bardSprite = new Image();
+let cleanedBardSprite = null;
+bardSprite.src = "./assets/bard-spritesheet.png";
+bardSprite.addEventListener("load", () => {
+  cleanedBardSprite = createTransparentSprite(bardSprite);
 });
 const curlyFriesSprite = new Image();
 let cleanedCurlyFriesSprite = null;
@@ -537,6 +571,7 @@ function createPlayer() {
     rogueAttackAngle: 0,
     backstabTimer: 0,
     deadeyeTimer: 0,
+    bardHealTickTimer: 0,
     smokeSpeedGranted: false,
     tumbleTimer: 0,
     invulnerableTimer: 0,
@@ -1046,6 +1081,7 @@ function clearPlayerTransientState() {
   player.tacoGreaseTimer = 0;
   player.backstabTimer = 0;
   player.deadeyeTimer = 0;
+  player.bardHealTickTimer = 0;
   player.talentSaves = {};
   player.lastDamageAt = 0;
   Object.keys(movementKeys).forEach((direction) => {
@@ -1823,6 +1859,7 @@ function currentClassKey() {
   if (weaponTag === "Magic") return "mage";
   if (weaponTag === "Rogue") return "rogue";
   if (weaponTag === "Paladin") return "paladin";
+  if (weaponTag === "Bard") return "bard";
   return "melee";
 }
 
@@ -1836,6 +1873,91 @@ function isWarriorTag(tag) {
 
 function currentAbilities() {
   return abilityLoadouts[currentClassKey()];
+}
+
+function isBardSongEffect(effect) {
+  return effect?.type === "bardBattleHymn" || effect?.type === "bardQuickstepVerse" || effect?.type === "bardHealingBallad";
+}
+
+function bardSongType(effect) {
+  if (effect?.type === "bardBattleHymn") return "battle";
+  if (effect?.type === "bardQuickstepVerse") return "quickstep";
+  if (effect?.type === "bardHealingBallad") return "healing";
+  return "";
+}
+
+function ownBardSongEffects() {
+  return abilityEffects.filter((effect) => isBardSongEffect(effect) && effect.ttl > 0);
+}
+
+function activeLocalBardSongTypes() {
+  return new Set(ownBardSongEffects().map((effect) => bardSongType(effect)).filter(Boolean));
+}
+
+function bardSongSnapshot() {
+  return ownBardSongEffects().map((effect) => ({
+    type: effect.type,
+    songType: bardSongType(effect),
+    room: player.room,
+    x: Math.round(effect.x),
+    y: Math.round(effect.y),
+    r: Math.round(effect.r),
+    ttl: Math.max(0, Number(effect.ttl) || 0),
+    damageBuff: Number(effect.damageBuff) || 0,
+    attackSpeedBuff: Number(effect.attackSpeedBuff) || 0,
+    speedBuff: Number(effect.speedBuff) || 0,
+    armorBonus: Number(effect.armorBonus) || 0,
+    healAmount: Number(effect.healAmount) || 0,
+  }));
+}
+
+function bardSongsAffectingPlayer() {
+  const songs = [];
+  ownBardSongEffects().forEach((effect) => {
+    if (distance(player, effect) <= effect.r + player.radius) songs.push(effect);
+  });
+  multiplayer.peers.forEach((peer) => {
+    if (peer.room !== player.room || peer.dead || peer.bossKind !== boss.kind || !Array.isArray(peer.bardSongs)) return;
+    peer.bardSongs.forEach((song) => {
+      if (!song || song.room !== player.room || (Number(song.ttl) || 0) <= 0) return;
+      const r = Number(song.r) || 0;
+      if (!Number.isFinite(song.x) || !Number.isFinite(song.y)) return;
+      if (Math.hypot(song.x - player.x, song.y - player.y) <= r + player.radius) songs.push(song);
+    });
+  });
+  return songs;
+}
+
+function strongestBardSongValue(songType, key) {
+  return bardSongsAffectingPlayer().reduce((best, song) => {
+    if (song.songType && song.songType !== songType) return best;
+    if (!song.songType && bardSongType(song) !== songType) return best;
+    return Math.max(best, Number(song[key]) || 0);
+  }, 0);
+}
+
+function bardDamageBuffMultiplier() {
+  return 1 + strongestBardSongValue("battle", "damageBuff");
+}
+
+function bardAttackSpeedMultiplier() {
+  return clamp(1 - strongestBardSongValue("battle", "attackSpeedBuff"), 0.55, 1);
+}
+
+function bardMoveSpeedMultiplier() {
+  return 1 + strongestBardSongValue("quickstep", "speedBuff");
+}
+
+function bardArmorBonus() {
+  return strongestBardSongValue("healing", "armorBonus");
+}
+
+function playerDamage(multiplier = 1) {
+  return Math.max(1, Math.round(player.stats.damage * bardDamageBuffMultiplier() * multiplier));
+}
+
+function effectivePlayerArmor() {
+  return player.stats.armor + bardArmorBonus();
 }
 
 function aimAngle() {
@@ -2565,7 +2687,7 @@ function movePlayer(dt) {
 function playerSpeed() {
   const haste = player.guardSpeedTimer > 0 ? 1.45 : 1;
   const greaseSlow = player.tacoGreaseTimer > 0 ? 0.58 : 1;
-  return player.stats.speed * haste * greaseSlow;
+  return player.stats.speed * haste * greaseSlow * bardMoveSpeedMultiplier();
 }
 
 function moveSlidingPlayer(dt) {
@@ -2581,7 +2703,7 @@ function moveSlidingPlayer(dt) {
     player.slide.damageTimer -= dt;
     if (player.slide.damageTimer <= 0) {
       player.slide.damageTimer = 0.06;
-      const hit = damageEnemiesInRadius(player.x, player.y, 92, Math.round(player.stats.damage * 0.28), "Whirlwind Dash");
+      const hit = damageEnemiesInRadius(player.x, player.y, 92, playerDamage(0.28), "Whirlwind Dash");
       if (hasTalent("melee_blood_whirl")) hit.forEach((target) => applyBleed(target));
       if (hit.length > 0 && !player.slide.reducedShieldCooldown) {
         player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
@@ -4892,13 +5014,14 @@ function firePlayerProjectile(angle) {
   const rangedAttack = weapon.tag === "Ranged";
   const meleeAttack = isWarriorTag(weapon.tag);
   const rogueAttack = weapon.tag === "Rogue";
+  const bardAttack = weapon.tag === "Bard";
   const projectile = {
     x: player.x + Math.cos(angle) * 24,
     y: player.y + Math.sin(angle) * 24,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    r: magicAttack ? 11 : meleeAttack ? 12 : rogueAttack ? 8 : 6,
-    damage: Math.round(player.stats.damage * (0.78 + Math.random() * 0.44)),
+    r: magicAttack ? 11 : meleeAttack ? 12 : rogueAttack ? 8 : bardAttack ? 9 : 6,
+    damage: playerDamage(0.78 + Math.random() * 0.44),
     color: magicAttack ? "#48efe4" : weapon.color,
     ttl: projectileTravelTime(weapon, speed),
     age: 0,
@@ -4925,8 +5048,12 @@ function firePlayerProjectile(angle) {
     player.rogueAttackTimer = 0.24;
     player.rogueAttackAngle = angle;
   }
+  if (bardAttack) {
+    player.meleeAttackTimer = 0.22;
+    player.meleeAttackAngle = angle;
+  }
   player.attackCooldown = basicAttackCooldown(weapon);
-  ui.status.textContent = meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
+  ui.status.textContent = bardAttack ? `Playing ${weapon.name}.` : meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
   multiplayer.attackSeq += 1;
   sendMultiplayerEvent({
     kind: "attack",
@@ -4948,16 +5075,17 @@ function projectileSpeedForWeapon(tag) {
   if (tag === "Ranged") return 620;
   if (tag === "Magic") return 480;
   if (tag === "Rogue") return 720;
+  if (tag === "Bard") return 560;
   return 760;
 }
 
 function projectileTravelTime(weapon, speed) {
-  const rangeBonus = isWarriorTag(weapon.tag) ? 150 : weapon.tag === "Rogue" ? 62 : 210;
+  const rangeBonus = isWarriorTag(weapon.tag) ? 150 : weapon.tag === "Rogue" ? 62 : weapon.tag === "Bard" ? 170 : 210;
   return (player.stats.range + rangeBonus) / speed;
 }
 
 function basicAttackCooldown(weapon) {
-  return weapon.speed * (1 - (runState.mazeBuffs.attackSpeed || 0));
+  return weapon.speed * (1 - (runState.mazeBuffs.attackSpeed || 0)) * bardAttackSpeedMultiplier();
 }
 
 function updateHeldPrimaryAttack() {
@@ -4987,6 +5115,7 @@ function useAbility(index) {
   if (currentClassKey() === "mage") useMageAbility(index, ability);
   if (currentClassKey() === "rogue") useRogueAbility(index, ability);
   if (currentClassKey() === "paladin") usePaladinAbility(index, ability);
+  if (currentClassKey() === "bard") useBardAbility(index, ability);
 }
 
 function abilityIndexForKey(event) {
@@ -5051,7 +5180,7 @@ function shieldBash() {
   player.meleeAttackAngle = angle;
   const range = hasTalent("melee_earth_bash") ? 176 : 138;
   const halfAngle = Math.PI * 0.36;
-  const hit = damageEnemiesInCone(player.x, player.y, angle, range, halfAngle, Math.round(player.stats.damage * (hasTalent("melee_earth_bash") ? 0.92 : 0.72)), "Shield Bash");
+  const hit = damageEnemiesInCone(player.x, player.y, angle, range, halfAngle, playerDamage(hasTalent("melee_earth_bash") ? 0.92 : 0.72), "Shield Bash");
   hit.forEach((target) => {
     interruptTarget(target);
     shoveTarget(target, player.x, player.y, 54);
@@ -5066,11 +5195,11 @@ function groundbreaker() {
   player.meleeAttackTimer = 0.4;
   player.meleeAttackAngle = movementOrAimAngle();
   const radius = 142 + (hasTalent("melee_earth_radius") ? 28 : 0);
-  const hits = damageEnemiesInRadius(player.x, player.y, radius, Math.round(player.stats.damage * 1.18), "Groundbreaker");
+  const hits = damageEnemiesInRadius(player.x, player.y, radius, playerDamage(1.18), "Groundbreaker");
   hits.forEach((target) => {
     interruptTarget(target);
     shoveTarget(target, player.x, player.y, 42);
-    if (hasTalent("melee_blood_hemo") && target.bleedTimer > 0) damageBossTarget(target, Math.round(player.stats.damage * 0.38), "Hemorrhage");
+    if (hasTalent("melee_blood_hemo") && target.bleedTimer > 0) damageBossTarget(target, playerDamage(0.38), "Hemorrhage");
   });
   if (hasTalent("melee_earth_after")) {
     abilityEffects.push({ type: "aftershock", x: player.x, y: player.y, r: radius * 0.8, ttl: 0.42, maxTtl: 0.42, pulseTimer: 0.28 });
@@ -5101,7 +5230,7 @@ function useRangerAbility(index, ability) {
   if (index === 0) {
     spendAbility(index, ability);
     fireAbilityArrow(angle, {
-      damage: Math.round(player.stats.damage * 0.72),
+      damage: playerDamage(0.72),
       speed: 860,
       color: "#ffd782",
       markedShot: true,
@@ -5146,7 +5275,7 @@ function tumbleShot(angle) {
   player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.22);
   player.tumbleTimer = 0.28;
   fireAbilityArrow(angle, {
-    damage: Math.round(player.stats.damage * 0.66),
+    damage: playerDamage(0.66),
     speed: 760,
     color: "#f6c46d",
     ttl: 0.65,
@@ -5289,6 +5418,122 @@ function usePaladinAbility(index, ability) {
   divineBulwark();
 }
 
+function useBardAbility(index, ability) {
+  if (index === 0) {
+    spendAbility(index, ability);
+    powerChord();
+    return;
+  }
+  if (index === 1) {
+    spendAbility(index, ability);
+    startBardSong("battle");
+    return;
+  }
+  if (index === 2) {
+    spendAbility(index, ability);
+    quickstepVerse();
+    return;
+  }
+  spendAbility(index, ability);
+  startBardSong("healing");
+}
+
+function bardSongSettings(songType, options = {}) {
+  if (songType === "battle") {
+    const ttl = 6 + (hasTalent("bard_hymn_cap") ? 2 : 0);
+    return {
+      type: "bardBattleHymn",
+      songType,
+      r: 132 + (hasTalent("bard_hymn_radius") ? 34 : 0),
+      ttl,
+      maxTtl: ttl,
+      damageBuff: 0.14 + (hasTalent("bard_hymn_damage") ? 0.08 : 0),
+      attackSpeedBuff: 0.1 + (hasTalent("bard_hymn_speed") ? 0.08 : 0),
+      color: "#ffd782",
+    };
+  }
+  if (songType === "quickstep") {
+    const ttl = options.encore ? 2.2 : 3.2;
+    return {
+      type: "bardQuickstepVerse",
+      songType,
+      r: 112 + (hasTalent("bard_hymn_radius") ? 20 : 0),
+      ttl,
+      maxTtl: ttl,
+      speedBuff: 0.22,
+      color: "#92d4ff",
+    };
+  }
+  const ttl = (options.encore ? 3.4 : 6) + (hasTalent("bard_heal_duration") && !options.encore ? 2 : 0);
+  return {
+    type: "bardHealingBallad",
+    songType: "healing",
+    r: 145 + (hasTalent("bard_hymn_radius") ? 18 : 0),
+    ttl,
+    maxTtl: ttl,
+    healAmount: (options.encore ? 4 : 4) + (hasTalent("bard_heal_power") ? 3 : 0),
+    armorBonus: hasTalent("bard_heal_armor") ? 2 : 0,
+    color: "#ff9fc8",
+  };
+}
+
+function startBardSong(songType, options = {}) {
+  const settings = bardSongSettings(songType, options);
+  abilityEffects = abilityEffects.filter((effect) => !isBardSongEffect(effect) || bardSongType(effect) !== settings.songType);
+  abilityEffects.push({
+    ...settings,
+    x: player.x,
+    y: player.y,
+    pulseTimer: 0.12,
+    healTimer: 0,
+  });
+  particles.push({ x: player.x, y: player.y - 44, text: settings.songType === "battle" ? "hymn" : settings.songType === "quickstep" ? "verse" : "ballad", color: settings.color, ttl: 0.8 });
+}
+
+function quickstepVerse() {
+  const angle = movementOrAimAngle();
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  player.slide = {
+    vx: Math.cos(angle) * player.stats.speed * 2.45,
+    vy: Math.sin(angle) * player.stats.speed * 2.45,
+    timer: 0.24,
+  };
+  player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.32);
+  startBardSong("quickstep");
+  abilityEffects.push({ type: "bardQuickstepTrail", x: player.x, y: player.y, angle, ttl: 0.34, maxTtl: 0.34 });
+}
+
+function powerChord() {
+  const angle = aimAngle();
+  const activeSongs = activeLocalBardSongTypes();
+  const songCount = activeSongs.size;
+  let multiplier = 1.3 + songCount * (hasTalent("bard_chord_harmonic") ? 0.3 : 0.2);
+  if (hasTalent("bard_chord_damage")) multiplier += 0.25;
+  if (hasTalent("bard_hymn_cap") && activeSongs.has("battle")) multiplier += 0.15;
+  if (hasTalent("bard_chord_cap") && songCount >= 3) multiplier += 0.75;
+  const range = 212;
+  const halfAngle = Math.PI * 0.28;
+  player.facing = getFacing(Math.cos(angle), Math.sin(angle));
+  player.meleeAttackTimer = 0.26;
+  player.meleeAttackAngle = angle;
+  const hits = damageEnemiesInCone(player.x, player.y, angle, range, halfAngle, playerDamage(multiplier), "Power Chord");
+  if (hits.length && hasTalent("bard_chord_extend")) extendBardSongs(0.75);
+  if (hits.length && hasTalent("bard_chord_cap") && songCount >= 3) {
+    const hitTargets = [];
+    hits.forEach((target) => {
+      damageEnemiesInRadius(target.x, target.y, 72, playerDamage(0.48), "Grand Finale", hitTargets);
+    });
+  }
+  abilityEffects.push({ type: "bardPowerChord", x: player.x, y: player.y, angle, range, songs: songCount, ttl: 0.3, maxTtl: 0.3 });
+  particles.push({ x: player.x + Math.cos(angle) * 62, y: player.y + Math.sin(angle) * 62 - 20, text: hits.length ? "chord!" : "chord", color: "#ffd782", ttl: 0.55 });
+}
+
+function extendBardSongs(amount) {
+  ownBardSongEffects().forEach((effect) => {
+    effect.ttl = Math.min(effect.maxTtl + 1.5, effect.ttl + amount);
+  });
+}
+
 function shadowStep() {
   const angle = aimAngle();
   const origin = { x: player.x, y: player.y };
@@ -5307,7 +5552,7 @@ function backstabStrike() {
   const angle = aimAngle();
   player.facing = getFacing(Math.cos(angle), Math.sin(angle));
   const empowered = player.backstabTimer > 0;
-  const targets = damageEnemiesInCone(player.x, player.y, angle, 122, Math.PI * 0.52, Math.round(player.stats.damage * (empowered ? (hasTalent("rogue_shadow_backstab") ? 2.22 : 1.85) : 1.05)), empowered ? "Backstab" : "Twin Cut");
+  const targets = damageEnemiesInCone(player.x, player.y, angle, 122, Math.PI * 0.52, playerDamage(empowered ? (hasTalent("rogue_shadow_backstab") ? 2.22 : 1.85) : 1.05), empowered ? "Backstab" : "Twin Cut");
   targets.forEach((target) => {
     applyBleed(target);
     if (target.poisonStacks > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
@@ -5340,10 +5585,10 @@ function radiantSmite() {
   player.meleeAttackAngle = angle;
   const target = pointFromAngle(player.x, player.y, angle, 98);
   const radius = 96 + (hasTalent("paladin_judgment_radius") ? 24 : 0);
-  const hits = damageEnemiesInRadius(target.x, target.y, radius, Math.round(player.stats.damage * (hasTalent("paladin_judgment_damage") ? 1.34 : 1.12)), "Radiant Smite");
+  const hits = damageEnemiesInRadius(target.x, target.y, radius, playerDamage(hasTalent("paladin_judgment_damage") ? 1.34 : 1.12), "Radiant Smite");
   hits.forEach((enemy) => {
     interruptTarget(enemy);
-    if (hasTalent("paladin_judgment_cap") && enemy.judgmentTimer > 0) damageBossTarget(enemy, Math.round(player.stats.damage * 0.7), "Final Judgment");
+    if (hasTalent("paladin_judgment_cap") && enemy.judgmentTimer > 0) damageBossTarget(enemy, playerDamage(0.7), "Final Judgment");
     if (hasTalent("paladin_judgment_mark")) {
       enemy.judgmentTimer = 5;
       particles.push({ x: enemy.x, y: enemy.y - enemy.radius - 42, text: "judged", color: "#fff0bf", ttl: 0.7 });
@@ -5412,7 +5657,7 @@ function fireFireBlast(angle) {
     vx: Math.cos(angle) * 520,
     vy: Math.sin(angle) * 520,
     r: 18,
-    damage: Math.round(player.stats.damage * blastMultiplier),
+    damage: playerDamage(blastMultiplier),
     color: "#ff8a32",
     ttl: 1.05,
     age: 0,
@@ -7289,7 +7534,7 @@ function hitDonutHole(projectile) {
     sendBossSubtargetIntent("donut-hole", {
       targetId: hole.id,
       baseAmount: projectile.damage,
-      popDamage: Math.round(player.stats.damage * 1.4),
+      popDamage: playerDamage(1.4),
       source: "Shot",
     });
     particles.push({ x: hole.x, y: hole.y - 24, text: "hit", color: "#ffb6d1", ttl: 0.45 });
@@ -7300,7 +7545,7 @@ function hitDonutHole(projectile) {
   particles.push({ x: hole.x, y: hole.y - 24, text: `-${damage}`, color: "#ffb6d1", ttl: 0.65 });
   if (hole.hp <= 0) {
     boss.shieldTimer = 0;
-    damageBossTarget(boss, Math.round(player.stats.damage * 1.4), "Donut hole pop");
+    damageBossTarget(boss, playerDamage(1.4), "Donut hole pop");
     particles.push({ x: hole.x, y: hole.y - 36, text: "pop", color: "#ffd7e8", ttl: 0.8 });
   }
   return true;
@@ -7361,7 +7606,7 @@ function damagePlayer(amount, source, options = {}) {
     particles.push({ x: player.x, y: player.y - 35, text: "evade", color: "#ffd782", ttl: 0.55 });
     return;
   }
-  let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - player.stats.armor));
+  let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - effectivePlayerArmor()));
   const now = performance.now();
   if (player.lastDamageAt && now - player.lastDamageAt < combatTuning.overlapDamageWindowMs && !options.ignoreOverlapGrace) {
     hit = Math.max(1, Math.ceil(hit * combatTuning.overlapDamageMultiplier));
@@ -7561,9 +7806,48 @@ function updateAbilities(dt) {
       effect.x = player.x;
       effect.y = player.y;
     }
+    if (isBardSongEffect(effect)) updateBardSongEffect(effect, dt);
     return effect.ttl > 0;
   });
+  updateBardSongBuffs(dt);
   applyTimeWarpSlow(dt);
+}
+
+function updateBardSongEffect(effect, dt) {
+  effect.x = player.x;
+  effect.y = player.y;
+  effect.pulseTimer = (effect.pulseTimer || 0) - dt;
+  if (effect.pulseTimer > 0) return;
+  effect.pulseTimer = effect.type === "bardQuickstepVerse" ? 0.38 : 0.52;
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 18 + Math.random() * Math.max(18, effect.r - 28);
+  const symbol = effect.type === "bardHealingBallad" ? "♪" : effect.type === "bardBattleHymn" ? "♫" : "♩";
+  particles.push({
+    x: effect.x + Math.cos(angle) * radius,
+    y: effect.y + Math.sin(angle) * radius - 18,
+    text: symbol,
+    color: effect.color || "#ffd782",
+    ttl: 0.42,
+  });
+}
+
+function updateBardSongBuffs(dt) {
+  if (isBardBuild() && hasTalent("bard_heal_cap") && !player.talentSaves.encoreRecovery && !player.dead && player.room !== "starter" && player.hp > 0 && player.hp <= player.maxHp * 0.34) {
+    player.talentSaves.encoreRecovery = true;
+    startBardSong("healing", { encore: true });
+    particles.push({ x: player.x, y: player.y - 52, text: "Encore Recovery", color: "#ffb6d1", ttl: 1 });
+  }
+  const healAmount = strongestBardSongValue("healing", "healAmount");
+  if (healAmount <= 0 || player.dead) {
+    player.bardHealTickTimer = 0;
+    return;
+  }
+  player.bardHealTickTimer = (player.bardHealTickTimer || 1) - dt;
+  if (player.bardHealTickTimer > 0) return;
+  player.bardHealTickTimer = 1;
+  const before = player.hp;
+  player.hp = Math.min(player.maxHp, player.hp + healAmount);
+  if (player.hp > before) particles.push({ x: player.x, y: player.y - 48, text: `+${Math.round(player.hp - before)}`, color: "#ffb6d1", ttl: 0.65 });
 }
 
 function updateRogueDebuffs(target, dt) {
@@ -7592,7 +7876,7 @@ function updateRogueDebuffs(target, dt) {
     target.burnTickTimer = (target.burnTickTimer || 0.5) - dt;
     if (target.burnTickTimer <= 0) {
       target.burnTickTimer += 0.5;
-      damageBossTarget(target, target.burnDamage || Math.round(player.stats.damage * 0.12), "Burn");
+      damageBossTarget(target, target.burnDamage || playerDamage(0.12), "Burn");
     }
   }
   target.exposedTimer = Math.max(0, (target.exposedTimer || 0) - dt);
@@ -7618,7 +7902,7 @@ function updateVolleyTrap(effect, dt) {
     vx: Math.cos(angle) * 710,
     vy: Math.sin(angle) * 710,
     r: 6,
-    damage: Math.round(player.stats.damage * (hasTalent("ranger_trap_damage") ? 0.68 : 0.5)),
+    damage: playerDamage(hasTalent("ranger_trap_damage") ? 0.68 : 0.5),
     color: "#ffd782",
     ttl: 0.8,
     age: 0,
@@ -7640,7 +7924,7 @@ function updateArrowStorm(effect, dt) {
   }
   if (effect.pulseTimer > 0) return;
   effect.pulseTimer = effect.pulseInterval || 0.45;
-  damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * (effect.damageMultiplier || 0.42)), "Arrow Storm");
+  damageEnemiesInRadius(effect.x, effect.y, effect.r, playerDamage(effect.damageMultiplier || 0.42), "Arrow Storm");
 }
 
 function updateMeteorField(effect, dt) {
@@ -7651,7 +7935,7 @@ function updateMeteorField(effect, dt) {
   const radius = Math.sqrt(Math.random()) * effect.r;
   const x = effect.x + Math.cos(angle) * radius;
   const y = effect.y + Math.sin(angle) * radius;
-  damageEnemiesInRadius(x, y, 58 + (hasTalent("mage_meteor_cap") ? 20 : 0), Math.round(player.stats.damage * (hasTalent("mage_meteor_cap") ? 0.98 : 0.75)), "Meteor Field");
+  damageEnemiesInRadius(x, y, 58 + (hasTalent("mage_meteor_cap") ? 20 : 0), playerDamage(hasTalent("mage_meteor_cap") ? 0.98 : 0.75), "Meteor Field");
   particles.push({ x, y: y - 20, text: "meteor", color: "#ff8a32", ttl: 0.4 });
 }
 
@@ -7666,7 +7950,7 @@ function updatePoisonCloud(effect, dt) {
   });
   if (effect.pulseTimer > 0) return;
   effect.pulseTimer = 0.55;
-  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.34), "Poison Cloud");
+  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, playerDamage(0.34), "Poison Cloud");
   hits.forEach((target) => {
     if (target.kind) applyPoisonStack(target);
   });
@@ -7680,7 +7964,7 @@ function updateConsecration(effect, dt) {
   effect.healTimer -= dt;
   if (effect.pulseTimer <= 0) {
     effect.pulseTimer = 0.5;
-    damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * (hasTalent("paladin_consecrate_damage") ? 0.5 : 0.38)), "Consecration");
+    damageEnemiesInRadius(effect.x, effect.y, effect.r, playerDamage(hasTalent("paladin_consecrate_damage") ? 0.5 : 0.38), "Consecration");
   }
   if (effect.healTimer <= 0) {
     effect.healTimer = 1;
@@ -7692,7 +7976,7 @@ function updateAftershock(effect, dt) {
   effect.pulseTimer -= dt;
   if (effect.pulseTimer > 0) return;
   effect.pulseTimer = 999;
-  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.7), "Aftershock");
+  const hits = damageEnemiesInRadius(effect.x, effect.y, effect.r, playerDamage(0.7), "Aftershock");
   hits.forEach((target) => shoveTarget(target, effect.x, effect.y, 24));
 }
 
@@ -7757,7 +8041,7 @@ function updateSmokeBomb(effect, dt) {
     effect.pulseTimer = (effect.pulseTimer || 0) - dt;
     if (effect.pulseTimer <= 0) {
       effect.pulseTimer = 0.7;
-      damageEnemiesInRadius(effect.x, effect.y, effect.r, Math.round(player.stats.damage * 0.18), "Noxious Smoke").forEach((target) => applyPoisonStack(target));
+      damageEnemiesInRadius(effect.x, effect.y, effect.r, playerDamage(0.18), "Noxious Smoke").forEach((target) => applyPoisonStack(target));
     }
   }
 }
@@ -7996,6 +8280,7 @@ function shouldSendHostHitIntent(target, source, options = {}) {
 function damageIntentOptions(source, options = {}) {
   const deadeye = !options.poison && source === "Shot" && player.deadeyeTimer > 0;
   const meleeBleed = !options.poison && source === "Shot" && hasTalent("melee_blood_bleed") && currentClassKey() === "melee";
+  const bardPowerChord = source === "Power Chord" || source === "Grand Finale";
   if (deadeye) {
     player.deadeyeTimer = 0;
     particles.push({ x: player.x, y: player.y - 42, text: "deadeye", color: "#ffd782", ttl: 0.7 });
@@ -8008,6 +8293,8 @@ function damageIntentOptions(source, options = {}) {
     markedMultiplier: Number(options.markedMultiplier) || 1,
     deadeye,
     meleeBleed,
+    bardPowerChord,
+    bardSongCount: bardPowerChord ? activeLocalBardSongTypes().size : 0,
     bleedTimer: meleeBleed ? 4 + (hasTalent("melee_blood_deep") ? 2 : 0) : 0,
     bleedDamage: meleeBleed ? (hasTalent("melee_blood_deep") ? 6 : 4) : 0,
   };
@@ -8107,7 +8394,7 @@ function applyPoisonStack(target) {
   target.poisonDamagePerStack = roguePoisonDamagePerStack();
   if (!target.poisonTickTimer || target.poisonTickTimer <= 0) target.poisonTickTimer = 1;
   if (hasTalent("rogue_venom_cap") && oldStacks < maxStacks && target.poisonStacks >= maxStacks) {
-    damageBossTarget(target, Math.round(player.stats.damage * 0.65), "Venom Nova");
+    damageBossTarget(target, playerDamage(0.65), "Venom Nova");
   }
   particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
   syncTargetStatus(target, "poison");
@@ -8128,7 +8415,7 @@ function applyBleed(target, options = {}) {
 function applyBurn(target) {
   target.burnTimer = 3.5;
   target.burnTickTimer = 0.5;
-  target.burnDamage = Math.round(player.stats.damage * 0.12);
+  target.burnDamage = playerDamage(0.12);
   particles.push({ x: target.x, y: target.y - target.radius - 50, text: "burn", color: "#ff8a32", ttl: 0.65 });
   syncTargetStatus(target, "burn");
 }
@@ -8148,7 +8435,7 @@ function consumeExposed(target) {
   if ((target.exposedStacks || 0) < 3) return;
   target.exposedStacks = 0;
   target.exposedTimer = 0;
-  damageBossTarget(target, Math.round(player.stats.damage * 0.8), "Expose");
+  damageBossTarget(target, playerDamage(0.8), "Expose");
   particles.push({ x: target.x, y: target.y - target.radius - 60, text: "exploit", color: "#c8ff9a", ttl: 0.75 });
   syncTargetStatus(target, "exposed", "exposed-consume");
 }
@@ -10331,6 +10618,32 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (effect.type === "bardPowerChord") {
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "rgba(255, 215, 130, 0.18)";
+      ctx.strokeStyle = "rgba(255, 244, 210, 0.9)";
+      ctx.shadowColor = "#ffd782";
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(12, 0);
+      ctx.arc(0, 0, effect.range * (0.58 + progress * 0.42), -0.48, 0.48);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(28, (i - 1) * 12);
+        ctx.quadraticCurveTo(effect.range * 0.38, (i - 1) * 18, effect.range * (0.7 + progress * 0.18), (i - 1) * 22);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
     if (effect.type === "whirlwindDash") {
       const spin = (effect.age || 0) * 18;
       ctx.globalAlpha = alpha;
@@ -10416,6 +10729,33 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (isBardSongEffect(effect)) {
+      const songConfig = {
+        bardBattleHymn: ["rgba(255, 215, 130, 0.1)", "rgba(255, 215, 130, 0.72)", "#ffd782"],
+        bardQuickstepVerse: ["rgba(146, 212, 255, 0.1)", "rgba(146, 212, 255, 0.72)", "#92d4ff"],
+        bardHealingBallad: ["rgba(255, 159, 200, 0.1)", "rgba(255, 159, 200, 0.72)", "#ff9fc8"],
+      };
+      const [fill, stroke, glow] = songConfig[effect.type];
+      const spin = (effect.age || 0) * 1.9;
+      ctx.globalAlpha = effect.ttl < 0.7 ? alpha : 0.9;
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i += 1) {
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.r * (0.36 + i * 0.12), spin + i * 0.8, spin + i * 0.8 + Math.PI * 0.85);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
     if (effect.type === "arrowStorm" || effect.type === "meteorField" || effect.type === "poisonCloud" || effect.type === "consecration" || effect.type === "divineBulwark") {
       const configs = {
         arrowStorm: ["rgba(255, 215, 130, 0.12)", "rgba(255, 215, 130, 0.72)", "#ffd782"],
@@ -10458,6 +10798,19 @@ function drawAbilityEffects() {
       ctx.beginPath();
       ctx.arc(effect.x2, effect.y2, 48 * (0.5 + progress), 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+      return;
+    }
+    if (effect.type === "bardQuickstepTrail") {
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.strokeStyle = "#92d4ff";
+      ctx.shadowColor = "#92d4ff";
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.x - Math.cos(effect.angle) * (44 + progress * 58), effect.y - Math.sin(effect.angle) * (44 + progress * 58));
+      ctx.stroke();
       ctx.restore();
       return;
     }
@@ -10643,6 +10996,7 @@ function drawAbilityEffects() {
 }
 
 function drawRemoteAbilityEffects() {
+  drawRemoteBardSongs();
   remoteAbilityEffects.forEach((effect) => {
     const progress = 1 - effect.ttl / effect.maxTtl;
     const alpha = clamp(effect.ttl / effect.maxTtl, 0, 1);
@@ -10663,6 +11017,33 @@ function drawRemoteAbilityEffects() {
     ctx.fillStyle = effect.color || "#8ec7ff";
     ctx.fillRect(18, -3, lineLength, 6);
     ctx.restore();
+  });
+}
+
+function drawRemoteBardSongs() {
+  multiplayer.peers.forEach((peer) => {
+    if (peer.room !== player.room || !Array.isArray(peer.bardSongs)) return;
+    peer.bardSongs.forEach((song) => {
+      if (!song || song.room !== player.room || (Number(song.ttl) || 0) <= 0) return;
+      const x = Number(song.x);
+      const y = Number(song.y);
+      const r = Number(song.r);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(r)) return;
+      const color = song.songType === "healing" ? "#ff9fc8" : song.songType === "quickstep" ? "#92d4ff" : "#ffd782";
+      const alpha = clamp((Number(song.ttl) || 0) / 3, 0.18, 0.55);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = `${color}22`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([12, 10]);
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    });
   });
 }
 
@@ -10757,6 +11138,8 @@ function drawPlayerProjectiles() {
       ctx.lineTo(-8, 0);
       ctx.lineTo(-30, 6);
       ctx.stroke();
+    } else if (projectile.tag === "Bard") {
+      drawBardNoteProjectile(projectile);
     } else if (projectile.tag === "Ranged") {
       ctx.strokeStyle = projectile.color;
       ctx.lineWidth = 4;
@@ -10785,7 +11168,9 @@ function drawRemoteProjectiles() {
     ctx.globalAlpha = 0.72;
     ctx.shadowColor = projectile.color;
     ctx.shadowBlur = projectile.heavy ? 18 : 8;
-    if (projectile.tag === "Ranged") {
+    if (projectile.tag === "Bard") {
+      drawBardNoteProjectile(projectile);
+    } else if (projectile.tag === "Ranged") {
       ctx.strokeStyle = projectile.color;
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -10862,6 +11247,31 @@ function drawMeleeProjectile(projectile) {
   ctx.restore();
 }
 
+function drawBardNoteProjectile(projectile) {
+  const age = projectile.age || 0;
+  const pulse = Math.sin(age * 18) * 0.5 + 0.5;
+  ctx.save();
+  ctx.shadowColor = projectile.color || "#ffd782";
+  ctx.shadowBlur = 14 + pulse * 8;
+  ctx.strokeStyle = "#fff4c4";
+  ctx.fillStyle = projectile.color || "#f6c46d";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.ellipse(6, 4, 9, 6, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(13, 2);
+  ctx.lineTo(13, -24);
+  ctx.quadraticCurveTo(24, -20, 26, -12);
+  ctx.stroke();
+  ctx.globalAlpha = 0.45;
+  ctx.beginPath();
+  ctx.ellipse(-16, 0, 28, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawPlayer() {
   drawRing(player.x, player.y, player.radius + 7, player.dead ? "#c7443b" : "#92d4ff");
   if (player.meleeAttackTimer > 0 && isMeleeBuild()) drawMeleeAttackWindup();
@@ -10874,6 +11284,7 @@ function drawPlayer() {
     drawFallbackPlayer();
   }
   if (isGlassMageBuild() && !outfit) drawGlassMageOutfit();
+  if (isBardBuild() && !outfit) drawBardLute(player.x, player.y, 1);
   if (player.meleeAttackTimer > 0 && isMeleeBuild()) drawMeleeAttackSlash();
   if (player.castTimer > 0) drawMageCastBurst();
   if (player.rangerAttackTimer > 0 && isRangedBuild()) drawRangerAttackRelease();
@@ -10910,6 +11321,7 @@ function drawRemotePlayers() {
     } else {
       drawRemoteFallbackPlayer(renderPeer, color);
     }
+    if ((renderPeer.weapon === "oakLute" || renderPeer.weaponTag === "Bard") && !outfit) drawBardLute(renderPeer.x, renderPeer.y, 0.88);
     const hpPercent = clamp((renderPeer.hp || 0) / Math.max(1, renderPeer.maxHp || 1), 0, 1);
     ctx.fillStyle = "rgba(15, 12, 10, 0.82)";
     ctx.fillRect(renderPeer.x - 25, renderPeer.y - 47, 50, 6);
@@ -10962,11 +11374,45 @@ function drawRemoteFallbackPlayer(peer, color) {
   ctx.fill();
 }
 
+function drawBardLute(x, y, scale = 1) {
+  ctx.save();
+  ctx.translate(x + 21 * scale, y + 6 * scale);
+  ctx.rotate(-0.42);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#8f5a2e";
+  ctx.strokeStyle = "#f6c46d";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 10, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#5b351e";
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 3.4, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#d8a36f";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, -3);
+  ctx.lineTo(2, -31);
+  ctx.stroke();
+  ctx.strokeStyle = "#fff4c4";
+  ctx.lineWidth = 1;
+  for (let i = -1; i <= 1; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(i * 2, -2);
+    ctx.lineTo(2 + i * 1.2, -30);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function remotePlayerColor(tag) {
   if (tag === "Magic") return "#8ec7ff";
   if (tag === "Ranged") return "#9bd07b";
   if (tag === "Rogue") return "#9be06f";
   if (tag === "Paladin") return "#f0d47c";
+  if (tag === "Bard") return "#ffd782";
   if (tag === "Warrior") return "#f0c36a";
   return "#d8d1c4";
 }
@@ -11015,6 +11461,10 @@ function isPaladinBuild() {
   return player.gear.weapon === "dawnHammer";
 }
 
+function isBardBuild() {
+  return player.gear.weapon === "oakLute";
+}
+
 function playerOutfitSprite() {
   return outfitSpriteForGear(player.gear.weapon, player.gear.armor);
 }
@@ -11051,6 +11501,17 @@ function outfitSpriteForGear(weaponId, armorId) {
       drawWidth: 84,
       drawHeight: 96,
       topCrop: 0.01,
+    };
+  }
+  if (weaponId === "oakLute" && bardSprite.complete && bardSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedBardSprite || bardSprite,
+      sideCrop: 0.04,
+      cropWidth: 0.92,
+      cropBottom: 0.92,
+      drawWidth: 92,
+      drawHeight: 100,
+      topCrop: 0.02,
     };
   }
   if (weaponId === "pulseStaff" && armorId === "channelerRobe" && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
@@ -11093,10 +11554,13 @@ function drawCharacterSprite(character, outfit, sprite) {
   const rangerAttacking = character.rangerAttackTimer > 0 && character.weapon === "emberBow";
   const meleeAttacking = character.meleeAttackTimer > 0 && character.weapon === "ironBlade";
   const rogueAttacking = character.rogueAttackTimer > 0 && character.weapon === "shadowDaggers";
+  const bardAttacking = character.meleeAttackTimer > 0 && character.weapon === "oakLute";
   const frame = rangerAttacking
     ? (character.rangerAttackTimer > 0.14 ? 2 : 3)
     : rogueAttacking
       ? (character.rogueAttackTimer > 0.12 ? 2 : 3)
+    : bardAttacking
+      ? (character.meleeAttackTimer > 0.11 ? 2 : 3)
     : meleeAttacking
       ? (character.meleeAttackTimer > 0.17 ? 2 : 3)
       : character.moving
@@ -11118,10 +11582,13 @@ function drawCharacterSprite(character, outfit, sprite) {
   const rangedPulse = rangerAttacking ? Math.sin((1 - character.rangerAttackTimer / 0.28) * Math.PI) : 0;
   const meleePulse = meleeAttacking ? Math.sin((1 - character.meleeAttackTimer / 0.34) * Math.PI) : 0;
   const roguePulse = rogueAttacking ? Math.sin((1 - character.rogueAttackTimer / 0.24) * Math.PI) : 0;
+  const bardPulse = bardAttacking ? Math.sin((1 - character.meleeAttackTimer / 0.22) * Math.PI) : 0;
   const recoilX = rangerAttacking
     ? -Math.cos(character.rangerAttackAngle) * rangedPulse * 4
     : rogueAttacking
       ? Math.cos(character.rogueAttackAngle) * roguePulse * 7
+    : bardAttacking
+      ? -Math.cos(character.meleeAttackAngle) * bardPulse * 3
     : meleeAttacking
       ? Math.cos(character.meleeAttackAngle) * meleePulse * 8
       : 0;
@@ -11129,6 +11596,8 @@ function drawCharacterSprite(character, outfit, sprite) {
     ? -Math.sin(character.rangerAttackAngle) * rangedPulse * 4
     : rogueAttacking
       ? Math.sin(character.rogueAttackAngle) * roguePulse * 7
+    : bardAttacking
+      ? -Math.sin(character.meleeAttackAngle) * bardPulse * 3
     : meleeAttacking
       ? Math.sin(character.meleeAttackAngle) * meleePulse * 8
       : 0;
@@ -11702,10 +12171,10 @@ function renderUi() {
     <div><span>Class</span><strong>${currentClassOption().name}</strong></div>
     <div><span>Weapon</span><strong>${weapon.name}</strong></div>
     <div><span>Armor</span><strong>${armor.name}</strong></div>
-    <div><span>Damage</span><strong>${player.stats.damage}</strong></div>
+    <div><span>Damage</span><strong>${playerDamage()}</strong></div>
     <div><span>Range</span><strong>${player.stats.range}</strong></div>
-    <div><span>Armor</span><strong>${player.stats.armor}</strong></div>
-    <div><span>Speed</span><strong>${player.stats.speed}</strong></div>
+    <div><span>Armor</span><strong>${effectivePlayerArmor()}</strong></div>
+    <div><span>Speed</span><strong>${Math.round(playerSpeed())}</strong></div>
     <div><span>Run Buffs</span><strong>${activeBuffs}</strong></div>
   `;
   if (ui.classMenuButton) {
@@ -13061,7 +13530,7 @@ function remoteIntentAmountCap(peer) {
   const armor = gear.armor[peer.armor] || {};
   const baseDamage = Number(weapon.damage) || 55;
   const multiplier = Number(armor.damageMultiplier) || 1;
-  const burstFactor = peer.weaponTag === "Magic" ? 58 : peer.weaponTag === "Ranged" ? 44 : 50;
+  const burstFactor = peer.weaponTag === "Magic" ? 58 : peer.weaponTag === "Bard" ? 58 : peer.weaponTag === "Ranged" ? 44 : 50;
   return Math.max(900, Math.min(3600, Math.ceil(baseDamage * multiplier * burstFactor)));
 }
 
@@ -13076,7 +13545,7 @@ function remoteIntentTargetRange(peer, event, target) {
     return 1500 + targetRadius;
   }
   if (event?.encounter === "arena") return 1700 + targetRadius;
-  if (peer.weaponTag === "Ranged" || peer.weaponTag === "Magic") return 1250 + targetRadius;
+  if (peer.weaponTag === "Ranged" || peer.weaponTag === "Magic" || peer.weaponTag === "Bard") return 1250 + targetRadius;
   return 760 + targetRadius;
 }
 
@@ -13615,9 +14084,9 @@ function spawnRemoteAttackVisual(peerId, event) {
     y: event.y + Math.sin(angle) * (24 + remoteProjectileLagDistance(event, speed)),
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    r: tag === "Magic" ? 11 : isWarriorTag(tag) ? 12 : tag === "Rogue" ? 8 : 6,
+    r: tag === "Magic" ? 11 : isWarriorTag(tag) ? 12 : tag === "Rogue" ? 8 : tag === "Bard" ? 9 : 6,
     color: event.color || remotePlayerColor(tag),
-    ttl: tag === "Ranged" ? 0.9 : tag === "Magic" ? 0.75 : 0.42,
+    ttl: tag === "Ranged" ? 0.9 : tag === "Bard" ? 0.82 : tag === "Magic" ? 0.75 : 0.42,
     age: 0,
     heavy: Boolean(event.heavy),
     tag,
@@ -13668,6 +14137,7 @@ function multiplayerSnapshot() {
     bossKind: boss.kind,
     partyPhase: multiplayer.partyPhase,
     phaseSeq: multiplayer.phaseSeq,
+    bardSongs: bardSongSnapshot(),
   };
   if (isMultiplayerHost() && multiplayer.lastPartyPhaseEvent) {
     snapshot.partyPhaseEvent = cloneSyncObject(multiplayer.lastPartyPhaseEvent);
