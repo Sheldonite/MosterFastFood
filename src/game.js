@@ -510,6 +510,7 @@ const multiplayer = {
   lastHostileSyncAt: 0,
   hostileNetState: new Map(),
   hostileHostSendState: new Map(),
+  consumedRemoteHazards: new Map(),
   peers: new Map(),
 };
 
@@ -1622,6 +1623,7 @@ function resetHostileNetState() {
   multiplayer.lastHostileSyncAt = 0;
   multiplayer.hostileNetState.clear();
   multiplayer.hostileHostSendState.clear();
+  multiplayer.consumedRemoteHazards.clear();
 }
 
 function localPartyReadyMatches(phase) {
@@ -6791,12 +6793,40 @@ function isPlayerInMazeWall(hazard) {
   return dy < halfShort && dx < halfLong + player.radius;
 }
 
+function remoteHazardKey(hazardOrId) {
+  if (!hazardOrId) return "";
+  if (typeof hazardOrId === "string") return hazardOrId.startsWith("hazard:") ? hazardOrId : `hazard:${hazardOrId}`;
+  if (hazardOrId.syncId) return remoteHazardKey(hazardOrId.syncId);
+  return "";
+}
+
+function pruneConsumedRemoteHazards() {
+  const now = performance.now();
+  multiplayer.consumedRemoteHazards.forEach((expiresAt, key) => {
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) multiplayer.consumedRemoteHazards.delete(key);
+  });
+}
+
+function isConsumedRemoteHazard(hazardOrId) {
+  const key = remoteHazardKey(hazardOrId);
+  return Boolean(key && multiplayer.consumedRemoteHazards.has(key));
+}
+
+function consumeRemoteHazard(hazard, ttlMs = 2200) {
+  const key = remoteHazardKey(hazard);
+  if (!key || !isRemoteBossHazard(hazard)) return;
+  multiplayer.consumedRemoteHazards.set(key, performance.now() + ttlMs);
+  multiplayer.hostileNetState.delete(key);
+}
+
 function updateHazards(dt) {
   const spawnedHazards = [];
+  pruneConsumedRemoteHazards();
   hazards = hazards.filter((hazard) => {
     if (hazard.mazeHazard && player.room !== "maze") {
       return false;
     }
+    if (isConsumedRemoteHazard(hazard)) return false;
     const remoteBossHazard = isRemoteBossHazard(hazard);
     if (hazard.type === "mazeShot") {
       hazard.ttl -= dt;
@@ -6873,10 +6903,11 @@ function updateHazards(dt) {
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (hazard.storm) {
-        if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-          damagePlayer(hazard.damage, "Pico de gallo storm");
-          hazard.ttl = 0;
-        }
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, "Pico de gallo storm");
+        consumeRemoteHazard(hazard);
+        hazard.ttl = 0;
+      }
       } else {
         hazard.vx *= Math.pow(0.84, dt * 4);
         hazard.vy *= Math.pow(0.84, dt * 4);
@@ -6921,6 +6952,7 @@ function updateHazards(dt) {
       hazard.traveled += Math.hypot(dx, dy);
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         damagePlayer(hazard.damage, "Tortilla chip");
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       } else if (hazard.traveled >= hazard.shatterDistance) {
         if (!remoteBossHazard) shatterNachoChip(hazard, spawnedHazards);
@@ -6954,6 +6986,7 @@ function updateHazards(dt) {
       hazard.y += hazard.vy * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         damagePlayer(hazard.damage, "Pizza slice");
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       } else if (
         hazard.x <= world.arena.x + hazard.r ||
@@ -6978,6 +7011,7 @@ function updateHazards(dt) {
         hazard.y += hazard.vy * dt;
         if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
           damagePlayer(hazard.damage, "Returning pizza slice");
+          consumeRemoteHazard(hazard);
           hazard.ttl = 0;
         }
       }
@@ -7014,6 +7048,7 @@ function updateHazards(dt) {
       hazard.vy += (Math.random() - 0.5) * 22 * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         popColaBubble(hazard);
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       } else if (hazard.ttl <= 0) {
         popColaBubble(hazard);
@@ -7201,6 +7236,7 @@ function updateHazards(dt) {
         if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
         addStuffedStack();
         damagePlayer(hazard.damage, "Lettuce fan");
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
     } else if (hazard.type === "lettuceCleanseZone") {
@@ -7391,6 +7427,7 @@ function updateHazards(dt) {
         const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : hazard.type === "pepperoni" ? "Pepperoni" : hazard.type === "cheeseBolt" ? "Ghost cheese" : hazard.type === "sprinkle" ? "Sprinkle barrage" : "Arc bolt";
         damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
     } else {
@@ -8574,6 +8611,10 @@ function handleMazeEnemyDefeated(target) {
 
 function showMazeRewardChoices() {
   if (!ui.mazeRewardOverlay || !ui.mazeRewardCards || !mazeState || player.dead) return;
+  if (!ui.mazeRewardOverlay.hidden && ui.mazeRewardCards.querySelector(".reward-card")) {
+    updateMazeRewardCardLock();
+    return;
+  }
   mazeState.rewardInputReadyAt = performance.now() + mazeRewardInputDelayMs;
   ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
   ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => `
@@ -8586,11 +8627,16 @@ function showMazeRewardChoices() {
   ui.status.textContent = "Choose one gauntlet reward to open the boss gate.";
   showFloat("Choose a reward");
   window.setTimeout(() => {
-    if (!mazeState || mazeState.rewardChosen || ui.mazeRewardOverlay?.hidden) return;
-    ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
-      card.disabled = false;
-    });
+    updateMazeRewardCardLock();
   }, mazeRewardInputDelayMs);
+}
+
+function updateMazeRewardCardLock() {
+  if (!mazeState || mazeState.rewardChosen || ui.mazeRewardOverlay?.hidden) return;
+  const locked = Number.isFinite(mazeState.rewardInputReadyAt) && performance.now() < mazeState.rewardInputReadyAt;
+  ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
+    card.disabled = locked;
+  });
 }
 
 function chooseMazeReward(rewardId) {
@@ -12837,6 +12883,7 @@ function applyRemoteBossSyncEvent(peerId, event) {
   if (event.bossState) applyBossStateSnapshot(event.bossState);
   (event.hazards || []).forEach((remoteHazard) => {
     if (!remoteHazard?.syncId || hazards.some((hazard) => hazard.syncId === remoteHazard.syncId)) return;
+    if (isConsumedRemoteHazard(remoteHazard.syncId)) return;
     hazards.push(normalizeRemoteBossHazard(remoteHazard, event.serverTime));
   });
   (event.particles || []).slice(-8).forEach((remoteParticle) => {
@@ -13095,6 +13142,7 @@ function pruneMissingHostileActors(snapshots) {
 function recordHostileSnapshot(snapshot, event) {
   if (!snapshot?.syncId || !snapshot.type || !Number.isFinite(snapshot.x) || !Number.isFinite(snapshot.y)) return;
   const syncId = String(snapshot.syncId);
+  if (snapshot.type === "hazard" && isConsumedRemoteHazard(syncId)) return;
   const serverTime = Number(event?.serverTime) || Date.now();
   const entry = multiplayer.hostileNetState.get(syncId) || {
     syncId,
@@ -13236,6 +13284,7 @@ function ensureHostileTarget(entry) {
     return boss.serpentBody[snapshot.index];
   }
   if (entry.type === "hazard") {
+    if (isConsumedRemoteHazard(entry.syncId)) return null;
     let hazard = hazards.find((candidate) => candidate.syncId && `hazard:${candidate.syncId}` === entry.syncId);
     if (!hazard && Number.isFinite(snapshot.ttl) && snapshot.ttl > 0) {
       const hazardSnapshot = { ...snapshot, type: snapshot.hazardType || snapshot.type };
@@ -13280,6 +13329,7 @@ function syncBossHazardsSnapshot(remoteHazards, serverTime = 0) {
     const seen = new Set();
     remoteHazards.forEach((remoteHazard) => {
       if (!remoteHazard?.syncId) return;
+      if (isConsumedRemoteHazard(remoteHazard.syncId)) return;
       seen.add(remoteHazard.syncId);
       const existing = hazards.find((hazard) => hazard.syncId === remoteHazard.syncId);
       if (existing) {
@@ -13298,7 +13348,9 @@ function syncBossHazardsSnapshot(remoteHazards, serverTime = 0) {
     return;
   }
   const keepLocal = hazards.filter((hazard) => !isSyncableBossHazard(hazard));
-  const synced = remoteHazards.map((hazard) => normalizeRemoteBossHazard(hazard, serverTime));
+  const synced = remoteHazards
+    .filter((hazard) => !isConsumedRemoteHazard(hazard?.syncId))
+    .map((hazard) => normalizeRemoteBossHazard(hazard, serverTime));
   hazards = keepLocal.concat(synced);
 }
 
