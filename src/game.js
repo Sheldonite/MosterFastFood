@@ -437,6 +437,7 @@ const multiplayer = {
   assignedSpawn: null,
   partyPhase: "starter",
   phaseSeq: 0,
+  lastPartyPhaseEvent: null,
   localPartyReady: null,
   partyReady: new Map(),
   gauntletSyncSeq: 0,
@@ -1242,6 +1243,7 @@ function isPartySyncActive() {
 function resetPartySyncState() {
   multiplayer.partyPhase = "starter";
   multiplayer.phaseSeq = 0;
+  multiplayer.lastPartyPhaseEvent = null;
   multiplayer.localPartyReady = null;
   multiplayer.partyReady.clear();
   multiplayer.gauntletSyncSeq = 0;
@@ -1353,6 +1355,7 @@ function broadcastPartyPhase(phase, options = {}) {
     defeatedName: options.defeatedName || "",
     talentPoints: options.talentPoints || 0,
   };
+  multiplayer.lastPartyPhaseEvent = cloneSyncObject(event);
   sendMultiplayerEvent(event);
   if (options.applyLocal === false) {
     multiplayer.partyPhase = phase;
@@ -1426,6 +1429,46 @@ function applyPartyPhase(event, local = false) {
 function applyRemotePartyPhase(peerId, event) {
   if (!isHostPeer(peerId) || isMultiplayerHost()) return;
   applyPartyPhase(event, false);
+}
+
+function partyPhaseNeedsRecovery(event) {
+  if (!event) return false;
+  const phaseBossKind = event.bossKind || boss.kind;
+  if (boss.kind !== phaseBossKind) return true;
+  if (event.phase === "gauntlet") {
+    return player.room !== "maze"
+      || !mazeState
+      || mazeState.kind !== phaseBossKind
+      || (Number.isFinite(event.mazeSequence) && mazeState.sequence !== event.mazeSequence);
+  }
+  if (event.phase === "reward") {
+    return player.room !== "maze"
+      || !mazeState
+      || mazeState.kind !== phaseBossKind
+      || (!mazeState.rewardPending && !mazeState.rewardChosen);
+  }
+  if (event.phase === "arena") return player.room !== "arena";
+  return false;
+}
+
+function applyHostPartyPhaseSnapshot(state, peerId) {
+  if (!isPartySyncActive() || isMultiplayerHost() || !isHostPeer(peerId) || !state) return;
+  const event = state.partyPhaseEvent;
+  if (event?.kind === "party-phase" && Number.isFinite(event.phaseSeq)) {
+    const newer = event.phaseSeq > multiplayer.phaseSeq;
+    const sameSeqRecovery = event.phaseSeq === multiplayer.phaseSeq && partyPhaseNeedsRecovery(event);
+    if (newer || sameSeqRecovery) applyPartyPhase(event);
+    return;
+  }
+  if (!state.partyPhase || !Number.isFinite(state.phaseSeq) || state.phaseSeq <= multiplayer.phaseSeq) return;
+  applyPartyPhase({
+    kind: "party-phase",
+    phase: state.partyPhase,
+    bossKind: state.bossKind || boss.kind,
+    phaseSeq: state.phaseSeq,
+    mazeSequence: Number.isFinite(state.mazeSequence) ? state.mazeSequence : runState.mazeCount || 1,
+    spawns: state.partySpawns || [],
+  });
 }
 
 function clamp(value, min, max) {
@@ -2194,10 +2237,10 @@ function getFacing(dx, dy) {
 
 function updateRoom(dt) {
   player.gateCooldown = Math.max(0, player.gateCooldown - dt);
-  if (player.room === "starter" && pointInRect(player.x, player.y, world.gate)) {
+  if (player.room === "starter" && player.gateCooldown <= 0 && circleIntersectsRect(player.x, player.y, player.radius, world.gate)) {
     startMazeForBoss(boss.kind);
   }
-  if (player.room === "maze" && mazeState?.exitOpen && pointInRect(player.x, player.y, mazeState.exit)) {
+  if (player.room === "maze" && player.gateCooldown <= 0 && mazeState?.exitOpen && circleIntersectsRect(player.x, player.y, player.radius, mazeState.exit)) {
     enterBossArena();
   }
   if (player.room === "arena" && player.x < world.arena.x + player.radius) {
@@ -11092,6 +11135,7 @@ function handleMultiplayerMessage(message) {
     recordPeerSnapshot(message.id, message.state);
     multiplayer.count = multiplayer.peers.size + 1;
     setCoopStatus("In Room", multiplayer.room?.players?.length || multiplayer.count);
+    applyHostPartyPhaseSnapshot(message.state, message.id);
     applyRemoteBossProgress(message.state, message.id);
     if (isMultiplayerHost()) maybeAdvancePartyPhase();
     return;
@@ -11418,6 +11462,16 @@ function applyRemoteGauntletSync(peerId, event) {
   if (Number.isFinite(event.phaseSeq) && event.phaseSeq < multiplayer.phaseSeq) return;
   if (Number.isFinite(event.seq) && event.seq <= multiplayer.lastGauntletSyncSeq) return;
   if (Number.isFinite(event.seq)) multiplayer.lastGauntletSyncSeq = event.seq;
+  if (Number.isFinite(event.phaseSeq) && event.phaseSeq > multiplayer.phaseSeq) {
+    multiplayer.phaseSeq = event.phaseSeq;
+    multiplayer.partyPhase = event.rewardPending ? "reward" : "gauntlet";
+    multiplayer.localPartyReady = null;
+    multiplayer.partyReady.clear();
+  } else if (event.rewardPending && multiplayer.partyPhase === "gauntlet") {
+    multiplayer.partyPhase = "reward";
+    multiplayer.localPartyReady = null;
+    multiplayer.partyReady.clear();
+  }
   if (!mazeState || mazeState.sequence !== event.mazeSequence) {
     startMazeForBoss(event.bossKind, { fromParty: true, sequence: event.mazeSequence || runState.mazeCount + 1 });
   }
@@ -12081,12 +12135,17 @@ function multiplayerSnapshot() {
     partyPhase: multiplayer.partyPhase,
     phaseSeq: multiplayer.phaseSeq,
   };
+  if (isMultiplayerHost() && multiplayer.lastPartyPhaseEvent) {
+    snapshot.partyPhaseEvent = cloneSyncObject(multiplayer.lastPartyPhaseEvent);
+    snapshot.partySpawns = multiplayerArenaSpawns();
+  }
   if (player.room === "arena") {
     snapshot.bossHp = Math.max(0, Math.ceil(bossHealthSummary().hp));
     snapshot.bossMaxHp = bossHealthSummary().maxHp;
     snapshot.bossPhase = boss.phase || 1;
     snapshot.bossTargets = bossTargetSnapshot();
   } else if (player.room === "maze" && mazeState) {
+    snapshot.mazeSequence = mazeState.sequence;
     const gauntletHp = bossHealthSummary();
     snapshot.gauntletHp = Math.max(0, Math.ceil(gauntletHp.hp));
     snapshot.gauntletMaxHp = gauntletHp.maxHp;
