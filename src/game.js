@@ -415,6 +415,7 @@ let floatTimer = 0;
 let screenBanner = null;
 let fightStartedAt = 0;
 let lastTime = performance.now();
+let lastRuntimeErrorAt = 0;
 let logLines = ["Choose gear, use WASD to cross the gate, click to shoot."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
@@ -1048,6 +1049,7 @@ function startMazeForBoss(kind, options = {}) {
   if (Number.isFinite(options.sequence)) runState.mazeCount = options.sequence;
   else runState.mazeCount += 1;
   mazeState = generateMazeForBoss(kind, runState.mazeCount);
+  ensureGauntletRuntimeState();
   const start = mazeState.playerStart || mazeCellCenter(mazeState, mazeState.entranceCell.x, mazeState.entranceCell.y);
   player.room = "maze";
   player.x = start.x;
@@ -1366,9 +1368,9 @@ function broadcastPartyPhase(phase, options = {}) {
   }
 }
 
-function applyPartyPhase(event, local = false) {
+function applyPartyPhase(event, local = false, options = {}) {
   if (!event || event.bossKind && lockedBosses.has(event.bossKind)) return;
-  if (!local && Number.isFinite(event.phaseSeq) && event.phaseSeq <= multiplayer.phaseSeq) return;
+  if (!local && !options.force && Number.isFinite(event.phaseSeq) && event.phaseSeq <= multiplayer.phaseSeq) return;
   if (Number.isFinite(event.phaseSeq)) multiplayer.phaseSeq = event.phaseSeq;
   multiplayer.partyPhase = event.phase || multiplayer.partyPhase;
   multiplayer.localPartyReady = null;
@@ -1381,10 +1383,13 @@ function applyPartyPhase(event, local = false) {
   if (event.phase === "gauntlet") {
     if (boss.kind !== phaseBossKind) loadBoss(phaseBossKind);
     startMazeForBoss(phaseBossKind, { fromParty: true, sequence: event.mazeSequence || runState.mazeCount + 1 });
+    ensureGauntletRuntimeState();
     return;
   }
   if (event.phase === "reward") {
     if (!mazeState || mazeState.kind !== phaseBossKind) startMazeForBoss(phaseBossKind, { fromParty: true, sequence: event.mazeSequence || runState.mazeCount || 1 });
+    if (!mazeState) return;
+    ensureGauntletRuntimeState();
     mazeState.cleared = true;
     mazeState.rewardPending = !mazeState.rewardChosen;
     mazeState.exitOpen = false;
@@ -1457,7 +1462,7 @@ function applyHostPartyPhaseSnapshot(state, peerId) {
   if (event?.kind === "party-phase" && Number.isFinite(event.phaseSeq)) {
     const newer = event.phaseSeq > multiplayer.phaseSeq;
     const sameSeqRecovery = event.phaseSeq === multiplayer.phaseSeq && partyPhaseNeedsRecovery(event);
-    if (newer || sameSeqRecovery) applyPartyPhase(event);
+    if (newer || sameSeqRecovery) applyPartyPhase(event, false, { force: sameSeqRecovery });
     return;
   }
   if (!state.partyPhase || !Number.isFinite(state.phaseSeq) || state.phaseSeq <= multiplayer.phaseSeq) return;
@@ -1679,6 +1684,18 @@ function generateMazeForBoss(kind, sequence) {
     exitOpen: false,
     cleared: false,
   };
+}
+
+function ensureGauntletRuntimeState(state = mazeState) {
+  if (!state) return null;
+  if (!Array.isArray(state.enemies)) state.enemies = [];
+  if (!Array.isArray(state.pickupDrops)) state.pickupDrops = [];
+  if (!(state.claimedPickupIds instanceof Set)) {
+    const claimed = Array.isArray(state.claimedPickupIds) ? state.claimedPickupIds : [];
+    state.claimedPickupIds = new Set(claimed);
+  }
+  if (!(state.localContactTimers instanceof Map)) state.localContactTimers = new Map();
+  return state;
 }
 
 function createGauntletBounds() {
@@ -2303,11 +2320,14 @@ function spawnGauntletMiniBoss() {
 }
 
 function dropGauntletPickup(waveIndex) {
+  ensureGauntletRuntimeState();
   if (!mazeState?.bounds) return;
+  const id = `pickup-${waveIndex}`;
+  if (mazeState.pickupDrops.some((pickup) => pickup.id === id)) return;
   const point = gauntletPoint(mazeState.bounds, waveIndex === 0 ? 0.38 : 0.61, waveIndex === 0 ? 0.80 : 0.50);
   const potionDrop = waveIndex === 1 && player.potions < 4;
   mazeState.pickupDrops.push({
-    id: `pickup-${waveIndex}`,
+    id,
     type: potionDrop ? "potion" : "heal",
     x: point.x,
     y: point.y,
@@ -2318,9 +2338,17 @@ function dropGauntletPickup(waveIndex) {
 }
 
 function updateGauntletPickups(dt) {
+  ensureGauntletRuntimeState();
   if (!mazeState?.pickupDrops?.length) return;
+  let changed = false;
   mazeState.pickupDrops = mazeState.pickupDrops.filter((pickup) => {
-    pickup.ttl -= dt;
+    if (!Number.isFinite(pickup.x) || !Number.isFinite(pickup.y)) {
+      changed = true;
+      return false;
+    }
+    pickup.r = Number.isFinite(pickup.r) ? Math.max(4, pickup.r) : 16;
+    pickup.amount = Number.isFinite(pickup.amount) ? Math.max(1, pickup.amount) : pickup.type === "potion" ? 1 : 24;
+    pickup.ttl = (Number.isFinite(pickup.ttl) ? pickup.ttl : 0) - dt;
     if (pickup.ttl <= 0) return false;
     if (Math.hypot(player.x - pickup.x, player.y - pickup.y) > player.radius + pickup.r + 8) return true;
     if (pickup.type === "potion") {
@@ -2333,13 +2361,16 @@ function updateGauntletPickups(dt) {
       log("A snack pickup restores health.");
     }
     particles.push({ x: pickup.x, y: pickup.y - 28, text: pickup.type === "potion" ? "+potion" : "+hp", color: "#9be06f", ttl: 0.85 });
-    if (pickup.id) mazeState.claimedPickupIds?.add(pickup.id);
+    if (pickup.id) mazeState.claimedPickupIds.add(pickup.id);
+    changed = true;
     return false;
   });
+  if (changed && isPartySyncActive() && isMultiplayerHost()) sendGauntletSync(true);
 }
 
 function updateMazeCombat(dt) {
   if (player.room !== "maze" || !mazeState || player.won || mazeState.rewardPending) return;
+  ensureGauntletRuntimeState();
   if (player.dead && (!isPartySyncActive() || !isMultiplayerHost())) return;
   if (isPartySyncActive() && !isMultiplayerHost()) {
     updateGauntletPickups(dt);
@@ -2381,7 +2412,7 @@ function updateMazeCombat(dt) {
 
 function updateLocalGauntletContactDamage(dt) {
   if (!mazeState || player.dead || player.room !== "maze") return;
-  if (!mazeState.localContactTimers) mazeState.localContactTimers = new Map();
+  ensureGauntletRuntimeState();
   mazeState.localContactTimers.forEach((timer, id) => {
     const next = timer - dt;
     if (next > 0) mazeState.localContactTimers.set(id, next);
@@ -7701,12 +7732,14 @@ function drawGauntletObstacle(obstacle) {
 function drawGauntletPickups() {
   if (!mazeState?.pickupDrops?.length) return;
   mazeState.pickupDrops.forEach((pickup) => {
+    if (!Number.isFinite(pickup.x) || !Number.isFinite(pickup.y)) return;
+    const radius = Number.isFinite(pickup.r) ? Math.max(4, pickup.r) : 16;
     const pulse = Math.sin(performance.now() / 180) * 2;
     ctx.fillStyle = pickup.type === "potion" ? "#77c6ff" : "#9be06f";
     ctx.strokeStyle = "#f7efd9";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(pickup.x, pickup.y, pickup.r + pulse, 0, Math.PI * 2);
+    ctx.arc(pickup.x, pickup.y, radius + pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#173018";
@@ -7785,37 +7818,41 @@ function drawMazeEnemies() {
   if (player.room !== "maze" || !mazeState) return;
   mazeState.enemies.forEach((enemy) => {
     if (enemy.hp <= 0) return;
-    const pulse = Math.sin(enemy.moveTimer * 6) * (enemy.miniBoss ? 3 : 1.5);
+    if (!Number.isFinite(enemy.x) || !Number.isFinite(enemy.y)) return;
+    const radius = Number.isFinite(enemy.radius) ? Math.max(8, enemy.radius) : enemy.miniBoss ? 34 : 18;
+    const moveTimer = Number.isFinite(enemy.moveTimer) ? enemy.moveTimer : 0;
+    const pulse = Math.sin(moveTimer * 6) * (enemy.miniBoss ? 3 : 1.5);
     ctx.save();
     ctx.translate(enemy.x, enemy.y);
-    if (selectedBoss === enemy) drawRing(0, 0, enemy.radius + 8, "#ffe082");
+    if (selectedBoss === enemy) drawRing(0, 0, radius + 8, "#ffe082");
     ctx.fillStyle = "rgba(0, 0, 0, 0.24)";
     ctx.beginPath();
-    ctx.ellipse(0, enemy.radius + 8, enemy.radius * 0.9, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, radius + 8, radius * 0.9, 7, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = enemy.color;
     ctx.strokeStyle = enemy.miniBoss ? mazeState.theme.trim : "#171313";
     ctx.lineWidth = enemy.miniBoss ? 4 : 3;
     ctx.beginPath();
-    if (enemy.ranged) ctx.roundRect(-enemy.radius, -enemy.radius - pulse, enemy.radius * 2, enemy.radius * 2.1, 8);
-    else ctx.arc(0, 0, enemy.radius + pulse, 0, Math.PI * 2);
+    if (enemy.ranged) ctx.roundRect(-radius, -radius - pulse, radius * 2, radius * 2.1, 8);
+    else ctx.arc(0, 0, radius + pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#171313";
     ctx.beginPath();
-    ctx.arc(-enemy.radius * 0.32, -enemy.radius * 0.18, 3.5, 0, Math.PI * 2);
-    ctx.arc(enemy.radius * 0.32, -enemy.radius * 0.18, 3.5, 0, Math.PI * 2);
+    ctx.arc(-radius * 0.32, -radius * 0.18, 3.5, 0, Math.PI * 2);
+    ctx.arc(radius * 0.32, -radius * 0.18, 3.5, 0, Math.PI * 2);
     ctx.fill();
     const hpWidth = enemy.miniBoss ? 92 : 48;
+    const maxHp = Number.isFinite(enemy.maxHp) && enemy.maxHp > 0 ? enemy.maxHp : 1;
     ctx.fillStyle = "rgba(10, 12, 11, 0.82)";
-    ctx.fillRect(-hpWidth / 2, -enemy.radius - 20, hpWidth, 6);
+    ctx.fillRect(-hpWidth / 2, -radius - 20, hpWidth, 6);
     ctx.fillStyle = enemy.miniBoss ? "#f0d47c" : "#9be06f";
-    ctx.fillRect(-hpWidth / 2, -enemy.radius - 20, hpWidth * clamp(enemy.hp / enemy.maxHp, 0, 1), 6);
+    ctx.fillRect(-hpWidth / 2, -radius - 20, hpWidth * clamp(enemy.hp / maxHp, 0, 1), 6);
     if (enemy.miniBoss) {
       ctx.fillStyle = "#f7efd9";
       ctx.font = "bold 13px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(enemy.name, 0, -enemy.radius - 30);
+      ctx.fillText(enemy.name, 0, -radius - 30);
       ctx.textAlign = "left";
     }
     ctx.restore();
@@ -11185,7 +11222,12 @@ function sendMultiplayerEvent(event) {
 
 function sendServer(payload) {
   if (!multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
-  multiplayer.socket.send(JSON.stringify(payload));
+  try {
+    multiplayer.socket.send(JSON.stringify(payload));
+  } catch (error) {
+    console.warn("Failed to send multiplayer payload.", error);
+    if (ui.status) ui.status.textContent = "Multiplayer sync recovered from a bad packet.";
+  }
 }
 
 function beginBossSyncCapture(source) {
@@ -11399,6 +11441,7 @@ function shouldBroadcastGauntletSync() {
 
 function sendGauntletSync(force = false) {
   if (!shouldBroadcastGauntletSync()) return;
+  ensureGauntletRuntimeState();
   if (!force && multiplayer.gauntletSyncTimer > 0) return;
   multiplayer.gauntletSyncTimer = 0.12;
   multiplayer.gauntletSyncSeq += 1;
@@ -11417,14 +11460,38 @@ function sendGauntletSync(force = false) {
     exitOpen: Boolean(mazeState.exitOpen),
     cleared: Boolean(mazeState.cleared),
     enemies: mazeState.enemies.map(serializeGauntletEnemy),
-    pickupDrops: cloneSyncObject(mazeState.pickupDrops || []),
+    pickupDrops: mazeState.pickupDrops.map(serializeGauntletPickup).filter(Boolean),
     hazards: hazards.filter((hazard) => hazard.mazeHazard).map(serializeGauntletHazard),
   });
 }
 
 function serializeGauntletEnemy(enemy) {
   if (!enemy.id) enemy.id = enemy.miniBoss ? "warden" : `mob-${Math.round(enemy.spawnX)}-${Math.round(enemy.spawnY)}`;
-  return cloneSyncObject(enemy);
+  const fields = [
+    "id", "kind", "name", "mazeEnemy", "miniBoss", "x", "y", "spawnX", "spawnY", "radius", "maxHp",
+    "hp", "color", "attackTimer", "patternIndex", "moveTimer", "ranged", "speed", "damage", "state",
+    "waveIndex", "markedTimer", "markedShots", "poisonStacks", "poisonTimer", "poisonTickTimer",
+    "poisonDamagePerStack", "bleedTimer", "bleedTickTimer", "bleedDamage", "burnTimer", "burnTickTimer",
+    "burnDamage", "exposedStacks", "exposedTimer", "judgmentTimer",
+  ];
+  return fields.reduce((snapshot, key) => {
+    const value = cloneSyncObject(enemy[key]);
+    if (typeof value !== "undefined") snapshot[key] = value;
+    return snapshot;
+  }, {});
+}
+
+function serializeGauntletPickup(pickup) {
+  if (!pickup || !Number.isFinite(pickup.x) || !Number.isFinite(pickup.y)) return null;
+  return {
+    id: String(pickup.id || ""),
+    type: pickup.type === "potion" ? "potion" : "heal",
+    x: Math.round(pickup.x),
+    y: Math.round(pickup.y),
+    r: Math.max(4, Math.round(Number(pickup.r) || 16)),
+    amount: Math.max(1, Math.round(Number(pickup.amount) || (pickup.type === "potion" ? 1 : 24))),
+    ttl: Math.max(0, Number(pickup.ttl) || 0),
+  };
 }
 
 function serializeGauntletHazard(hazard) {
@@ -11439,7 +11506,34 @@ function normalizeGauntletEnemy(remoteEnemy) {
   const enemy = cloneSyncObject(remoteEnemy) || {};
   enemy.mazeEnemy = true;
   enemy.remoteGauntletEnemy = true;
+  enemy.id = String(enemy.id || (enemy.miniBoss ? "warden" : `mob-${Math.round(enemy.x || 0)}-${Math.round(enemy.y || 0)}`));
+  enemy.x = Number.isFinite(enemy.x) ? enemy.x : Number.isFinite(enemy.spawnX) ? enemy.spawnX : 0;
+  enemy.y = Number.isFinite(enemy.y) ? enemy.y : Number.isFinite(enemy.spawnY) ? enemy.spawnY : 0;
+  enemy.spawnX = Number.isFinite(enemy.spawnX) ? enemy.spawnX : enemy.x;
+  enemy.spawnY = Number.isFinite(enemy.spawnY) ? enemy.spawnY : enemy.y;
+  enemy.radius = Number.isFinite(enemy.radius) ? Math.max(8, enemy.radius) : enemy.miniBoss ? 34 : 18;
+  enemy.maxHp = Number.isFinite(enemy.maxHp) ? Math.max(1, enemy.maxHp) : 1;
+  enemy.hp = Number.isFinite(enemy.hp) ? clamp(enemy.hp, 0, enemy.maxHp) : enemy.maxHp;
+  enemy.moveTimer = Number.isFinite(enemy.moveTimer) ? enemy.moveTimer : 0;
+  enemy.attackTimer = Number.isFinite(enemy.attackTimer) ? enemy.attackTimer : 1;
+  enemy.speed = Number.isFinite(enemy.speed) ? enemy.speed : enemy.miniBoss ? 82 : 96;
+  enemy.damage = Number.isFinite(enemy.damage) ? enemy.damage : enemy.miniBoss ? 16 : 8;
+  enemy.color = typeof enemy.color === "string" && enemy.color ? enemy.color : "#f0c35b";
   return enemy;
+}
+
+function normalizeGauntletPickup(remotePickup) {
+  const pickup = cloneSyncObject(remotePickup) || {};
+  if (!Number.isFinite(pickup.x) || !Number.isFinite(pickup.y)) return null;
+  return {
+    id: String(pickup.id || ""),
+    type: pickup.type === "potion" ? "potion" : "heal",
+    x: pickup.x,
+    y: pickup.y,
+    r: Number.isFinite(pickup.r) ? Math.max(4, pickup.r) : 16,
+    amount: Number.isFinite(pickup.amount) ? Math.max(1, pickup.amount) : pickup.type === "potion" ? 1 : 24,
+    ttl: Number.isFinite(pickup.ttl) ? Math.max(0, pickup.ttl) : 0,
+  };
 }
 
 function normalizeGauntletHazard(remoteHazard, serverTime = 0) {
@@ -11476,6 +11570,7 @@ function applyRemoteGauntletSync(peerId, event) {
     startMazeForBoss(event.bossKind, { fromParty: true, sequence: event.mazeSequence || runState.mazeCount + 1 });
   }
   if (!mazeState) return;
+  ensureGauntletRuntimeState();
   mazeState.waveIndex = Number.isFinite(event.waveIndex) ? event.waveIndex : mazeState.waveIndex;
   mazeState.waveTimer = Number.isFinite(event.waveTimer) ? event.waveTimer : mazeState.waveTimer;
   mazeState.miniBossSpawned = Boolean(event.miniBossSpawned);
@@ -11489,9 +11584,11 @@ function applyRemoteGauntletSync(peerId, event) {
     wave.cleared = Boolean(remoteWave.cleared);
   });
   mazeState.enemies = (event.enemies || []).map(normalizeGauntletEnemy);
-  const claimed = mazeState.claimedPickupIds || new Set();
+  const claimed = mazeState.claimedPickupIds instanceof Set ? mazeState.claimedPickupIds : new Set();
   mazeState.claimedPickupIds = claimed;
-  mazeState.pickupDrops = (cloneSyncObject(event.pickupDrops || []) || []).filter((pickup) => !pickup.id || !claimed.has(pickup.id));
+  mazeState.pickupDrops = (event.pickupDrops || [])
+    .map(normalizeGauntletPickup)
+    .filter((pickup) => pickup && (!pickup.id || !claimed.has(pickup.id)));
   const keepLocalHazards = hazards.filter((hazard) => !hazard.mazeHazard);
   hazards = keepLocalHazards.concat((event.hazards || []).map((hazard) => normalizeGauntletHazard(hazard, event.serverTime)));
   if (mazeState.rewardPending && !mazeState.rewardChosen) showMazeRewardChoices();
@@ -12510,10 +12607,20 @@ function handleSelectorPointer(event) {
 function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
-  update(dt);
-  draw();
-  renderUi();
-  requestAnimationFrame(gameLoop);
+  try {
+    update(dt);
+    draw();
+    renderUi();
+  } catch (error) {
+    const errorAt = performance.now();
+    if (errorAt - lastRuntimeErrorAt > 1500) {
+      lastRuntimeErrorAt = errorAt;
+      console.error("Recovered from game loop error.", error);
+      if (ui.status) ui.status.textContent = "Recovered from a runtime hiccup. Sync is continuing.";
+    }
+  } finally {
+    requestAnimationFrame(gameLoop);
+  }
 }
 
 function handleCanvasPointerAttack(event) {
