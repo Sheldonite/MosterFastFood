@@ -229,6 +229,28 @@ canvas {
   pointer-events: none;
 }
 
+.debug-hud {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 13;
+  max-width: min(760px, calc(100% - 28px));
+  padding: 7px 10px;
+  border: 1px solid rgba(142, 199, 255, 0.34);
+  background: rgba(5, 9, 12, 0.82);
+  color: #d6ecff;
+  font: 700 12px/1.35 Consolas, "Courier New", monospace;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.debug-hud[hidden] {
+  display: none;
+}
+
 .death-screen {
   position: absolute;
   inset: 0;
@@ -252,6 +274,63 @@ canvas {
 
 .reward-overlay[hidden] {
   display: none;
+}
+
+.debug-report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(5, 7, 8, 0.76);
+}
+
+.debug-report-overlay[hidden] {
+  display: none;
+}
+
+.debug-report-panel {
+  width: min(760px, calc(100% - 24px));
+  max-height: min(640px, calc(100% - 24px));
+  display: grid;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 111, 97, 0.56);
+  background: rgba(18, 16, 15, 0.98);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+}
+
+.debug-report-head,
+.debug-report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debug-report-head h1 {
+  margin: 0;
+  color: #ffb0a4;
+  font-size: 24px;
+}
+
+.debug-report-head p {
+  margin: 4px 0 0;
+  color: #d8cfc2;
+  font-size: 13px;
+}
+
+.debug-report-panel textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: none;
+  padding: 10px;
+  border: 1px solid rgba(244, 232, 203, 0.18);
+  background: #080909;
+  color: #f4f1e6;
+  font: 12px/1.45 Consolas, "Courier New", monospace;
 }
 
 .reward-panel {

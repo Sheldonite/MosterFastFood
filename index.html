@@ -79,6 +79,7 @@
           <button id="resetButton" type="button" title="Reset fight">Reset Fight</button>
         </div>
         <div id="floatText" class="float-text" aria-live="polite"></div>
+        <div id="multiplayerDebugHud" class="debug-hud" hidden></div>
         <div id="deathScreen" class="death-screen" aria-live="assertive" hidden>
           <div class="death-title">You're Stuffed</div>
           <button id="deathResetButton" class="death-reset" type="button">Reset Run</button>
@@ -87,6 +88,21 @@
           <section class="reward-panel" aria-label="Choose gauntlet reward">
             <h1 id="mazeRewardTitle">Choose a Reward</h1>
             <div id="mazeRewardCards" class="reward-cards"></div>
+          </section>
+        </div>
+        <div id="debugReportOverlay" class="debug-report-overlay" hidden>
+          <section class="debug-report-panel" aria-label="Debug report">
+            <div class="debug-report-head">
+              <div>
+                <h1>Debug Report</h1>
+                <p>Paste this to Codex.</p>
+              </div>
+              <button id="debugReportDismiss" type="button">Dismiss</button>
+            </div>
+            <textarea id="debugReportText" readonly spellcheck="false"></textarea>
+            <div class="debug-report-actions">
+              <button id="debugReportCopy" type="button">Copy Report</button>
+            </div>
           </section>
         </div>
       </section>
@@ -189,6 +205,6 @@
       </section>
     </div>
 
-    <script src="./src/game.js?v=20260505-partysync1"></script>
+    <script src="./src/game.js?v=20260505-debugreport1"></script>
   </body>
 </html>
