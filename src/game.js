@@ -70,6 +70,7 @@ const ui = {
   debugReportText: document.querySelector("#debugReportText"),
   debugReportCopy: document.querySelector("#debugReportCopy"),
   debugReportDismiss: document.querySelector("#debugReportDismiss"),
+  debugReportButton: document.querySelector("#debugReportButton"),
 };
 
 const lockedBosses = new Set();
@@ -1395,6 +1396,11 @@ function reportRuntimeError(error, context = {}) {
   recordDebugEvent("runtime-error", { area: context.area || "unknown", message: errorInfo.message });
   console.error("Captured runtime error.", error);
   showDebugReport(error, context);
+}
+
+function showManualDebugReport(trigger = "manual") {
+  recordDebugEvent("manual-debug-capture", { trigger });
+  showDebugReport(new Error("Manual debug capture"), { area: "manual-debug-capture", trigger });
 }
 
 function attackInterval(kind, phase = boss.phase, enraged = boss.enraged) {
@@ -11271,6 +11277,7 @@ function renderUi() {
 }
 
 function updateMultiplayerDebugHud() {
+  if (ui.debugReportButton) ui.debugReportButton.hidden = !gauntletTestDebugEnabled;
   if (!ui.multiplayerDebugHud) return;
   if (!gauntletTestDebugEnabled || runState.mode !== "multiplayer") {
     ui.multiplayerDebugHud.hidden = true;
@@ -13119,6 +13126,7 @@ ui.mazeRewardCards?.addEventListener("click", (event) => {
 });
 ui.resetButton.addEventListener("click", () => resetFight(false));
 ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
+ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
 ui.debugReportCopy?.addEventListener("click", copyDebugReport);
 ui.debugReportDismiss?.addEventListener("click", () => {
   if (ui.debugReportOverlay) ui.debugReportOverlay.hidden = true;
@@ -13139,6 +13147,11 @@ window.addEventListener("unhandledrejection", (event) => {
 window.addEventListener("keydown", (event) => {
   if (isTypingTarget(document.activeElement)) return;
   const key = event.key.toLowerCase();
+  if (event.ctrlKey && event.shiftKey && key === "d") {
+    event.preventDefault();
+    showManualDebugReport("hotkey");
+    return;
+  }
   const direction = keyDirections[key];
   if (direction) {
     event.preventDefault();
