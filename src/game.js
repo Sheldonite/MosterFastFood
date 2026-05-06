@@ -448,6 +448,7 @@ const multiplayer = {
   reconnectAttempts: 0,
   maxReconnectAttempts: 3,
   attackSeq: 0,
+  intentSeq: 0,
   bossSyncSeq: 0,
   hazardSyncSeq: 0,
   particleSyncSeq: 0,
@@ -864,13 +865,17 @@ function talentAbilityCooldownMultiplier(index) {
 
 function destroyProjectilesInRadius(x, y, radius) {
   let cleared = 0;
+  const hazardIds = [];
   hazards = hazards.filter((hazard) => {
     if (!hazard.r || hazard.r > 14 || !Number.isFinite(hazard.ttl)) return true;
     if (distance({ x, y }, hazard) > radius + hazard.r) return true;
     cleared += 1;
+    const syncId = sharedHazardSyncId(hazard);
+    if (syncId) hazardIds.push(syncId);
     particles.push({ x: hazard.x, y: hazard.y - 10, text: "cleared", color: "#fff4c4", ttl: 0.45 });
     return false;
   });
+  if (hazardIds.length) sendHazardControlIntent("destroy", hazardIds, { x, y, radius });
   return cleared;
 }
 
@@ -1146,6 +1151,7 @@ function startMultiplayerFight(bossKind, spawn, startAt = 0, serverTime = 0) {
   multiplayer.bossSyncSeq = 0;
   multiplayer.hazardSyncSeq = 0;
   multiplayer.particleSyncSeq = 0;
+  multiplayer.intentSeq = 0;
   multiplayer.lastBossSyncSeq = 0;
   resetPartySyncState();
   const safeBossKind = lockedBosses.has(bossKind) ? "cola" : bossKind || "cola";
@@ -2290,7 +2296,8 @@ function updateGauntletPickups(dt) {
 }
 
 function updateMazeCombat(dt) {
-  if (player.room !== "maze" || !mazeState || player.dead || player.won || mazeState.rewardPending) return;
+  if (player.room !== "maze" || !mazeState || player.won || mazeState.rewardPending) return;
+  if (player.dead && (!isPartySyncActive() || !isMultiplayerHost())) return;
   if (isPartySyncActive() && !isMultiplayerHost()) {
     updateGauntletPickups(dt);
     updateLocalGauntletContactDamage(dt);
@@ -3219,15 +3226,23 @@ function spawnTacoLettuceCleanseZone(delay = 0.2) {
   });
 }
 
-function markTacoPuzzleFailure(ingredient) {
+function markTacoPuzzleFailure(ingredient, options = {}) {
   if (boss.kind !== "taco" || !boss.tacoPuzzleActive) return;
   if (boss.tacoCurrentIngredient !== ingredient) return;
+  if (!options.remote && shouldSendBossMechanicIntent()) {
+    sendBossMechanicIntent("taco-failure", { ingredient });
+    return;
+  }
   boss.tacoPuzzleFailed = true;
 }
 
-function markTacoPuzzleProgress(ingredient) {
+function markTacoPuzzleProgress(ingredient, options = {}) {
   if (boss.kind !== "taco" || !boss.tacoPuzzleActive) return;
   if (boss.tacoCurrentIngredient !== ingredient) return;
+  if (!options.remote && shouldSendBossMechanicIntent()) {
+    sendBossMechanicIntent("taco-progress", { ingredient });
+    return;
+  }
   boss.tacoPuzzleProgress = true;
 }
 
@@ -3366,7 +3381,9 @@ function isDonutFinalPhase() {
 
 function createDonutHoles(count) {
   const holeHp = Math.round((isDonutFinalPhase() ? 58 : 78) * 1.35);
+  const waveId = (boss.donutHoleWaveSeq = (boss.donutHoleWaveSeq || 0) + 1);
   return Array.from({ length: count }, (_, index) => ({
+    id: `hole-${waveId}-${index}`,
     angle: (Math.PI * 2 * index) / count,
     r: 18,
     fireTimer: 0.95 + index * 0.22,
@@ -3444,6 +3461,7 @@ function spawnDonutMinion(index, elapsed) {
     glazer: { r: 24, hp: 78, speed: 36, color: "#ffe36e" },
   }[kind];
   boss.donutMinions.push({
+    id: `minion-${boss.donutMinionSeq = (boss.donutMinionSeq || 0) + 1}`,
     kind,
     x: spawn.x,
     y: spawn.y,
@@ -4528,7 +4546,7 @@ function radiantSmite() {
     if (hasTalent("paladin_judgment_mark")) {
       enemy.judgmentTimer = 5;
       particles.push({ x: enemy.x, y: enemy.y - enemy.radius - 42, text: "judged", color: "#fff0bf", ttl: 0.7 });
-      syncTargetStatus(enemy);
+      syncTargetStatus(enemy, "judgment");
     }
   });
   abilityEffects.push({ type: "radiantSmite", x: target.x, y: target.y, r: radius, ttl: 0.42, maxTtl: 0.42 });
@@ -4663,6 +4681,7 @@ function damageEnemiesInCone(x, y, angle, range, halfAngle, amount, source) {
 
 function destroyProjectilesInCone(x, y, angle, range, halfAngle) {
   let blocked = 0;
+  const hazardIds = [];
   hazards = hazards.filter((hazard) => {
     if (!isDestroyableProjectile(hazard)) return true;
     const dx = hazard.x - x;
@@ -4671,9 +4690,12 @@ function destroyProjectilesInCone(x, y, angle, range, halfAngle) {
     if (dist > range + (hazard.r || 0)) return true;
     if (Math.abs(angleDifference(Math.atan2(dy, dx), angle)) > halfAngle) return true;
     blocked += 1;
+    const syncId = sharedHazardSyncId(hazard);
+    if (syncId) hazardIds.push(syncId);
     abilityEffects.push({ type: "projectileBlock", x: hazard.x, y: hazard.y, r: (hazard.r || 10) + 10, ttl: 0.22, maxTtl: 0.22 });
     return false;
   });
+  if (hazardIds.length) sendHazardControlIntent("destroy", hazardIds, { x, y, angle, range, halfAngle });
   return blocked;
 }
 
@@ -6462,6 +6484,16 @@ function spawnTacoShellShards(source, targetList = hazards) {
 function hitDonutHole(projectile) {
   const hole = boss.donutHoles?.find((candidate) => candidate.hp > 0 && distance(projectile, candidate) < candidate.r + projectile.r);
   if (!hole) return false;
+  if (shouldSendBossSubtargetIntent()) {
+    sendBossSubtargetIntent("donut-hole", {
+      targetId: hole.id,
+      baseAmount: projectile.damage,
+      popDamage: Math.round(player.stats.damage * 1.4),
+      source: "Shot",
+    });
+    particles.push({ x: hole.x, y: hole.y - 24, text: "hit", color: "#ffb6d1", ttl: 0.45 });
+    return true;
+  }
   const damage = Math.ceil(projectile.damage * 0.9);
   hole.hp = Math.max(0, hole.hp - damage);
   particles.push({ x: hole.x, y: hole.y - 24, text: `-${damage}`, color: "#ffb6d1", ttl: 0.65 });
@@ -6480,8 +6512,17 @@ function hitDonutMinion(projectile) {
   return true;
 }
 
-function damageDonutMinion(minion, amount, source) {
+function damageDonutMinion(minion, amount, source, options = {}) {
   if (!minion || minion.hp <= 0) return false;
+  if (shouldSendBossSubtargetIntent() && !options.remote) {
+    sendBossSubtargetIntent("donut-minion", {
+      targetId: minion.id,
+      baseAmount: amount,
+      source,
+    });
+    particles.push({ x: minion.x, y: minion.y - 24, text: "hit", color: "#ffd7e8", ttl: 0.45 });
+    return true;
+  }
   const damage = Math.ceil(amount);
   minion.hp = Math.max(0, minion.hp - damage);
   particles.push({ x: minion.x, y: minion.y - 24, text: `-${damage}`, color: "#ffd7e8", ttl: 0.65 });
@@ -6495,6 +6536,15 @@ function damageDonutMinion(minion, amount, source) {
 function hitSushiSegment(projectile) {
   const segment = sushiSegments().find((candidate) => distance(projectile, candidate) < candidate.r + projectile.r);
   if (!segment) return false;
+  if (shouldSendBossSubtargetIntent()) {
+    sendBossSubtargetIntent("sushi-segment", {
+      segmentIndex: segment.index,
+      baseAmount: projectile.damage,
+      source: "Shot",
+    });
+    particles.push({ x: segment.x, y: segment.y - 24, text: "hit", color: "#9ff089", ttl: 0.45 });
+    return true;
+  }
   const damage = segment.weak ? Math.ceil(projectile.damage * 1.8) : Math.ceil(projectile.damage * 0.82);
   damageBossTarget(boss, damage, segment.weak ? "Weak segment" : "Sushi segment");
   if (segment.weak) {
@@ -6563,7 +6613,7 @@ function enterDeathState(source) {
   player.slide = null;
   player.moving = false;
   selectedBoss = null;
-  hazards = [];
+  if (!isPartySyncActive()) hazards = [];
   playerProjectiles = [];
   remoteProjectiles = [];
   abilityEffects = [];
@@ -6858,13 +6908,17 @@ function updateBlinkRune(effect, dt) {
   livingBosses().forEach((target) => {
     if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, hasTalent("mage_chrono_blink") ? 14 : 8, "Blink Rune");
   });
+  const hazardIds = [];
   hazards.forEach((hazard) => {
     if (!hazard.r || hazard.r > 11 || !Number.isFinite(hazard.ttl)) return;
     if (distance(effect, hazard) < effect.r + hazard.r) {
+      const syncId = sharedHazardSyncId(hazard);
+      if (syncId) hazardIds.push(syncId);
       hazard.ttl = 0;
       particles.push({ x: hazard.x, y: hazard.y - 10, text: "cleared", color: "#bafcff", ttl: 0.45 });
     }
   });
+  if (hazardIds.length) sendHazardControlIntent("destroy", hazardIds, { x: effect.x, y: effect.y, radius: effect.r });
 }
 
 function updateSmokeBomb(effect, dt) {
@@ -6879,9 +6933,12 @@ function updateSmokeBomb(effect, dt) {
     player.smokeSpeedGranted = true;
     particles.push({ x: player.x, y: player.y - 36, text: "ambush", color: "#c8ff9a", ttl: 0.65 });
   }
+  const hazardIds = [];
   hazards.forEach((hazard) => {
     if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
     if (distance(effect, hazard) < effect.r + (hazard.r || 0)) {
+      const syncId = sharedHazardSyncId(hazard);
+      if (syncId) hazardIds.push(syncId);
       hazard.vx *= Math.pow(0.5, dt);
       hazard.vy *= Math.pow(0.5, dt);
       if (!hazard.smokeWeakened && Number.isFinite(hazard.damage)) {
@@ -6890,6 +6947,11 @@ function updateSmokeBomb(effect, dt) {
       }
     }
   });
+  effect.hazardControlTimer = Math.max(0, (effect.hazardControlTimer || 0) - dt);
+  if (hazardIds.length && effect.hazardControlTimer <= 0) {
+    effect.hazardControlTimer = 0.2;
+    sendHazardControlIntent("slow-weaken", hazardIds, { x: effect.x, y: effect.y, radius: effect.r, factor: 0.82, damageFactor: 0.75 });
+  }
   if (hasTalent("rogue_smoke_poison")) {
     effect.pulseTimer = (effect.pulseTimer || 0) - dt;
     if (effect.pulseTimer <= 0) {
@@ -6903,13 +6965,21 @@ function applyTimeWarpSlow(dt) {
   const timeWarp = activeTimeWarp();
   if (!timeWarp) return;
   const decay = Math.pow(0.1, dt);
+  const hazardIds = [];
   hazards.forEach((hazard) => {
     if (!Number.isFinite(hazard.vx) || !Number.isFinite(hazard.vy)) return;
     if (distance(timeWarp, hazard) < timeWarp.r + (hazard.r || 0)) {
+      const syncId = sharedHazardSyncId(hazard);
+      if (syncId) hazardIds.push(syncId);
       hazard.vx *= decay;
       hazard.vy *= decay;
     }
   });
+  timeWarp.hazardControlTimer = Math.max(0, (timeWarp.hazardControlTimer || 0) - dt);
+  if (hazardIds.length && timeWarp.hazardControlTimer <= 0) {
+    timeWarp.hazardControlTimer = 0.2;
+    sendHazardControlIntent("slow", hazardIds, { x: timeWarp.x, y: timeWarp.y, radius: timeWarp.r, factor: 0.35 });
+  }
 }
 
 function activeTimeWarp() {
@@ -7006,12 +7076,11 @@ function updatePlayerProjectiles(dt) {
           damageBossTarget(hitMazeEnemy, projectile.damage, "Marked Shot");
         } else {
           const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitMazeEnemy.markedTimer > 0 && hitMazeEnemy.markedShots > 0;
-          const damage = markedBonus ? Math.ceil(projectile.damage * 1.45) : projectile.damage;
-          if (markedBonus) {
-            hitMazeEnemy.markedShots -= 1;
-            syncTargetStatus(hitMazeEnemy);
-          }
-          damageBossTarget(hitMazeEnemy, damage, projectile.ability ? "Ability" : "Shot");
+          damageBossTarget(hitMazeEnemy, projectile.damage, projectile.ability ? "Ability" : "Shot", {
+            markedBonus,
+            rangedBasic: projectile.tag === "Ranged" && !projectile.ability,
+            markedMultiplier: 1.45,
+          });
           if (projectile.tag === "Rogue" && !projectile.ability) {
             applyPoisonStack(hitMazeEnemy);
             applyExposedStack(hitMazeEnemy, projectile);
@@ -7046,13 +7115,11 @@ function updatePlayerProjectiles(dt) {
         damageBossTarget(hitBoss, projectile.damage, "Marked Shot");
       } else {
         const markedBonus = projectile.tag === "Ranged" && !projectile.ability && hitBoss.markedTimer > 0 && hitBoss.markedShots > 0;
-        const damage = markedBonus ? Math.ceil(projectile.damage * (hasTalent("ranger_deadeye_damage") ? 1.7 : 1.45)) : projectile.damage;
-        if (markedBonus) {
-          hitBoss.markedShots -= 1;
-          particles.push({ x: hitBoss.x, y: hitBoss.y - 58, text: "mark", color: "#ffd782", ttl: 0.65 });
-          syncTargetStatus(hitBoss);
-        }
-        damageBossTarget(hitBoss, damage, projectile.ability ? "Ability" : "Shot");
+        damageBossTarget(hitBoss, projectile.damage, projectile.ability ? "Ability" : "Shot", {
+          markedBonus,
+          rangedBasic: projectile.tag === "Ranged" && !projectile.ability,
+          markedMultiplier: hasTalent("ranger_deadeye_damage") ? 1.7 : 1.45,
+        });
         if (projectile.tag === "Rogue" && !projectile.ability) {
           applyPoisonStack(hitBoss);
           applyExposedStack(hitBoss, projectile);
@@ -7082,12 +7149,66 @@ function markBossTarget(target) {
   target.markedShots = 4 + (hasTalent("ranger_deadeye_mark") ? 2 : 0) + (hasTalent("ranger_deadeye_cap") ? 4 : 0);
   selectedBoss = target;
   particles.push({ x: target.x, y: target.y - target.radius - 36, text: "marked", color: "#ffd782", ttl: 0.95 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "mark");
 }
 
 function damageBossTarget(target, amount, source, options = {}) {
   if (!target || target.hp <= 0) return false;
   if (target.kind === "trainingDummy") return damageTrainingDummy(target, amount, source);
+  if (shouldSendHostHitIntent(target, source, options)) {
+    sendHitIntent(target, amount, source, damageIntentOptions(source, options));
+    particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
+    return true;
+  }
+  return applyDamageBossTargetLocal(target, amount, source, options);
+}
+
+function shouldSendHostHitIntent(target, source, options = {}) {
+  return isPartySyncActive()
+    && !isMultiplayerHost()
+    && !options.remote
+    && source !== "Co-op"
+    && target.kind !== "trainingDummy"
+    && Boolean(targetSyncDescriptor(target));
+}
+
+function damageIntentOptions(source, options = {}) {
+  const deadeye = !options.poison && source === "Shot" && player.deadeyeTimer > 0;
+  const meleeBleed = !options.poison && source === "Shot" && hasTalent("melee_blood_bleed") && currentClassKey() === "melee";
+  if (deadeye) {
+    player.deadeyeTimer = 0;
+    particles.push({ x: player.x, y: player.y - 42, text: "deadeye", color: "#ffd782", ttl: 0.7 });
+  }
+  return {
+    poison: Boolean(options.poison),
+    tacoBypassGuard: Boolean(options.tacoBypassGuard),
+    markedBonus: Boolean(options.markedBonus),
+    rangedBasic: Boolean(options.rangedBasic),
+    markedMultiplier: Number(options.markedMultiplier) || 1,
+    deadeye,
+    meleeBleed,
+    bleedTimer: meleeBleed ? 4 + (hasTalent("melee_blood_deep") ? 2 : 0) : 0,
+    bleedDamage: meleeBleed ? (hasTalent("melee_blood_deep") ? 6 : 4) : 0,
+  };
+}
+
+function sendHitIntent(target, amount, source, options = {}) {
+  const descriptor = targetSyncDescriptor(target);
+  if (!descriptor) return;
+  multiplayer.intentSeq += 1;
+  sendMultiplayerEvent({
+    kind: "hit-intent",
+    seq: multiplayer.intentSeq,
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    ...descriptor,
+    source,
+    baseAmount: amount,
+    options,
+  });
+}
+
+function applyDamageBossTargetLocal(target, amount, source, options = {}) {
   if (target.kind === "donut" && target.donutGauntletActive) {
     particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + 70, text: "offscreen", color: "#ffd7e8", ttl: 0.7 });
     return false;
@@ -7097,35 +7218,24 @@ function damageBossTarget(target, amount, source, options = {}) {
     return false;
   }
   let tunedAmount = amount;
-  if (!options.poison && source === "Shot" && hasTalent("melee_blood_bleed") && currentClassKey() === "melee") applyBleed(target);
+  if (options.meleeBleed) applyBleed(target, { timer: options.bleedTimer, damage: options.bleedDamage });
+  else if (!options.remoteIntent && !options.poison && source === "Shot" && hasTalent("melee_blood_bleed") && currentClassKey() === "melee") applyBleed(target);
+  if ((options.markedBonus || options.rangedBasic) && target.markedTimer > 0 && target.markedShots > 0) {
+    tunedAmount = Math.ceil(tunedAmount * (Number(options.markedMultiplier) || 1.45));
+    target.markedShots -= 1;
+    particles.push({ x: target.x, y: target.y - 58, text: "mark", color: "#ffd782", ttl: 0.65 });
+    syncTargetStatus(target, "mark");
+  }
   if (!options.poison && target.judgmentTimer > 0) tunedAmount = Math.ceil(tunedAmount * 1.12);
-  if (!options.poison && source === "Shot" && player.deadeyeTimer > 0) {
+  if (!options.poison && (options.deadeye || (!options.remoteIntent && source === "Shot" && player.deadeyeTimer > 0))) {
     tunedAmount = Math.ceil(tunedAmount * 1.4);
-    player.deadeyeTimer = 0;
+    if (!options.remoteIntent) player.deadeyeTimer = 0;
     particles.push({ x: target.x, y: target.y - 60, text: "deadeye", color: "#ffd782", ttl: 0.7 });
   }
   let damage = target.shieldTimer > 0 ? Math.ceil(tunedAmount * 0.5) : tunedAmount;
   if (target.kind === "taco" && !options.tacoBypassGuard) {
     if (target.shellGuardActive && target.exposedFillingTimer <= 0) damage = Math.max(1, Math.ceil(damage * 0.32));
     if (target.exposedFillingTimer > 0) damage = Math.ceil(damage * 2.35);
-  }
-  if (target.mazeEnemy && isPartySyncActive() && !isMultiplayerHost() && !options.remote) {
-    sendGauntletDamage(target, damage, source);
-    particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
-    return true;
-  }
-  if (!target.mazeEnemy && isPartySyncActive() && !isMultiplayerHost() && source !== "Co-op" && !options.remote) {
-    sendMultiplayerEvent({
-      kind: "damage",
-      encounter: "arena",
-      room: player.room,
-      phaseSeq: multiplayer.phaseSeq,
-      bossKind: boss.kind,
-      targetKind: target.kind,
-      amount: damage,
-    });
-    particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
-    return true;
   }
   target.hp = Math.max(0, target.hp - damage);
   if (!target.mazeEnemy && source !== "Co-op" && !options.remote && !isPartySyncActive()) {
@@ -7179,19 +7289,19 @@ function applyPoisonStack(target) {
     damageBossTarget(target, Math.round(player.stats.damage * 0.65), "Venom Nova");
   }
   particles.push({ x: target.x, y: target.y - target.radius - 26, text: `poison ${target.poisonStacks}`, color: "#9be06f", ttl: 0.65 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "poison");
 }
 
 function roguePoisonDamagePerStack() {
   return (isRogueBuild() && player.gear.armor === "channelerRobe" ? 2 : 1) + (hasTalent("rogue_venom_damage") ? 1 : 0);
 }
 
-function applyBleed(target) {
-  target.bleedTimer = 4 + (hasTalent("melee_blood_deep") ? 2 : 0);
+function applyBleed(target, options = {}) {
+  target.bleedTimer = Number.isFinite(options.timer) && options.timer > 0 ? options.timer : 4 + (hasTalent("melee_blood_deep") ? 2 : 0);
   target.bleedTickTimer = 0.5;
-  target.bleedDamage = hasTalent("melee_blood_deep") ? 6 : 4;
+  target.bleedDamage = Number.isFinite(options.damage) && options.damage > 0 ? options.damage : hasTalent("melee_blood_deep") ? 6 : 4;
   particles.push({ x: target.x, y: target.y - target.radius - 44, text: "bleed", color: "#ff6e7f", ttl: 0.65 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "bleed");
 }
 
 function applyBurn(target) {
@@ -7199,7 +7309,7 @@ function applyBurn(target) {
   target.burnTickTimer = 0.5;
   target.burnDamage = Math.round(player.stats.damage * 0.12);
   particles.push({ x: target.x, y: target.y - target.radius - 50, text: "burn", color: "#ff8a32", ttl: 0.65 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "burn");
 }
 
 function applyExposedStack(target, projectile) {
@@ -7210,7 +7320,7 @@ function applyExposedStack(target, projectile) {
   target.exposedStacks = Math.min(3, (target.exposedStacks || 0) + 1);
   target.exposedTimer = 4 + (hasTalent("rogue_shadow_exposed") ? 2 : 0);
   particles.push({ x: target.x, y: target.y - target.radius - 58, text: `exposed ${target.exposedStacks}`, color: "#c8ff9a", ttl: 0.65 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "exposed");
 }
 
 function consumeExposed(target) {
@@ -7219,7 +7329,7 @@ function consumeExposed(target) {
   target.exposedTimer = 0;
   damageBossTarget(target, Math.round(player.stats.damage * 0.8), "Expose");
   particles.push({ x: target.x, y: target.y - target.radius - 60, text: "exploit", color: "#c8ff9a", ttl: 0.75 });
-  syncTargetStatus(target);
+  syncTargetStatus(target, "exposed", "exposed-consume");
 }
 
 function handleBossDefeated(target) {
@@ -11146,6 +11256,22 @@ function handleMultiplayerEvent(peerId, event) {
     applyRemoteGauntletSync(peerId, event);
     return;
   }
+  if (event.kind === "hit-intent") {
+    applyRemoteHitIntent(peerId, event);
+    return;
+  }
+  if (event.kind === "boss-subtarget-intent") {
+    applyRemoteBossSubtargetIntent(peerId, event);
+    return;
+  }
+  if (event.kind === "boss-mechanic-intent") {
+    applyRemoteBossMechanicIntent(peerId, event);
+    return;
+  }
+  if (event.kind === "hazard-control") {
+    applyRemoteHazardControl(peerId, event);
+    return;
+  }
   if (event.kind === "target-status") {
     applyRemoteTargetStatus(peerId, event);
     return;
@@ -11329,15 +11455,327 @@ function sendGauntletDamage(target, amount, source) {
   });
 }
 
+function validPeerIntent(peerId, room, maxAgeMs = 2000) {
+  if (!peerId || !isMultiplayerHost()) return null;
+  const peer = multiplayer.peers.get(peerId);
+  if (!peer) return null;
+  if (!Number.isFinite(peer.updatedAt) || Date.now() - peer.updatedAt > maxAgeMs) return null;
+  if (room && peer.room !== room) return null;
+  if (peer.bossKind !== boss.kind) return null;
+  if (peer.dead) return null;
+  if (!Number.isFinite(peer.x) || !Number.isFinite(peer.y)) return null;
+  return peer;
+}
+
+function peerDistanceToPoint(peer, point) {
+  if (!peer || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return Infinity;
+  return Math.hypot(peer.x - point.x, peer.y - point.y);
+}
+
+function remoteIntentAmountCap(peer) {
+  const weapon = gear.weapon[peer.weapon] || {};
+  const armor = gear.armor[peer.armor] || {};
+  const baseDamage = Number(weapon.damage) || 55;
+  const multiplier = Number(armor.damageMultiplier) || 1;
+  const burstFactor = peer.weaponTag === "Magic" ? 58 : peer.weaponTag === "Ranged" ? 44 : 50;
+  return Math.max(900, Math.min(3600, Math.ceil(baseDamage * multiplier * burstFactor)));
+}
+
+function validRemoteIntentAmount(peer, amount, multiplier = 1) {
+  return Number.isFinite(amount) && amount > 0 && amount <= remoteIntentAmountCap(peer) * multiplier;
+}
+
+function remoteIntentTargetRange(peer, event, target) {
+  const targetRadius = Number(target?.radius) || 0;
+  const source = String(event?.source || "");
+  if (source.includes("Meteor") || source.includes("Arrow Storm") || source.includes("Divine") || source.includes("Noxious") || source.includes("Groundbreaker")) {
+    return 1500 + targetRadius;
+  }
+  if (event?.encounter === "arena") return 1700 + targetRadius;
+  if (peer.weaponTag === "Ranged" || peer.weaponTag === "Magic") return 1250 + targetRadius;
+  return 760 + targetRadius;
+}
+
+function validPeerTargetIntent(peer, event, target, amount) {
+  if (!validRemoteIntentAmount(peer, amount)) return false;
+  return peerDistanceToPoint(peer, target) <= remoteIntentTargetRange(peer, event, target);
+}
+
 function applyRemoteGauntletDamage(peerId, event) {
   if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) return;
   if (player.room !== "maze" || !mazeState) return;
+  const peer = validPeerIntent(peerId, "maze");
+  if (!peer) return;
   const amount = Math.max(0, Number(event.amount) || 0);
   if (!amount) return;
   const target = mazeState.enemies.find((enemy) => enemy.id === event.targetId && enemy.hp > 0);
   if (!target) return;
+  if (!validPeerTargetIntent(peer, { encounter: "gauntlet", source: event.source }, target, amount)) return;
   damageBossTarget(target, amount, event.source || "Co-op", { remote: true });
   sendGauntletSync(true);
+}
+
+function applyRemoteHitIntent(peerId, event) {
+  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) return;
+  const room = event.encounter === "gauntlet" ? "maze" : event.encounter === "arena" ? "arena" : "";
+  const peer = validPeerIntent(peerId, room);
+  if (!peer) return;
+  const target = resolveRemoteSyncedTarget(event);
+  if (!target) return;
+  const amount = Math.max(0, Number(event.baseAmount) || 0);
+  if (!amount) return;
+  if (!validPeerTargetIntent(peer, event, target, amount)) return;
+  const options = cloneSyncObject(event.options || {}) || {};
+  options.remote = true;
+  options.remoteIntent = true;
+  applyDamageBossTargetLocal(target, amount, event.source || "Co-op", options);
+  if (event.encounter === "gauntlet") sendGauntletSync(true);
+  else sendMultiplayerState(true);
+}
+
+function shouldSendBossSubtargetIntent() {
+  return isPartySyncActive() && !isMultiplayerHost() && player.room === "arena";
+}
+
+function sendBossSubtargetIntent(subKind, payload) {
+  if (!shouldSendBossSubtargetIntent()) return;
+  multiplayer.intentSeq += 1;
+  sendMultiplayerEvent({
+    kind: "boss-subtarget-intent",
+    seq: multiplayer.intentSeq,
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    subKind,
+    ...payload,
+  });
+}
+
+function applyRemoteBossSubtargetIntent(peerId, event) {
+  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq || player.room !== "arena") return;
+  const peer = validPeerIntent(peerId, "arena");
+  if (!peer) return;
+  const amount = Math.max(0, Number(event.baseAmount) || 0);
+  if (!validRemoteIntentAmount(peer, amount)) return;
+  if (event.subKind === "donut-hole" && boss.kind === "donut") {
+    const hole = boss.donutHoles?.find((candidate) => candidate.id === event.targetId && candidate.hp > 0);
+    if (!hole || !amount) return;
+    if (peerDistanceToPoint(peer, hole) > 1500 + (hole.r || 0)) return;
+    const damage = Math.ceil(amount * 0.9);
+    hole.hp = Math.max(0, hole.hp - damage);
+    particles.push({ x: hole.x, y: hole.y - 24, text: `-${damage}`, color: "#ffb6d1", ttl: 0.65 });
+    if (hole.hp <= 0) {
+      boss.shieldTimer = 0;
+      const popDamage = Math.min(Math.max(1, Number(event.popDamage) || Math.round(amount * 1.4)), remoteIntentAmountCap(peer) * 2);
+      applyDamageBossTargetLocal(boss, popDamage, "Donut hole pop", { remote: true, remoteIntent: true });
+      particles.push({ x: hole.x, y: hole.y - 36, text: "pop", color: "#ffd7e8", ttl: 0.8 });
+    }
+    sendMultiplayerState(true);
+    return;
+  }
+  if (event.subKind === "donut-minion" && boss.kind === "donut") {
+    const minion = boss.donutMinions?.find((candidate) => candidate.id === event.targetId && candidate.hp > 0);
+    if (!minion || !amount) return;
+    if (peerDistanceToPoint(peer, minion) > 1500 + (minion.radius || 0)) return;
+    damageDonutMinion(minion, amount, event.source || "Co-op", { remote: true });
+    sendMultiplayerState(true);
+    return;
+  }
+  if (event.subKind === "sushi-segment" && boss.kind === "sushi") {
+    const segmentIndex = Number(event.segmentIndex);
+    if (!Number.isFinite(segmentIndex) || !amount) return;
+    const segment = sushiSegments().find((candidate) => candidate.index === segmentIndex);
+    if (!segment) return;
+    if (peerDistanceToPoint(peer, segment) > 1500 + (segment.r || 0)) return;
+    const damage = segment.weak ? Math.ceil(amount * 1.8) : Math.ceil(amount * 0.82);
+    applyDamageBossTargetLocal(boss, damage, segment.weak ? "Weak segment" : "Sushi segment", { remote: true, remoteIntent: true });
+    if (segment.weak) {
+      boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
+      boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
+      particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
+    }
+    sendMultiplayerState(true);
+  }
+}
+
+function shouldSendBossMechanicIntent() {
+  return isPartySyncActive() && !isMultiplayerHost() && player.room === "arena";
+}
+
+function sendBossMechanicIntent(action, payload = {}) {
+  if (!shouldSendBossMechanicIntent()) return;
+  multiplayer.intentSeq += 1;
+  sendMultiplayerEvent({
+    kind: "boss-mechanic-intent",
+    seq: multiplayer.intentSeq,
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    action,
+    ...payload,
+  });
+}
+
+function isPointInLineSegment(point, x, y, angle, length, width) {
+  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
+  const dx = point.x - x;
+  const dy = point.y - y;
+  const forward = Math.cos(angle) * dx + Math.sin(angle) * dy;
+  if (forward < 0 || forward > length) return false;
+  const side = Math.abs(-Math.sin(angle) * dx + Math.cos(angle) * dy);
+  return side < width;
+}
+
+function isPeerInTacoShellSafe(peer) {
+  const slam = hazards.find((hazard) => hazard.type === "tacoSlam" && hazard.tacoPuzzleIngredient === "shell");
+  if (!slam || slam.warn > 0) return false;
+  const dist = peerDistanceToPoint(peer, slam);
+  const angleToPeer = Math.atan2(peer.y - slam.y, peer.x - slam.x);
+  const inGap = Math.abs(angleDifference(angleToPeer, slam.gapAngle)) < 0.46;
+  return (dist < slam.r && dist > slam.inner && inGap) || dist <= slam.inner;
+}
+
+function peerTouchesTacoFailureHazard(peer, hazard) {
+  if (!hazard || hazard.warn > 0) return false;
+  const radius = 18;
+  if (hazard.type === "tacoCharge") {
+    return isPointInLineSegment(peer, hazard.x, hazard.y, hazard.angle, hazard.length, (hazard.width || 44) / 2 + radius + 18);
+  }
+  if (hazard.type === "tacoSlam") {
+    const dist = peerDistanceToPoint(peer, hazard);
+    const angleToPeer = Math.atan2(peer.y - hazard.y, peer.x - hazard.x);
+    const inGap = Math.abs(angleDifference(angleToPeer, hazard.gapAngle)) < 0.42;
+    return dist < hazard.r + radius && dist > hazard.inner && !inGap;
+  }
+  return Number.isFinite(hazard.r) && peerDistanceToPoint(peer, hazard) < hazard.r + radius + 24;
+}
+
+function validTacoMechanicIntent(peer, event) {
+  if (boss.kind !== "taco" || !boss.tacoPuzzleActive) return false;
+  const ingredient = event?.ingredient;
+  if (!ingredient || boss.tacoCurrentIngredient !== ingredient) return false;
+  if (event.action === "taco-progress") {
+    if (ingredient === "lettuce") {
+      return hazards.some((hazard) => hazard.type === "lettuceCleanseZone" && hazard.warn <= 0 && peerDistanceToPoint(peer, hazard) < hazard.r + 18);
+    }
+    if (ingredient === "shell") return isPeerInTacoShellSafe(peer);
+    if (ingredient === "salsa") return !boss.tacoPuzzleFailed;
+    return false;
+  }
+  if (event.action === "taco-failure") {
+    return hazards.some((hazard) => hazard.tacoPuzzleIngredient === ingredient && peerTouchesTacoFailureHazard(peer, hazard));
+  }
+  return false;
+}
+
+function applyRemoteBossMechanicIntent(peerId, event) {
+  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq || player.room !== "arena") return;
+  const peer = validPeerIntent(peerId, "arena");
+  if (!peer) return;
+  if (boss.kind === "taco") {
+    if (!validTacoMechanicIntent(peer, event)) return;
+    if (event.action === "taco-failure") markTacoPuzzleFailure(event.ingredient, { remote: true });
+    if (event.action === "taco-progress") markTacoPuzzleProgress(event.ingredient, { remote: true });
+    sendMultiplayerState(true);
+  }
+}
+
+function sharedHazardSyncId(hazard) {
+  if (!isPartySyncActive() || !hazard) return null;
+  if (!hazard.syncId && isMultiplayerHost()) {
+    if (hazard.mazeHazard) serializeGauntletHazard(hazard);
+    else if (player.room === "arena") serializeBossHazard(hazard);
+  }
+  return hazard.syncId || null;
+}
+
+function sendHazardControlIntent(action, hazardIds, payload = {}) {
+  if (!isPartySyncActive() || isMultiplayerHost() || !hazardIds?.length) return;
+  multiplayer.intentSeq += 1;
+  sendMultiplayerEvent({
+    kind: "hazard-control",
+    seq: multiplayer.intentSeq,
+    phaseSeq: multiplayer.phaseSeq,
+    bossKind: boss.kind,
+    room: player.room,
+    action,
+    hazardIds: [...new Set(hazardIds)].slice(0, 24),
+    ...payload,
+  });
+}
+
+function hazardControlOrigin(event) {
+  const x = Number(event?.x);
+  const y = Number(event?.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return { x, y };
+}
+
+function validHazardControlEnvelope(peer, event, origin) {
+  const radius = Number(event.radius);
+  const range = Number(event.range);
+  const extent = Number.isFinite(radius) ? radius : Number.isFinite(range) ? range : 0;
+  if (extent <= 0 || extent > 650) return false;
+  return peerDistanceToPoint(peer, origin) <= extent + 360;
+}
+
+function hazardWithinControlGeometry(hazard, event, origin) {
+  const padding = (Number(hazard.r) || 10) + 42;
+  const radius = Number(event.radius);
+  if (Number.isFinite(radius)) return peerDistanceToPoint(hazard, origin) <= radius + padding;
+  const range = Number(event.range);
+  const angle = Number(event.angle);
+  const halfAngle = Number(event.halfAngle);
+  if (!Number.isFinite(range) || !Number.isFinite(angle) || !Number.isFinite(halfAngle) || halfAngle <= 0 || halfAngle > Math.PI) return false;
+  const dx = hazard.x - origin.x;
+  const dy = hazard.y - origin.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > range + padding) return false;
+  return Math.abs(angleDifference(Math.atan2(dy, dx), angle)) <= halfAngle + 0.16;
+}
+
+function canRemoteDestroyHazard(hazard) {
+  if (isDestroyableProjectile(hazard)) return true;
+  return Number.isFinite(hazard.r) && hazard.r <= 14 && Number.isFinite(hazard.ttl);
+}
+
+function canRemoteSlowHazard(hazard) {
+  return Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy) && Number.isFinite(hazard.ttl);
+}
+
+function applyRemoteHazardControl(peerId, event) {
+  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) return;
+  if (event.room !== player.room || !Array.isArray(event.hazardIds)) return;
+  const peer = validPeerIntent(peerId, event.room);
+  if (!peer) return;
+  const origin = hazardControlOrigin(event);
+  if (!origin || !validHazardControlEnvelope(peer, event, origin)) return;
+  const ids = new Set(event.hazardIds.filter(Boolean));
+  if (!ids.size) return;
+  let changed = false;
+  hazards.forEach((hazard) => {
+    if (!hazard.syncId || !ids.has(hazard.syncId)) return;
+    if (!hazardWithinControlGeometry(hazard, event, origin)) return;
+    if (event.action === "destroy") {
+      if (!canRemoteDestroyHazard(hazard)) return;
+      hazard.ttl = 0;
+      changed = true;
+      return;
+    }
+    if ((event.action === "slow" || event.action === "slow-weaken") && canRemoteSlowHazard(hazard)) {
+      const factor = clamp(Number(event.factor) || 0.5, 0.05, 1);
+      hazard.vx *= factor;
+      hazard.vy *= factor;
+      changed = true;
+    }
+    if (event.action === "slow-weaken" && !hazard.smokeWeakened && Number.isFinite(hazard.damage)) {
+      hazard.damage = Math.max(1, Math.ceil(hazard.damage * clamp(Number(event.damageFactor) || 0.75, 0.2, 1)));
+      hazard.smokeWeakened = true;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  hazards = hazards.filter((hazard) => hazard.ttl > 0);
+  if (event.room === "maze") sendGauntletSync(true);
+  else sendMultiplayerState(true);
 }
 
 function targetSyncDescriptor(target) {
@@ -11351,24 +11789,22 @@ function targetSyncDescriptor(target) {
   return null;
 }
 
-function targetStatusSnapshot(target) {
-  return {
-    markedTimer: target.markedTimer || 0,
-    markedShots: target.markedShots || 0,
-    poisonStacks: target.poisonStacks || 0,
-    poisonTimer: target.poisonTimer || 0,
-    poisonTickTimer: target.poisonTickTimer || 0,
-    poisonDamagePerStack: target.poisonDamagePerStack || 0,
-    bleedTimer: target.bleedTimer || 0,
-    bleedTickTimer: target.bleedTickTimer || 0,
-    bleedDamage: target.bleedDamage || 0,
-    burnTimer: target.burnTimer || 0,
-    burnTickTimer: target.burnTickTimer || 0,
-    burnDamage: target.burnDamage || 0,
-    exposedStacks: target.exposedStacks || 0,
-    exposedTimer: target.exposedTimer || 0,
-    judgmentTimer: target.judgmentTimer || 0,
-  };
+const targetStatusGroups = {
+  mark: ["markedTimer", "markedShots"],
+  poison: ["poisonStacks", "poisonTimer", "poisonTickTimer", "poisonDamagePerStack"],
+  bleed: ["bleedTimer", "bleedTickTimer", "bleedDamage"],
+  burn: ["burnTimer", "burnTickTimer", "burnDamage"],
+  exposed: ["exposedStacks", "exposedTimer"],
+  judgment: ["judgmentTimer"],
+};
+
+function targetStatusSnapshot(target, statusGroup) {
+  const fields = targetStatusGroups[statusGroup];
+  if (!fields) return null;
+  return fields.reduce((snapshot, key) => {
+    snapshot[key] = target[key] || 0;
+    return snapshot;
+  }, {});
 }
 
 function targetControlSnapshot(target) {
@@ -11382,16 +11818,21 @@ function targetControlSnapshot(target) {
   };
 }
 
-function syncTargetStatus(target) {
+function syncTargetStatus(target, statusGroup, statusAction = "") {
   const descriptor = targetSyncDescriptor(target);
   if (!descriptor) return;
-  sendMultiplayerEvent({
+  const status = targetStatusSnapshot(target, statusGroup);
+  if (!status) return;
+  const event = {
     kind: "target-status",
     phaseSeq: multiplayer.phaseSeq,
     bossKind: boss.kind,
     ...descriptor,
-    status: targetStatusSnapshot(target),
-  });
+    statusGroup,
+    status,
+  };
+  if (statusAction) event.statusAction = statusAction;
+  sendMultiplayerEvent(event);
 }
 
 function syncTargetControl(target) {
@@ -11419,13 +11860,63 @@ function resolveRemoteSyncedTarget(event) {
   return null;
 }
 
+function finiteStatusNumber(status, key) {
+  const value = Number(status?.[key]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function mergeMaxStatusField(target, status, key) {
+  const value = finiteStatusNumber(status, key);
+  if (value === null) return false;
+  target[key] = Math.max(target[key] || 0, value);
+  return true;
+}
+
+function mergeRemoteTargetStatus(target, statusGroup, status, statusAction = "") {
+  if (!targetStatusGroups[statusGroup] || !status) return false;
+  let changed = false;
+  if (statusGroup === "mark") {
+    const currentTimer = target.markedTimer || 0;
+    const incomingTimer = finiteStatusNumber(status, "markedTimer");
+    if (incomingTimer !== null) {
+      target.markedTimer = Math.max(currentTimer, incomingTimer);
+      changed = true;
+    }
+    const incomingShots = finiteStatusNumber(status, "markedShots");
+    if (incomingShots !== null) {
+      const currentShots = target.markedShots || 0;
+      const timerDelta = incomingTimer === null ? Infinity : Math.abs(incomingTimer - currentTimer);
+      const consumedShot = incomingShots < currentShots && currentShots - incomingShots <= 1 && timerDelta <= 0.45;
+      target.markedShots = consumedShot ? incomingShots : Math.max(currentShots, incomingShots);
+      if (target.markedShots <= 0) target.markedTimer = 0;
+      changed = true;
+    }
+    return changed;
+  }
+  if (statusGroup === "exposed") {
+    if (statusAction === "exposed-consume") {
+      target.exposedStacks = 0;
+      target.exposedTimer = 0;
+      return true;
+    }
+    changed = mergeMaxStatusField(target, status, "exposedStacks") || changed;
+    changed = mergeMaxStatusField(target, status, "exposedTimer") || changed;
+    return changed;
+  }
+  targetStatusGroups[statusGroup].forEach((key) => {
+    changed = mergeMaxStatusField(target, status, key) || changed;
+  });
+  return changed;
+}
+
 function applyRemoteTargetStatus(peerId, event) {
   const target = resolveRemoteSyncedTarget(event);
   if (!target || !event.status) return;
-  Object.entries(event.status).forEach(([key, value]) => {
-    if (Number.isFinite(value)) target[key] = value;
-  });
+  const fields = targetStatusGroups[event.statusGroup];
+  if (!fields) return;
+  if (!mergeRemoteTargetStatus(target, event.statusGroup, event.status, event.statusAction)) return;
   if (event.encounter === "gauntlet") sendGauntletSync(true);
+  else sendMultiplayerState(true);
 }
 
 function applyRemoteTargetControl(peerId, event) {
