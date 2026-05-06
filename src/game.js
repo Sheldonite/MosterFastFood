@@ -452,6 +452,7 @@ const multiplayer = {
   lastGauntletSyncSeq: 0,
   gauntletSyncTimer: 0,
   lastGauntletSyncAt: 0,
+  staleGauntletReportAt: 0,
   sendTimer: 0,
   reconnectTimer: 0,
   reconnectDelay: 3,
@@ -471,6 +472,7 @@ const debugReportState = {
   lastReport: "",
   visible: false,
   messageSeq: 0,
+  lastErrorAtByKey: new Map(),
 };
 
 const runState = {
@@ -1393,7 +1395,13 @@ function showDebugReport(error, context = {}) {
 
 function reportRuntimeError(error, context = {}) {
   const errorInfo = debugErrorInfo(error);
-  recordDebugEvent("runtime-error", { area: context.area || "unknown", message: errorInfo.message });
+  const area = context.area || "unknown";
+  const key = `${area}:${errorInfo.message}`.slice(0, 180);
+  const now = performance.now();
+  const lastAt = debugReportState.lastErrorAtByKey.get(key) || 0;
+  if (lastAt && now - lastAt < 1500) return;
+  debugReportState.lastErrorAtByKey.set(key, now);
+  recordDebugEvent("runtime-error", { area, message: errorInfo.message });
   console.error("Captured runtime error.", error);
   showDebugReport(error, context);
 }
@@ -1451,6 +1459,7 @@ function resetPartySyncState() {
   multiplayer.lastGauntletSyncSeq = 0;
   multiplayer.gauntletSyncTimer = 0;
   multiplayer.lastGauntletSyncAt = 0;
+  multiplayer.staleGauntletReportAt = 0;
 }
 
 function localPartyReadyMatches(phase) {
@@ -2510,28 +2519,80 @@ function updateGauntletProgressInner(dt) {
   if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending) return;
   mazeState.waveTimer = Math.max(0, (mazeState.waveTimer || 0) - dt);
   updateGauntletPickups(dt);
-  if (mazeState.waveIndex < 0 && mazeState.waveTimer <= 0) {
-    spawnGauntletWave(0);
+  if (mazeState.waveIndex < 0) {
+    if (gauntletWaveAdvanceReady()) recoverGauntletWaveAdvance("initial-timer");
     return;
   }
-  const activeTrash = mazeState.enemies.some((enemy) => enemy.hp > 0 && !enemy.miniBoss);
+  const activeTrash = hasActiveGauntletTrash();
   const currentWave = mazeState.waves?.[mazeState.waveIndex];
   if (currentWave?.spawned && !currentWave.cleared && !activeTrash) {
-    currentWave.cleared = true;
-    mazeState.waveTimer = 1.1;
-    dropGauntletPickup(currentWave.index);
-    recordDebugEvent("gauntlet-wave-cleared", { index: currentWave.index, phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
-    sendGauntletSync(true);
-    ui.status.textContent = currentWave.index === 0 ? "Wave cleared. Next wave incoming." : "Trash cleared. The warden is coming.";
-    showFloat(currentWave.index === 0 ? "Wave cleared" : "Warden incoming");
+    clearGauntletWave(currentWave, "normal");
     return;
   }
-  if (activeTrash || mazeState.waveTimer > 0) return;
-  if (mazeState.waveIndex < mazeState.waves.length - 1) {
-    spawnGauntletWave(mazeState.waveIndex + 1);
-    return;
+  if (activeTrash || !gauntletWaveAdvanceReady()) return;
+  recoverGauntletWaveAdvance("timer");
+}
+
+function hasActiveGauntletTrash() {
+  return Boolean(mazeState?.enemies?.some((enemy) => enemy.hp > 0 && !enemy.miniBoss));
+}
+
+function gauntletWaveAdvanceReady() {
+  if (!mazeState) return false;
+  const timerReady = !Number.isFinite(mazeState.waveTimer) || mazeState.waveTimer <= 0;
+  const dueAt = Number(mazeState.nextWaveDueAt);
+  return timerReady || (Number.isFinite(dueAt) && dueAt > 0 && performance.now() >= dueAt);
+}
+
+function canAdvanceGauntletLocally() {
+  return !isPartySyncActive() || isMultiplayerHost();
+}
+
+function clearGauntletWave(wave, reason = "normal") {
+  if (!mazeState || !wave || wave.cleared) return;
+  wave.cleared = true;
+  mazeState.waveTimer = 1.1;
+  mazeState.nextWaveDueAt = performance.now() + mazeState.waveTimer * 1000;
+  dropGauntletPickup(wave.index);
+  recordDebugEvent("gauntlet-wave-cleared", { index: wave.index, reason, phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
+  sendGauntletSync(true);
+  ui.status.textContent = wave.index === 0 ? "Wave cleared. Next wave incoming." : "Trash cleared. The warden is coming.";
+  showFloat(wave.index === 0 ? "Wave cleared" : "Warden incoming");
+}
+
+function recoverGauntletWaveAdvance(reason = "watchdog") {
+  if (!canAdvanceGauntletLocally()) return false;
+  if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending) return false;
+  ensureGauntletRuntimeState();
+  if (hasActiveGauntletTrash()) return false;
+  const waves = Array.isArray(mazeState.waves) ? mazeState.waves : [];
+  if (mazeState.waveIndex < 0) {
+    if (!gauntletWaveAdvanceReady()) return false;
+    recordDebugEvent("gauntlet-wave-watchdog", { reason, action: "spawn-initial", phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
+    spawnGauntletWave(0);
+    return true;
   }
-  if (!mazeState.miniBossSpawned) spawnGauntletMiniBoss();
+  const currentWave = waves[mazeState.waveIndex];
+  if (currentWave?.spawned && !currentWave.cleared) {
+    clearGauntletWave(currentWave, reason);
+    return true;
+  }
+  if (!gauntletWaveAdvanceReady()) return false;
+  if (mazeState.waveIndex < waves.length - 1) {
+    const nextIndex = mazeState.waveIndex + 1;
+    if (!waves[nextIndex]?.spawned) {
+      recordDebugEvent("gauntlet-wave-watchdog", { reason, action: "spawn-next", nextIndex, phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
+      spawnGauntletWave(nextIndex);
+      return true;
+    }
+    return false;
+  }
+  if (!mazeState.miniBossSpawned) {
+    recordDebugEvent("gauntlet-wave-watchdog", { reason, action: "spawn-warden", phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
+    spawnGauntletMiniBoss();
+    return true;
+  }
+  return false;
 }
 
 function spawnGauntletWave(index) {
@@ -2540,6 +2601,7 @@ function spawnGauntletWave(index) {
   if (wave.spawned) return;
   wave.spawned = true;
   wave.cleared = false;
+  mazeState.nextWaveDueAt = 0;
   mazeState.waveIndex = index;
   mazeState.enemies.push(...wave.enemies);
   recordDebugEvent("gauntlet-wave-spawn", { index, enemies: wave.enemies.length, phaseSeq: multiplayer.phaseSeq, sequence: mazeState.sequence });
@@ -7307,42 +7369,61 @@ function playerInTimeWarp() {
   return Boolean(timeWarp && distance(player, timeWarp) < timeWarp.r + player.radius);
 }
 
-function update(dt) {
-  movePlayer(dt);
-  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
-  player.castTimer = Math.max(0, player.castTimer - dt);
-  player.rangerAttackTimer = Math.max(0, player.rangerAttackTimer - dt);
-  player.meleeAttackTimer = Math.max(0, player.meleeAttackTimer - dt);
-  player.rogueAttackTimer = Math.max(0, player.rogueAttackTimer - dt);
-  updateAbilities(dt);
-  updateTrainingDummy(dt);
-  updateRoom(dt);
-  updateMazeCombat(dt);
-  updateCombat(dt);
-  const hazardSync = beginBossSyncCapture("hazards");
-  updateHazards(dt);
-  finishBossSyncCapture(hazardSync);
-  updatePlayerProjectiles(dt);
-  updateRemoteProjectiles(dt);
-  remoteAbilityEffects = remoteAbilityEffects.filter((effect) => {
-    effect.ttl -= dt;
-    effect.age = (effect.age || 0) + dt;
-    return effect.ttl > 0;
-  });
-  particles = particles.filter((particle) => {
-    particle.ttl -= dt;
-    particle.y -= 28 * dt;
-    return particle.ttl > 0;
-  });
-  floatTimer -= dt;
-  if (floatTimer <= 0) ui.floatText.textContent = "";
-  if (screenBanner) {
-    screenBanner.timer -= dt;
-    if (screenBanner.timer <= 0) screenBanner = null;
+function runUpdateStep(area, step) {
+  try {
+    return step();
+  } catch (error) {
+    reportRuntimeError(error, { area });
+    return undefined;
   }
-  updateMultiplayer(dt);
-  camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
-  camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+}
+
+function update(dt) {
+  runUpdateStep("movePlayer", () => movePlayer(dt));
+  runUpdateStep("playerTimers", () => {
+    player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+    player.castTimer = Math.max(0, player.castTimer - dt);
+    player.rangerAttackTimer = Math.max(0, player.rangerAttackTimer - dt);
+    player.meleeAttackTimer = Math.max(0, player.meleeAttackTimer - dt);
+    player.rogueAttackTimer = Math.max(0, player.rogueAttackTimer - dt);
+  });
+  runUpdateStep("updateAbilities", () => updateAbilities(dt));
+  runUpdateStep("updateTrainingDummy", () => updateTrainingDummy(dt));
+  runUpdateStep("updateRoom", () => updateRoom(dt));
+  runUpdateStep("updateMazeCombat", () => updateMazeCombat(dt));
+  runUpdateStep("updateCombat", () => updateCombat(dt));
+  runUpdateStep("updateHazards", () => {
+    const hazardSync = beginBossSyncCapture("hazards");
+    updateHazards(dt);
+    finishBossSyncCapture(hazardSync);
+  });
+  runUpdateStep("updatePlayerProjectiles", () => updatePlayerProjectiles(dt));
+  runUpdateStep("updateRemoteProjectiles", () => updateRemoteProjectiles(dt));
+  runUpdateStep("remoteEffects", () => {
+    remoteAbilityEffects = remoteAbilityEffects.filter((effect) => {
+      effect.ttl -= dt;
+      effect.age = (effect.age || 0) + dt;
+      return effect.ttl > 0;
+    });
+    particles = particles.filter((particle) => {
+      particle.ttl -= dt;
+      particle.y -= 28 * dt;
+      return particle.ttl > 0;
+    });
+  });
+  runUpdateStep("uiTimers", () => {
+    floatTimer -= dt;
+    if (floatTimer <= 0) ui.floatText.textContent = "";
+    if (screenBanner) {
+      screenBanner.timer -= dt;
+      if (screenBanner.timer <= 0) screenBanner = null;
+    }
+  });
+  runUpdateStep("updateMultiplayer", () => updateMultiplayer(dt));
+  runUpdateStep("camera", () => {
+    camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
+    camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+  });
 }
 
 function updateTrainingDummy(dt) {
@@ -11469,11 +11550,54 @@ function updateMultiplayer(dt) {
     beginMultiplayerFightNow(pending.bossKind);
   }
   if (multiplayer.gauntletSyncTimer > 0) multiplayer.gauntletSyncTimer -= dt;
+  if (shouldBroadcastGauntletSync()) recoverGauntletWaveAdvance("multiplayer-watchdog");
+  checkStaleGauntletSync();
   if (shouldBroadcastGauntletSync()) sendGauntletSync(false);
   multiplayer.sendTimer -= dt;
   if (multiplayer.sendTimer <= 0) {
     multiplayer.sendTimer = 0.08;
     sendMultiplayerState(false);
+  }
+}
+
+function checkStaleGauntletSync() {
+  if (!isPartySyncActive() || isMultiplayerHost() || !multiplayer.connected) return;
+  if (player.room !== "maze" || multiplayer.partyPhase !== "gauntlet" || !mazeState) return;
+  if (!multiplayer.lastGauntletSyncAt) return;
+  const now = Date.now();
+  const ageMs = now - multiplayer.lastGauntletSyncAt;
+  if (ageMs < 3000) return;
+  if (now - (multiplayer.staleGauntletReportAt || 0) < 10000) return;
+  multiplayer.staleGauntletReportAt = now;
+  const hostId = multiplayer.room?.hostId || null;
+  const hostPeer = hostId ? multiplayer.peers.get(hostId) : null;
+  recordDebugEvent("gauntlet-sync-stale", {
+    ageMs,
+    lastSyncSeq: multiplayer.lastGauntletSyncSeq,
+    phaseSeq: multiplayer.phaseSeq,
+    waveIndex: mazeState.waveIndex,
+    hostPeerAgeMs: hostPeer?.updatedAt ? now - hostPeer.updatedAt : null,
+  });
+  showDebugReport(new Error(`Host gauntlet sync stale for ${Math.round(ageMs)}ms`), {
+    area: "gauntlet-sync-stale",
+    ageMs,
+    lastSyncSeq: multiplayer.lastGauntletSyncSeq,
+  });
+}
+
+function multiplayerWatchdogTick() {
+  try {
+    if (!multiplayer.enabled) return;
+    if (shouldBroadcastGauntletSync()) {
+      recoverGauntletWaveAdvance("interval-watchdog");
+      sendGauntletSync(true);
+    }
+    checkStaleGauntletSync();
+    if (multiplayer.connected && multiplayer.mode === "multiplayer" && multiplayer.room?.state === "inGame" && !multiplayer.pendingStart) {
+      sendMultiplayerState(true);
+    }
+  } catch (error) {
+    reportRuntimeError(error, { area: "multiplayerWatchdogTick" });
   }
 }
 
@@ -11874,6 +11998,7 @@ function applyRemoteGauntletSyncInner(peerId, event) {
   if (Number.isFinite(event.seq) && event.seq <= multiplayer.lastGauntletSyncSeq) return;
   if (Number.isFinite(event.seq)) multiplayer.lastGauntletSyncSeq = event.seq;
   multiplayer.lastGauntletSyncAt = Date.now();
+  multiplayer.staleGauntletReportAt = 0;
   if (Number.isFinite(event.seq) && (event.seq % 10 === 0 || event.rewardPending || event.miniBossSpawned)) {
     recordDebugEvent("gauntlet-sync-received", {
       seq: event.seq,
@@ -13186,4 +13311,5 @@ applyGear();
 resizeCanvas();
 renderUi();
 showMenuScreen("main");
+window.setInterval(multiplayerWatchdogTick, 750);
 requestAnimationFrame(gameLoop);
