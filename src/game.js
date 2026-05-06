@@ -156,6 +156,7 @@ const mazeRewardPool = [
 
 const mazeWallThickness = 8;
 const mazePlayerWallPadding = 8;
+const gauntletPlayerObstaclePadding = 3;
 
 const combatTuning = {
   incomingDamageMultiplier: 1.74,
@@ -478,8 +479,13 @@ const debugReportState = {
 };
 
 const multiplayerStateInterval = 0.18;
-const gauntletSyncInterval = 0.2;
+const gauntletSyncInterval = 0.16;
 const multiplayerWatchdogIntervalMs = 900;
+const remoteGauntletEnemySmoothing = 16;
+const remoteGauntletEnemySnapDistance = 260;
+const remoteGauntletEnemyMaxExtrapolate = 0.18;
+const mazeEnemySteerAngles = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.45, -1.45, Math.PI * 0.72, -Math.PI * 0.72];
+const mazeEnemyWaypointRefreshMs = 360;
 
 const runState = {
   mode: "menu",
@@ -1863,6 +1869,7 @@ function constrainToRoom(x, y, fromX = player.x, fromY = player.y) {
 }
 
 function mazePlayerCollisionRadius() {
+  if (mazeState?.encounterType === "gauntlet") return player.radius + gauntletPlayerObstaclePadding;
   return player.radius + mazePlayerWallPadding;
 }
 
@@ -2257,6 +2264,7 @@ function circleIntersectsRect(cx, cy, radius, rect) {
 }
 
 function constrainToMaze(x, y, radius, fromX = player.x, fromY = player.y) {
+  if (mazeState.encounterType === "gauntlet") return constrainToGauntlet(x, y, radius, fromX, fromY);
   const bounds = mazeState.bounds;
   const clamped = {
     x: clamp(x, bounds.x + radius, bounds.x + bounds.w - radius),
@@ -2266,6 +2274,108 @@ function constrainToMaze(x, y, radius, fromX = player.x, fromY = player.y) {
   if (isMazeCircleWalkable(clamped.x, fromY, radius) && isMazeSegmentWalkable(fromX, fromY, clamped.x, fromY, radius)) return { x: clamped.x, y: fromY };
   if (isMazeCircleWalkable(fromX, clamped.y, radius) && isMazeSegmentWalkable(fromX, fromY, fromX, clamped.y, radius)) return { x: fromX, y: clamped.y };
   return { x: fromX, y: fromY };
+}
+
+function constrainToGauntlet(x, y, radius, fromX = player.x, fromY = player.y) {
+  const bounds = mazeState.bounds;
+  const clamped = {
+    x: clamp(x, bounds.x + radius, bounds.x + bounds.w - radius),
+    y: clamp(y, bounds.y + radius, bounds.y + bounds.h - radius),
+  };
+  if (isGauntletCircleWalkable(clamped.x, clamped.y, radius)) return clamped;
+  const resolved = resolveGauntletCircle(clamped.x, clamped.y, radius);
+  if (isGauntletCircleWalkable(resolved.x, resolved.y, radius)) return resolved;
+  const slide = bestGauntletPlayerSlide(fromX, fromY, clamped.x, clamped.y, radius);
+  if (slide) return slide;
+  if (isGauntletCircleWalkable(clamped.x, fromY, radius)) return { x: clamped.x, y: fromY };
+  if (isGauntletCircleWalkable(fromX, clamped.y, radius)) return { x: fromX, y: clamped.y };
+  return { x: fromX, y: fromY };
+}
+
+function resolveGauntletCircle(x, y, radius) {
+  const bounds = mazeState.bounds;
+  let resolved = {
+    x: clamp(x, bounds.x + radius, bounds.x + bounds.w - radius),
+    y: clamp(y, bounds.y + radius, bounds.y + bounds.h - radius),
+  };
+  for (let iteration = 0; iteration < 4; iteration += 1) {
+    let moved = false;
+    (mazeState.obstacles || []).forEach((obstacle) => {
+      const push = gauntletObstaclePush(resolved.x, resolved.y, radius, obstacle);
+      if (!push) return;
+      resolved.x += push.x;
+      resolved.y += push.y;
+      moved = true;
+    });
+    resolved.x = clamp(resolved.x, bounds.x + radius, bounds.x + bounds.w - radius);
+    resolved.y = clamp(resolved.y, bounds.y + radius, bounds.y + bounds.h - radius);
+    if (!moved) break;
+  }
+  return resolved;
+}
+
+function gauntletObstaclePush(x, y, radius, obstacle) {
+  const skin = 0.9;
+  if (obstacle.type === "circle") {
+    const dx = x - obstacle.x;
+    const dy = y - obstacle.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = radius + obstacle.r + skin;
+    if (dist >= minDist) return null;
+    if (dist < 0.001) return { x: minDist, y: 0 };
+    return { x: (dx / dist) * (minDist - dist), y: (dy / dist) * (minDist - dist) };
+  }
+  const nearestX = clamp(x, obstacle.x, obstacle.x + obstacle.w);
+  const nearestY = clamp(y, obstacle.y, obstacle.y + obstacle.h);
+  const dx = x - nearestX;
+  const dy = y - nearestY;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 0.001) {
+    const minDist = radius + skin;
+    if (dist >= minDist) return null;
+    return { x: (dx / dist) * (minDist - dist), y: (dy / dist) * (minDist - dist) };
+  }
+  const left = Math.abs(x - obstacle.x);
+  const right = Math.abs(obstacle.x + obstacle.w - x);
+  const top = Math.abs(y - obstacle.y);
+  const bottom = Math.abs(obstacle.y + obstacle.h - y);
+  const min = Math.min(left, right, top, bottom);
+  if (min === left) return { x: -(radius + skin), y: 0 };
+  if (min === right) return { x: radius + skin, y: 0 };
+  if (min === top) return { x: 0, y: -(radius + skin) };
+  return { x: 0, y: radius + skin };
+}
+
+function bestGauntletPlayerSlide(fromX, fromY, targetX, targetY, radius) {
+  const moveX = targetX - fromX;
+  const moveY = targetY - fromY;
+  const moveDist = Math.hypot(moveX, moveY);
+  if (moveDist < 0.001) return null;
+  const baseAngle = Math.atan2(moveY, moveX);
+  const candidates = [
+    [Math.PI / 2, 0.92],
+    [-Math.PI / 2, 0.92],
+    [Math.PI / 3, 0.82],
+    [-Math.PI / 3, 0.82],
+    [Math.PI * 0.72, 0.72],
+    [-Math.PI * 0.72, 0.72],
+  ];
+  let best = null;
+  candidates.forEach(([offset, scale]) => {
+    const angle = baseAngle + offset;
+    const raw = {
+      x: fromX + Math.cos(angle) * moveDist * scale,
+      y: fromY + Math.sin(angle) * moveDist * scale,
+    };
+    const resolved = resolveGauntletCircle(raw.x, raw.y, radius);
+    if (!isGauntletCircleWalkable(resolved.x, resolved.y, radius)) return;
+    const progress = (resolved.x - fromX) * moveX + (resolved.y - fromY) * moveY;
+    const movement = Math.hypot(resolved.x - fromX, resolved.y - fromY);
+    const clearance = gauntletObstacleClearance(resolved.x, resolved.y, radius);
+    const score = progress / Math.max(1, moveDist) + movement * 0.25 + clearance * 0.02;
+    if (!best || score > best.score) best = { ...resolved, score };
+  });
+  return best && best.score > 1 ? { x: best.x, y: best.y } : null;
 }
 
 function chooseMazeRewards(seed) {
@@ -2728,6 +2838,7 @@ function updateMazeCombat(dt) {
   ensureGauntletRuntimeState();
   if (player.dead && (!isPartySyncActive() || !isMultiplayerHost())) return;
   if (isPartySyncActive() && !isMultiplayerHost()) {
+    updateRemoteGauntletEnemies(dt);
     updateGauntletPickups(dt);
     updateLocalGauntletContactDamage(dt);
     return;
@@ -2741,14 +2852,15 @@ function updateMazeCombat(dt) {
     const dx = target.x - enemy.x;
     const dy = target.y - enemy.y;
     const dist = Math.hypot(dx, dy) || 1;
-    const activeRange = enemy.miniBoss ? 520 : 340;
+    const activeRange = enemy.miniBoss ? 640 : enemy.ranged ? 560 : 590;
     if (dist < activeRange) {
       enemy.state = "fighting";
-      if (!enemy.ranged || dist < 130) {
+      const hasLineOfSight = isMazeSegmentWalkable(enemy.x, enemy.y, target.x, target.y, Math.min(10, enemy.radius * 0.55));
+      if (!enemy.ranged || dist < 130 || !hasLineOfSight || dist > 360) {
         const speed = enemy.speed * (enemy.miniBoss && dist > 110 ? 1 : 0.82);
-        moveMazeEnemy(enemy, (dx / dist) * speed * dt, (dy / dist) * speed * dt);
+        moveMazeEnemyToward(enemy, target, speed, dt);
       }
-      if (!enemy.miniBoss && enemy.ranged && enemy.attackTimer <= 0 && dist < 420) {
+      if (!enemy.miniBoss && enemy.ranged && enemy.attackTimer <= 0 && dist < 420 && hasLineOfSight) {
         spawnMazeProjectile(enemy);
         enemy.attackTimer = 1.45;
       }
@@ -2763,6 +2875,32 @@ function updateMazeCombat(dt) {
     }
   });
   updateLocalGauntletContactDamage(dt);
+}
+
+function updateRemoteGauntletEnemies(dt) {
+  if (!mazeState?.enemies?.length) return;
+  const now = performance.now();
+  mazeState.enemies.forEach((enemy) => {
+    if (!enemy.remoteGauntletEnemy || enemy.hp <= 0) return;
+    enemy.moveTimer = (Number.isFinite(enemy.moveTimer) ? enemy.moveTimer : 0) + dt;
+    if (!Number.isFinite(enemy.syncTargetX) || !Number.isFinite(enemy.syncTargetY)) return;
+    const age = Math.max(0, (now - (enemy.syncReceivedAt || now)) / 1000);
+    const extrapolate = Math.min(remoteGauntletEnemyMaxExtrapolate, age);
+    const targetX = enemy.syncTargetX + (enemy.syncVx || 0) * extrapolate;
+    const targetY = enemy.syncTargetY + (enemy.syncVy || 0) * extrapolate;
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
+    const dx = targetX - enemy.x;
+    const dy = targetY - enemy.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > remoteGauntletEnemySnapDistance) {
+      enemy.x = targetX;
+      enemy.y = targetY;
+      return;
+    }
+    const alpha = 1 - Math.exp(-remoteGauntletEnemySmoothing * dt);
+    enemy.x += dx * alpha;
+    enemy.y += dy * alpha;
+  });
 }
 
 function updateLocalGauntletContactDamage(dt) {
@@ -2794,6 +2932,173 @@ function moveMazeEnemy(enemy, dx, dy) {
   }
   if (isMazeCircleWalkable(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
   if (isMazeCircleWalkable(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
+}
+
+function moveMazeEnemyToward(enemy, target, speed, dt) {
+  if (!target || !Number.isFinite(target.x) || !Number.isFinite(target.y)) return;
+  const moveTarget = mazeEnemyMoveTarget(enemy, target);
+  const dx = moveTarget.x - enemy.x;
+  const dy = moveTarget.y - enemy.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 1) return;
+  const step = Math.min(speed * dt, Math.max(0, dist - enemy.radius * 0.4));
+  if (step <= 0) return;
+  const directX = enemy.x + (dx / dist) * step;
+  const directY = enemy.y + (dy / dist) * step;
+  if (isMazeCircleWalkable(directX, directY, enemy.radius) && isMazeSegmentWalkable(enemy.x, enemy.y, directX, directY, enemy.radius)) {
+    enemy.x = directX;
+    enemy.y = directY;
+    enemy.steerAngle = Math.atan2(dy, dx);
+    enemy.stuckTimer = 0;
+    if (moveTarget.waypoint && distance(enemy, moveTarget) < enemy.radius + 12) clearMazeEnemyWaypoint(enemy);
+    return;
+  }
+  const bestStep = bestMazeEnemySteerStep(enemy, moveTarget, step) || (moveTarget.waypoint ? bestMazeEnemySteerStep(enemy, target, step) : null);
+  if (bestStep) {
+    enemy.x = bestStep.x;
+    enemy.y = bestStep.y;
+    enemy.steerAngle = bestStep.angle;
+    enemy.stuckTimer = 0;
+    if (moveTarget.waypoint && distance(enemy, moveTarget) < enemy.radius + 12) clearMazeEnemyWaypoint(enemy);
+    return;
+  }
+  enemy.stuckTimer = (enemy.stuckTimer || 0) + dt;
+  moveMazeEnemy(enemy, (dx / dist) * step * 0.55, (dy / dist) * step * 0.55);
+}
+
+function mazeEnemyMoveTarget(enemy, target) {
+  if (!mazeState?.obstacles?.length) return target;
+  if (isMazeSegmentWalkable(enemy.x, enemy.y, target.x, target.y, enemy.radius)) {
+    clearMazeEnemyWaypoint(enemy);
+    return target;
+  }
+  const now = performance.now();
+  const waypoint = enemy.pathWaypoint;
+  if (
+    waypoint &&
+    now < (enemy.pathWaypointUntil || 0) &&
+    distance(enemy, waypoint) > enemy.radius + 10 &&
+    isMazeCircleWalkable(waypoint.x, waypoint.y, enemy.radius) &&
+    isMazeSegmentWalkable(enemy.x, enemy.y, waypoint.x, waypoint.y, enemy.radius)
+  ) {
+    return { ...waypoint, waypoint: true };
+  }
+  const nextWaypoint = bestGauntletPathWaypoint(enemy, target);
+  if (nextWaypoint) {
+    enemy.pathWaypoint = nextWaypoint;
+    enemy.pathWaypointUntil = now + mazeEnemyWaypointRefreshMs;
+    return { ...nextWaypoint, waypoint: true };
+  }
+  clearMazeEnemyWaypoint(enemy);
+  return target;
+}
+
+function clearMazeEnemyWaypoint(enemy) {
+  enemy.pathWaypoint = null;
+  enemy.pathWaypointUntil = 0;
+}
+
+function bestGauntletPathWaypoint(enemy, target) {
+  const candidates = gauntletPathCandidates(enemy.radius);
+  if (!candidates.length) return null;
+  const currentDistance = distance(enemy, target);
+  const previousAngle = Number.isFinite(enemy.steerAngle) ? enemy.steerAngle : Math.atan2(target.y - enemy.y, target.x - enemy.x);
+  let best = null;
+  candidates.forEach((candidate) => {
+    if (!isMazeCircleWalkable(candidate.x, candidate.y, enemy.radius)) return;
+    if (!isMazeSegmentWalkable(enemy.x, enemy.y, candidate.x, candidate.y, enemy.radius)) return;
+    const candidateDistance = distance(candidate, target);
+    const routeCost = distance(enemy, candidate) + candidateDistance;
+    const progress = currentDistance - candidateDistance;
+    const hasTargetSight = isMazeSegmentWalkable(candidate.x, candidate.y, target.x, target.y, Math.min(10, enemy.radius * 0.55));
+    const angle = Math.atan2(candidate.y - enemy.y, candidate.x - enemy.x);
+    const anglePenalty = Math.abs(angleDifference(angle, previousAngle)) * 9;
+    const clearance = gauntletObstacleClearance(candidate.x, candidate.y, enemy.radius);
+    const score = progress * 3.4 - routeCost * 0.12 + clearance * 0.08 + (hasTargetSight ? 90 : 0) - anglePenalty;
+    if (!best || score > best.score) best = { ...candidate, score };
+  });
+  return best && best.score > -12 ? { x: best.x, y: best.y } : null;
+}
+
+function gauntletPathCandidates(radius) {
+  const bounds = mazeState?.bounds;
+  if (!bounds) return [];
+  const candidates = [];
+  const addCandidate = (x, y) => {
+    candidates.push({
+      x: clamp(x, bounds.x + radius, bounds.x + bounds.w - radius),
+      y: clamp(y, bounds.y + radius, bounds.y + bounds.h - radius),
+    });
+  };
+  (mazeState.obstacles || []).forEach((obstacle) => {
+    const pad = radius + 24;
+    if (obstacle.type === "circle") {
+      const ring = obstacle.r + pad;
+      for (let i = 0; i < 8; i += 1) {
+        const angle = (Math.PI * 2 * i) / 8;
+        addCandidate(obstacle.x + Math.cos(angle) * ring, obstacle.y + Math.sin(angle) * ring);
+      }
+      return;
+    }
+    addCandidate(obstacle.x - pad, obstacle.y - pad);
+    addCandidate(obstacle.x + obstacle.w + pad, obstacle.y - pad);
+    addCandidate(obstacle.x - pad, obstacle.y + obstacle.h + pad);
+    addCandidate(obstacle.x + obstacle.w + pad, obstacle.y + obstacle.h + pad);
+    addCandidate(obstacle.x + obstacle.w / 2, obstacle.y - pad);
+    addCandidate(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h + pad);
+    addCandidate(obstacle.x - pad, obstacle.y + obstacle.h / 2);
+    addCandidate(obstacle.x + obstacle.w + pad, obstacle.y + obstacle.h / 2);
+  });
+  return candidates;
+}
+
+function bestMazeEnemySteerStep(enemy, target, step) {
+  const desiredAngle = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+  const previousAngle = Number.isFinite(enemy.steerAngle) ? enemy.steerAngle : desiredAngle;
+  const currentDistance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
+  let best = null;
+  mazeEnemySteerAngles.forEach((offset) => {
+    const preferredSign = angleDifference(previousAngle, desiredAngle) >= 0 ? 1 : -1;
+    const angle = desiredAngle + offset * preferredSign;
+    const x = enemy.x + Math.cos(angle) * step;
+    const y = enemy.y + Math.sin(angle) * step;
+    if (!isMazeCircleWalkable(x, y, enemy.radius)) return;
+    if (!isMazeSegmentWalkable(enemy.x, enemy.y, x, y, enemy.radius)) return;
+    const lookAheadX = enemy.x + Math.cos(angle) * step * 2.2;
+    const lookAheadY = enemy.y + Math.sin(angle) * step * 2.2;
+    const lookAheadClear = isMazeCircleWalkable(lookAheadX, lookAheadY, enemy.radius)
+      && isMazeSegmentWalkable(x, y, lookAheadX, lookAheadY, enemy.radius);
+    const distanceAfter = Math.hypot(target.x - x, target.y - y);
+    const progress = currentDistance - distanceAfter;
+    const anglePenalty = Math.abs(offset) * 10;
+    const continuityPenalty = Math.abs(angleDifference(angle, previousAngle)) * 8;
+    const clearanceBonus = gauntletObstacleClearance(x, y, enemy.radius) * 0.03;
+    const score = progress * 4 + clearanceBonus + (lookAheadClear ? 12 : -8) - anglePenalty - continuityPenalty;
+    if (!best || score > best.score) best = { x, y, angle, score };
+  });
+  return best && best.score > -24 ? best : null;
+}
+
+function gauntletObstacleClearance(x, y, radius) {
+  if (!mazeState?.bounds) return 0;
+  let clearance = Math.min(
+    x - mazeState.bounds.x,
+    mazeState.bounds.x + mazeState.bounds.w - x,
+    y - mazeState.bounds.y,
+    mazeState.bounds.y + mazeState.bounds.h - y,
+  ) - radius;
+  (mazeState.obstacles || []).forEach((obstacle) => {
+    let distanceToObstacle = 0;
+    if (obstacle.type === "circle") {
+      distanceToObstacle = Math.hypot(x - obstacle.x, y - obstacle.y) - obstacle.r - radius;
+    } else {
+      const nearestX = clamp(x, obstacle.x, obstacle.x + obstacle.w);
+      const nearestY = clamp(y, obstacle.y, obstacle.y + obstacle.h);
+      distanceToObstacle = Math.hypot(x - nearestX, y - nearestY) - radius;
+    }
+    clearance = Math.min(clearance, distanceToObstacle);
+  });
+  return Math.max(0, clearance);
 }
 
 function spawnMazeProjectile(enemy) {
@@ -12032,6 +12337,36 @@ function normalizeGauntletEnemy(remoteEnemy) {
   return enemy;
 }
 
+function mergeRemoteGauntletEnemy(remoteEnemy, previousById) {
+  const enemy = normalizeGauntletEnemy(remoteEnemy);
+  const previous = previousById?.get(enemy.id);
+  const receivedAt = performance.now();
+  const targetX = enemy.x;
+  const targetY = enemy.y;
+  const previousTargetX = Number.isFinite(previous?.syncTargetX) ? previous.syncTargetX : previous?.x;
+  const previousTargetY = Number.isFinite(previous?.syncTargetY) ? previous.syncTargetY : previous?.y;
+  const elapsed = previous?.syncReceivedAt ? clamp((receivedAt - previous.syncReceivedAt) / 1000, 0.04, 0.45) : gauntletSyncInterval;
+  const rawVx = Number.isFinite(previousTargetX) ? (targetX - previousTargetX) / elapsed : 0;
+  const rawVy = Number.isFinite(previousTargetY) ? (targetY - previousTargetY) / elapsed : 0;
+  const speedCap = Math.max(220, (enemy.speed || 100) * (enemy.miniBoss ? 2.4 : 3.1));
+  const velocity = Math.hypot(rawVx, rawVy);
+  const scale = velocity > speedCap ? speedCap / velocity : 1;
+  enemy.syncTargetX = targetX;
+  enemy.syncTargetY = targetY;
+  enemy.syncReceivedAt = receivedAt;
+  enemy.syncVx = rawVx * scale;
+  enemy.syncVy = rawVy * scale;
+  if (previous?.remoteGauntletEnemy && previous.hp > 0 && enemy.hp > 0 && Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
+    const snapDistance = Math.hypot(targetX - previous.x, targetY - previous.y);
+    if (snapDistance <= remoteGauntletEnemySnapDistance) {
+      enemy.x = previous.x;
+      enemy.y = previous.y;
+      enemy.moveTimer = Number.isFinite(previous.moveTimer) ? previous.moveTimer : enemy.moveTimer;
+    }
+  }
+  return enemy;
+}
+
 function normalizeGauntletPickup(remotePickup) {
   const pickup = cloneSyncObject(remotePickup) || {};
   if (!Number.isFinite(pickup.x) || !Number.isFinite(pickup.y)) return null;
@@ -12126,7 +12461,8 @@ function applyRemoteGauntletSyncInner(peerId, event) {
     wave.spawned = Boolean(remoteWave.spawned);
     wave.cleared = Boolean(remoteWave.cleared);
   });
-  mazeState.enemies = (event.enemies || []).map(normalizeGauntletEnemy);
+  const previousById = new Map((mazeState.enemies || []).map((enemy) => [enemy.id, enemy]));
+  mazeState.enemies = (event.enemies || []).map((enemy) => mergeRemoteGauntletEnemy(enemy, previousById));
   const claimed = mazeState.claimedPickupIds instanceof Set ? mazeState.claimedPickupIds : new Set();
   mazeState.claimedPickupIds = claimed;
   mazeState.pickupDrops = (event.pickupDrops || [])
