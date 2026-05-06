@@ -524,6 +524,8 @@ const debugReportState = {
 const multiplayerStateInterval = 0.18;
 const gauntletSyncInterval = 0.16;
 const hostileSyncInterval = 0.095;
+const hostileHazardHeavySyncInterval = 0.135;
+const hostileHazardHeavyThreshold = 12;
 const multiplayerWatchdogIntervalMs = 900;
 const remoteGauntletEnemySmoothing = 16;
 const remoteGauntletEnemySnapDistance = 260;
@@ -536,6 +538,7 @@ const hostileDeadKeepMs = 900;
 const maxParticles = 160;
 const maxRemoteProjectiles = 90;
 const maxRemoteAbilityEffects = 48;
+const mazeRewardInputDelayMs = 650;
 const mazeEnemySteerAngles = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.45, -1.45, Math.PI * 0.72, -Math.PI * 0.72];
 const mazeEnemyWaypointRefreshMs = 360;
 
@@ -3512,9 +3515,7 @@ function updateCombat(dt) {
     updateRemoteBossPassive(dt);
     return;
   }
-  const sync = beginBossSyncCapture("boss-ai");
   updateBossCombatLocal(dt);
-  finishBossSyncCapture(sync);
 }
 
 function updateBossCombatLocal(dt) {
@@ -8184,11 +8185,7 @@ function update(dt) {
   runUpdateStep("updateRoom", () => updateRoom(dt));
   runUpdateStep("updateMazeCombat", () => updateMazeCombat(dt));
   runUpdateStep("updateCombat", () => updateCombat(dt));
-  runUpdateStep("updateHazards", () => {
-    const hazardSync = beginBossSyncCapture("hazards");
-    updateHazards(dt);
-    finishBossSyncCapture(hazardSync);
-  });
+  runUpdateStep("updateHazards", () => updateHazards(dt));
   runUpdateStep("updatePlayerProjectiles", () => updatePlayerProjectiles(dt));
   runUpdateStep("updateRemoteProjectiles", () => updateRemoteProjectiles(dt));
   runUpdateStep("remoteEffects", () => {
@@ -8577,9 +8574,10 @@ function handleMazeEnemyDefeated(target) {
 
 function showMazeRewardChoices() {
   if (!ui.mazeRewardOverlay || !ui.mazeRewardCards || !mazeState || player.dead) return;
+  mazeState.rewardInputReadyAt = performance.now() + mazeRewardInputDelayMs;
   ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
   ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => `
-    <button class="reward-card" type="button" data-reward="${reward.id}">
+    <button class="reward-card" type="button" data-reward="${reward.id}" disabled>
       <strong>${escapeHtml(reward.name)}</strong>
       <span>${escapeHtml(reward.description)}</span>
     </button>
@@ -8587,10 +8585,17 @@ function showMazeRewardChoices() {
   ui.mazeRewardOverlay.hidden = false;
   ui.status.textContent = "Choose one gauntlet reward to open the boss gate.";
   showFloat("Choose a reward");
+  window.setTimeout(() => {
+    if (!mazeState || mazeState.rewardChosen || ui.mazeRewardOverlay?.hidden) return;
+    ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
+      card.disabled = false;
+    });
+  }, mazeRewardInputDelayMs);
 }
 
 function chooseMazeReward(rewardId) {
   if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead) return;
+  if (Number.isFinite(mazeState.rewardInputReadyAt) && performance.now() < mazeState.rewardInputReadyAt) return;
   const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
   if (!reward) return;
   const oldMaxHp = player.maxHp;
@@ -12886,9 +12891,9 @@ function sendHostileSync(force = false) {
 function sendHostileSyncInner(force = false) {
   if (!shouldBroadcastHostileSync()) return;
   if (!force && multiplayer.hostileSyncTimer > 0) return;
-  multiplayer.hostileSyncTimer = hostileSyncInterval;
   const actors = collectHostileActors();
   const hostileHazards = collectHostileHazards();
+  multiplayer.hostileSyncTimer = hostileHazards.length >= hostileHazardHeavyThreshold ? hostileHazardHeavySyncInterval : hostileSyncInterval;
   if (!actors.length && !hostileHazards.length) return;
   multiplayer.hostileSyncSeq += 1;
   const event = {

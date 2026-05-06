@@ -373,6 +373,12 @@ canvas {
   line-height: 1.35;
 }
 
+.reward-card:disabled {
+  cursor: default;
+  opacity: 0.68;
+  filter: saturate(0.72);
+}
+
 .death-screen[hidden] {
   display: none;
 }
