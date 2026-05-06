@@ -475,6 +475,10 @@ const debugReportState = {
   lastErrorAtByKey: new Map(),
 };
 
+const multiplayerStateInterval = 0.18;
+const gauntletSyncInterval = 0.2;
+const multiplayerWatchdogIntervalMs = 900;
+
 const runState = {
   mode: "menu",
   active: false,
@@ -11612,7 +11616,7 @@ function updateMultiplayer(dt) {
   if (shouldBroadcastGauntletSync()) sendGauntletSync(false);
   multiplayer.sendTimer -= dt;
   if (multiplayer.sendTimer <= 0) {
-    multiplayer.sendTimer = 0.08;
+    multiplayer.sendTimer = multiplayerStateInterval;
     sendMultiplayerState(false);
   }
 }
@@ -11917,7 +11921,7 @@ function sendGauntletSyncInner(force = false) {
   if (!shouldBroadcastGauntletSync()) return;
   ensureGauntletRuntimeState();
   if (!force && multiplayer.gauntletSyncTimer > 0) return;
-  multiplayer.gauntletSyncTimer = 0.12;
+  multiplayer.gauntletSyncTimer = gauntletSyncInterval;
   multiplayer.gauntletSyncSeq += 1;
   const event = {
     kind: "gauntlet-sync",
@@ -13376,5 +13380,5 @@ applyGear();
 resizeCanvas();
 renderUi();
 showMenuScreen("main");
-window.setInterval(multiplayerWatchdogTick, 750);
+window.setInterval(multiplayerWatchdogTick, multiplayerWatchdogIntervalMs);
 requestAnimationFrame(gameLoop);

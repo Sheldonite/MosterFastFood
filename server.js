@@ -78,15 +78,21 @@ function sendFrame(socket, payload) {
   socket.write(Buffer.concat([header, data]));
 }
 
+function sendControlFrame(socket, opcode, payload = Buffer.alloc(0)) {
+  if (socket.destroyed) return;
+  const body = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+  if (body.length > 125) return;
+  socket.write(Buffer.concat([Buffer.from([0x80 | opcode, body.length]), body]));
+}
+
 function send(peer, payload) {
   sendFrame(peer.socket, payload);
 }
 
 function decodeFrame(buffer) {
-  if (buffer.length < 6) return { frame: null, consumed: 0 };
+  if (buffer.length < 2) return { frame: null, consumed: 0 };
+  const fin = (buffer[0] & 0x80) !== 0;
   const opcode = buffer[0] & 0x0f;
-  if (opcode === 0x8) return { frame: { type: "close" }, consumed: 2 };
-  if (opcode !== 0x1) return { frame: null, consumed: 0 };
   let offset = 2;
   let length = buffer[1] & 0x7f;
   if (length === 126) {
@@ -99,7 +105,10 @@ function decodeFrame(buffer) {
     offset = 10;
   }
   const masked = (buffer[1] & 0x80) !== 0;
-  if (!masked) return { frame: null, consumed: 0 };
+  if (!masked) {
+    if (buffer.length < offset + length) return { frame: null, consumed: 0 };
+    return { frame: { type: "close" }, consumed: offset + length };
+  }
   const mask = buffer.subarray(offset, offset + 4);
   offset += 4;
   if (buffer.length < offset + length) return { frame: null, consumed: 0 };
@@ -107,7 +116,14 @@ function decodeFrame(buffer) {
   for (let i = 0; i < length; i += 1) {
     payload[i] = buffer[offset + i] ^ mask[i % 4];
   }
-  return { frame: { type: "message", text: payload.toString("utf8") }, consumed: offset + length };
+  const consumed = offset + length;
+  if (opcode === 0x8) return { frame: { type: "close" }, consumed };
+  if (opcode === 0x9) return { frame: { type: "ping", payload }, consumed };
+  if (opcode === 0x0a) return { frame: { type: "pong" }, consumed };
+  if (opcode === 0x1 && fin) return { frame: { type: "message", text: payload.toString("utf8") }, consumed };
+  if (opcode === 0x1) return { frame: { type: "fragment", start: true, final: false, payload }, consumed };
+  if (opcode === 0x0) return { frame: { type: "fragment", start: false, final: fin, payload }, consumed };
+  return { frame: { type: "ignore" }, consumed };
 }
 
 function publicRooms() {
@@ -386,6 +402,19 @@ server.on("upgrade", (request, socket) => {
       if (frame.type === "close") {
         socket.end();
         return;
+      }
+      if (frame.type === "ping") {
+        sendControlFrame(socket, 0x0a, frame.payload);
+        continue;
+      }
+      if (frame.type === "pong" || frame.type === "ignore") continue;
+      if (frame.type === "fragment") {
+        if (frame.start) peer.fragments = [frame.payload];
+        else if (peer.fragments) peer.fragments.push(frame.payload);
+        if (!frame.final) continue;
+        if (!peer.fragments) continue;
+        frame.text = Buffer.concat(peer.fragments).toString("utf8");
+        peer.fragments = null;
       }
       try {
         handlePeerMessage(peer, JSON.parse(frame.text));
