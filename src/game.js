@@ -458,6 +458,7 @@ let screenBanner = null;
 let fightStartedAt = 0;
 let lastTime = performance.now();
 let lastRuntimeErrorAt = 0;
+let spectateState = { targetId: null };
 let logLines = ["Choose gear, use WASD to cross the gate, hold click to attack."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
@@ -501,7 +502,6 @@ const multiplayer = {
   intentSeq: 0,
   bossSyncSeq: 0,
   hazardSyncSeq: 0,
-  particleSyncSeq: 0,
   lastBossSyncSeq: 0,
   hostileSyncSeq: 0,
   lastHostileSyncSeq: 0,
@@ -533,6 +533,9 @@ const hostileSnapshotBufferLimit = 8;
 const hostileSnapDistance = 280;
 const hostileMaxExtrapolateMs = 140;
 const hostileDeadKeepMs = 900;
+const maxParticles = 160;
+const maxRemoteProjectiles = 90;
+const maxRemoteAbilityEffects = 48;
 const mazeEnemySteerAngles = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.45, -1.45, Math.PI * 0.72, -Math.PI * 0.72];
 const mazeEnemyWaypointRefreshMs = 360;
 
@@ -1084,6 +1087,7 @@ function clearPlayerTransientState() {
   player.bardHealTickTimer = 0;
   player.talentSaves = {};
   player.lastDamageAt = 0;
+  resetSpectateState();
   Object.keys(movementKeys).forEach((direction) => {
     movementKeys[direction] = false;
   });
@@ -1235,7 +1239,6 @@ function startMultiplayerFight(bossKind, spawn, startAt = 0, serverTime = 0) {
   multiplayer.startAt = Date.now() + startDelay;
   multiplayer.bossSyncSeq = 0;
   multiplayer.hazardSyncSeq = 0;
-  multiplayer.particleSyncSeq = 0;
   multiplayer.intentSeq = 0;
   multiplayer.lastBossSyncSeq = 0;
   resetPartySyncState();
@@ -1513,12 +1516,87 @@ function isPartySyncActive() {
   return isMultiplayerGame() && runState.mode === "multiplayer";
 }
 
+function resetSpectateState() {
+  spectateState.targetId = null;
+}
+
+function spectatePeerLabel(id) {
+  return id ? id.slice(0, 4).toUpperCase() : "PLAYER";
+}
+
+function spectatablePeerEntries() {
+  if (!isPartySyncActive() || !player.dead) return [];
+  const entries = Array.from(multiplayer.peers.entries()).filter(([, peer]) => (
+    peer &&
+    !peer.dead &&
+    !peer.won &&
+    peer.bossKind === boss.kind &&
+    Number.isFinite(peer.x) &&
+    Number.isFinite(peer.y)
+  ));
+  const samePhase = entries.filter(([, peer]) => !peer.partyPhase || peer.partyPhase === multiplayer.partyPhase);
+  const phasePool = samePhase.length ? samePhase : entries;
+  const sameRoom = phasePool.filter(([, peer]) => peer.room === player.room);
+  return sameRoom.length ? sameRoom : phasePool;
+}
+
+function currentSpectateTarget() {
+  const entries = spectatablePeerEntries();
+  if (!entries.length) {
+    resetSpectateState();
+    return null;
+  }
+  let entry = entries.find(([id]) => id === spectateState.targetId);
+  if (!entry) {
+    entry = entries[0];
+    spectateState.targetId = entry[0];
+  }
+  return { id: entry[0], peer: entry[1] };
+}
+
+function isMultiplayerSpectating() {
+  return Boolean(currentSpectateTarget());
+}
+
+function cycleSpectateTarget(direction = 1) {
+  const entries = spectatablePeerEntries();
+  if (!entries.length) {
+    resetSpectateState();
+    showFloat("No teammate to spectate");
+    return false;
+  }
+  const currentIndex = entries.findIndex(([id]) => id === spectateState.targetId);
+  const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + entries.length) % entries.length;
+  spectateState.targetId = entries[nextIndex][0];
+  showFloat(`Spectating ${spectatePeerLabel(spectateState.targetId)}`);
+  return true;
+}
+
+function activateSpectateMode(source) {
+  if (!isPartySyncActive()) return false;
+  const activated = cycleSpectateTarget(1);
+  if (!activated) return false;
+  if (ui.mazeRewardOverlay) ui.mazeRewardOverlay.hidden = true;
+  ui.status.textContent = `${source} stuffed you. Spectating ${spectatePeerLabel(spectateState.targetId)}.`;
+  recordDebugEvent("spectate-start", { targetId: spectateState.targetId, source, phase: multiplayer.partyPhase, room: player.room });
+  return true;
+}
+
+function spectateCameraPoint() {
+  const target = currentSpectateTarget();
+  if (!target) return player;
+  const renderPeer = smoothedPeer(target.peer);
+  if (!Number.isFinite(renderPeer.x) || !Number.isFinite(renderPeer.y)) return target.peer;
+  return renderPeer;
+}
+
 function resetPartySyncState() {
   multiplayer.partyPhase = "starter";
   multiplayer.phaseSeq = 0;
   multiplayer.lastPartyPhaseEvent = null;
   multiplayer.localPartyReady = null;
   multiplayer.partyReady.clear();
+  resetSpectateState();
   resetGauntletSyncState();
   resetHostileNetState();
 }
@@ -1722,7 +1800,7 @@ function applyPartyPhaseInner(event, local = false, options = {}) {
     selectedBoss = null;
     playerProjectiles = [];
     hazards = hazards.filter((hazard) => !hazard.mazeHazard);
-    if (!mazeState.rewardChosen) showMazeRewardChoices();
+    if (!mazeState.rewardChosen && !player.dead) showMazeRewardChoices();
     return;
   }
   if (event.phase === "arena") {
@@ -2003,7 +2081,12 @@ function nachoQuadrantBounds() {
 }
 
 function handleCanvasClick(x, y) {
-  if (player.dead || player.won) return;
+  if (player.dead) {
+    if (isPartySyncActive()) cycleSpectateTarget(1);
+    stopHeldPrimaryAttack();
+    return;
+  }
+  if (player.won) return;
   selectedBoss = null;
   shootAt(x, y);
 }
@@ -7668,6 +7751,7 @@ function enterDeathState(source) {
     movementKeys[direction] = false;
   });
   log(`${source} stuffed you.`);
+  if (activateSpectateMode(source)) return;
   ui.status.textContent = "You're Stuffed. Reset to try again.";
   showFloat("You're Stuffed");
 }
@@ -8119,6 +8203,7 @@ function update(dt) {
       return particle.ttl > 0;
     });
   });
+  runUpdateStep("trimTransientVisuals", trimTransientVisuals);
   runUpdateStep("uiTimers", () => {
     floatTimer -= dt;
     if (floatTimer <= 0) ui.floatText.textContent = "";
@@ -8129,8 +8214,9 @@ function update(dt) {
   });
   runUpdateStep("updateMultiplayer", () => updateMultiplayer(dt));
   runUpdateStep("camera", () => {
-    camera.x = clamp(player.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
-    camera.y = clamp(player.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+    const cameraTarget = player.dead && isPartySyncActive() ? spectateCameraPoint() : player;
+    camera.x = clamp(cameraTarget.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
+    camera.y = clamp(cameraTarget.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
   });
 }
 
@@ -8156,6 +8242,12 @@ function updateRemoteProjectiles(dt) {
     const bounds = projectile.room === "starter" ? world.starter : world.arena;
     return projectile.ttl > 0 && pointInRect(projectile.x, projectile.y, bounds);
   });
+}
+
+function trimTransientVisuals() {
+  if (particles.length > maxParticles) particles = particles.slice(-maxParticles);
+  if (remoteProjectiles.length > maxRemoteProjectiles) remoteProjectiles = remoteProjectiles.slice(-maxRemoteProjectiles);
+  if (remoteAbilityEffects.length > maxRemoteAbilityEffects) remoteAbilityEffects = remoteAbilityEffects.slice(-maxRemoteAbilityEffects);
 }
 
 function updatePlayerProjectiles(dt) {
@@ -8480,11 +8572,11 @@ function handleMazeEnemyDefeated(target) {
     }
     return;
   }
-  showMazeRewardChoices();
+  if (!player.dead) showMazeRewardChoices();
 }
 
 function showMazeRewardChoices() {
-  if (!ui.mazeRewardOverlay || !ui.mazeRewardCards || !mazeState) return;
+  if (!ui.mazeRewardOverlay || !ui.mazeRewardCards || !mazeState || player.dead) return;
   ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
   ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => `
     <button class="reward-card" type="button" data-reward="${reward.id}">
@@ -8498,7 +8590,7 @@ function showMazeRewardChoices() {
 }
 
 function chooseMazeReward(rewardId) {
-  if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen) return;
+  if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead) return;
   const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
   if (!reward) return;
   const oldMaxHp = player.maxHp;
@@ -8580,8 +8672,35 @@ function draw() {
   ctx.restore();
   drawTacoObjectiveText();
   drawAbilityBar();
+  drawSpectateOverlay();
   drawRunCompleteOverlay();
   drawScreenBanner();
+}
+
+function drawSpectateOverlay() {
+  if (!player.dead || !isPartySyncActive()) return;
+  const target = currentSpectateTarget();
+  if (!target) return;
+  const label = spectatePeerLabel(target.id);
+  const x = canvas.clientWidth / 2;
+  const y = 34;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(8, 10, 11, 0.72)";
+  ctx.strokeStyle = "rgba(240, 212, 124, 0.62)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x - 190, y - 20, 380, 56, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#f0d47c";
+  ctx.font = "bold 18px sans-serif";
+  ctx.fillText(`Spectating ${label}`, x, y - 3);
+  ctx.fillStyle = "#d8cfc2";
+  ctx.font = "12px sans-serif";
+  ctx.fillText("Tab / Arrow keys switch teammate", x, y + 19);
+  ctx.restore();
 }
 
 function drawRooms() {
@@ -12019,13 +12138,22 @@ function drawTinyStar(x, y, radius) {
 }
 
 function drawParticles() {
+  const left = camera.x - 80;
+  const right = camera.x + canvas.clientWidth + 80;
+  const top = camera.y - 80;
+  const bottom = camera.y + canvas.clientHeight + 80;
+  ctx.save();
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center";
   particles.forEach((particle) => {
-    ctx.fillStyle = particle.color;
-    ctx.font = "bold 18px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(particle.text, particle.x, particle.y);
-    ctx.textAlign = "left";
+    if (!Number.isFinite(particle.x) || !Number.isFinite(particle.y) || !particle.text) return;
+    if (particle.x < left || particle.x > right || particle.y < top || particle.y > bottom) return;
+    ctx.globalAlpha = clamp((Number(particle.ttl) || 0.35) / (Number(particle.maxTtl) || 0.8), 0.25, 1);
+    ctx.fillStyle = particle.color || "#ffffff";
+    ctx.fillText(String(particle.text || ""), particle.x, particle.y);
   });
+  ctx.restore();
+  ctx.textAlign = "left";
 }
 
 function drawRing(x, y, r, color) {
@@ -12148,7 +12276,8 @@ function drawRunCompleteOverlay() {
 }
 
 function renderUi() {
-  ui.roomText.textContent = player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
+  const spectateTarget = currentSpectateTarget();
+  ui.roomText.textContent = spectateTarget ? `Spectating ${spectatePeerLabel(spectateTarget.id)}` : player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
   ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
   const bossHp = bossHealthSummary();
@@ -12245,7 +12374,7 @@ function renderUi() {
   }
   if (ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) renderTalentTree();
   if (ui.deathScreen) {
-    ui.deathScreen.hidden = !player.dead;
+    ui.deathScreen.hidden = !player.dead || Boolean(spectateTarget);
   }
   updateMultiplayerDebugHud();
 }
@@ -12563,7 +12692,6 @@ function beginBossSyncCapture(source) {
   return {
     source,
     hazardRefs: new Set(hazards),
-    particleRefs: new Set(particles),
   };
 }
 
@@ -12572,11 +12700,7 @@ function finishBossSyncCapture(capture) {
   const newHazards = hazards
     .filter((hazard) => !capture.hazardRefs.has(hazard) && isSyncableBossHazard(hazard))
     .map(serializeBossHazard);
-  const newParticles = particles
-    .filter((particle) => !capture.particleRefs.has(particle) && isSyncableBossParticle(particle))
-    .slice(-18)
-    .map(serializeBossParticle);
-  if (!newHazards.length && !newParticles.length) return;
+  if (!newHazards.length) return;
   multiplayer.bossSyncSeq += 1;
   sendMultiplayerEvent({
     kind: "boss-sync",
@@ -12584,19 +12708,12 @@ function finishBossSyncCapture(capture) {
     source: capture.source,
     bossKind: boss.kind,
     phaseSeq: multiplayer.phaseSeq,
-    bossState: bossStateSnapshot(),
     hazards: newHazards,
-    particles: newParticles,
   });
 }
 
 function isSyncableBossHazard(hazard) {
   return player.room === "arena" && hazard && !hazard.mazeHazard && typeof hazard.type === "string";
-}
-
-function isSyncableBossParticle(particle) {
-  if (player.room !== "arena" || !particle) return false;
-  return !String(particle.text || "").startsWith("-");
 }
 
 function serializeBossHazard(hazard) {
@@ -12605,14 +12722,6 @@ function serializeBossHazard(hazard) {
     hazard.syncId = `${multiplayer.id || "host"}-h${multiplayer.hazardSyncSeq}`;
   }
   return cloneSyncObject(hazard);
-}
-
-function serializeBossParticle(particle) {
-  if (!particle.syncId) {
-    multiplayer.particleSyncSeq += 1;
-    particle.syncId = `${multiplayer.id || "host"}-p${multiplayer.particleSyncSeq}`;
-  }
-  return cloneSyncObject(particle);
 }
 
 function bossHazardSnapshot() {
@@ -12725,7 +12834,7 @@ function applyRemoteBossSyncEvent(peerId, event) {
     if (!remoteHazard?.syncId || hazards.some((hazard) => hazard.syncId === remoteHazard.syncId)) return;
     hazards.push(normalizeRemoteBossHazard(remoteHazard, event.serverTime));
   });
-  (event.particles || []).forEach((remoteParticle) => {
+  (event.particles || []).slice(-8).forEach((remoteParticle) => {
     if (!remoteParticle?.syncId || particles.some((particle) => particle.syncId === remoteParticle.syncId)) return;
     particles.push(normalizeRemoteBossParticle(remoteParticle, event.serverTime));
   });
@@ -13472,7 +13581,7 @@ function applyRemoteGauntletSyncInner(peerId, event) {
     .map(normalizeGauntletPickup)
     .filter((pickup) => pickup && (!pickup.id || !claimed.has(pickup.id)));
   mergeRemoteGauntletHazards(event.hazards || [], event.serverTime);
-  if (mazeState.rewardPending && !mazeState.rewardChosen) showMazeRewardChoices();
+  if (mazeState.rewardPending && !mazeState.rewardChosen && !player.dead) showMazeRewardChoices();
 }
 
 function mergeRemoteGauntletHazards(remoteHazards, serverTime = 0) {
@@ -14043,6 +14152,7 @@ function spawnRemoteAbilityVisual(peerId, event) {
     classKey: event.classKey || "fighter",
     abilityIndex: Number(event.abilityIndex) || 0,
     abilityName: event.abilityName || "Ability",
+    room: event.room || player.room,
     x,
     y,
     targetX,
@@ -14062,6 +14172,7 @@ function spawnRemoteAbilityVisual(peerId, event) {
       vy: Math.sin(angle) * speed,
       r: event.classKey === "mage" ? 12 : 8,
       color,
+      room: event.room || player.room,
       ttl: 0.65,
       age: 0,
       heavy: event.classKey === "mage",
@@ -14086,6 +14197,7 @@ function spawnRemoteAttackVisual(peerId, event) {
     vy: Math.sin(angle) * speed,
     r: tag === "Magic" ? 11 : isWarriorTag(tag) ? 12 : tag === "Rogue" ? 8 : tag === "Bard" ? 9 : 6,
     color: event.color || remotePlayerColor(tag),
+    room: event.room || player.room,
     ttl: tag === "Ranged" ? 0.9 : tag === "Bard" ? 0.82 : tag === "Magic" ? 0.75 : 0.42,
     age: 0,
     heavy: Boolean(event.heavy),
@@ -14747,6 +14859,11 @@ window.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.shiftKey && key === "d") {
     event.preventDefault();
     showManualDebugReport("hotkey");
+    return;
+  }
+  if (player.dead && isPartySyncActive() && (key === "tab" || key === "arrowright" || key === "arrowleft")) {
+    event.preventDefault();
+    cycleSpectateTarget(key === "arrowleft" ? -1 : 1);
     return;
   }
   const direction = keyDirections[key];
