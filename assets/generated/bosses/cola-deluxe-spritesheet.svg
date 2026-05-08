@@ -1,0 +1,1601 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536" role="img">
+    <defs>
+      <linearGradient id="colaBody" x1="0" x2="1" y1="0" y2="1">
+        <stop stop-color="#f15a43"/>
+        <stop offset="0.42" stop-color="#b62929"/>
+        <stop offset="1" stop-color="#651313"/>
+      </linearGradient>
+      <linearGradient id="colaMetal" x1="0" x2="0" y1="0" y2="1">
+        <stop stop-color="#fff8e6"/>
+        <stop offset="0.5" stop-color="#b9b6ad"/>
+        <stop offset="1" stop-color="#6f6a63"/>
+      </linearGradient>
+      <filter id="colaGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs><g transform="translate(0,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+    
+    <g>
+      <path d="M79 119 C62 99 50 94 50 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C62 99 50 94 50 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 108 C38 114 42 118 31 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M50 108 C38 114 42 118 31 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="50" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M56 104 L44 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(31 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C194 99 206 94 206 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C194 99 206 94 206 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206 108 C218 114 214 118 225 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206 108 C218 114 214 118 225 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200 104 L212 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(256,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+    
+    <g>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 99 47.475587045576304 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 99 47.475587045576304 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.475587045576304 113 C35.475587045576304 119 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.475587045576304 113 C35.475587045576304 119 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.475587045576304" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.475587045576304 109 L41.475587045576304 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.475587045576304 133) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 99 208.5244129544237 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 99 208.5244129544237 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.5244129544237 113 C220.5244129544237 119 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.5244129544237 113 C220.5244129544237 119 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.5244129544237" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.5244129544237 109 L214.5244129544237 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.5244129544237 133) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 131) rotate(0) translate(-128 -131)">
+      <ellipse cx="128" cy="210" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 78 C83 59 173 59 174 78 L169 192 C166 214 90 214 86 192 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 85 C104 71 153 70 165 85" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 93 C93 128 91 158 96 189" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 88 C167 126 160 163 153 193" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="77" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="72" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="58" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="53" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="101" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 110 L126 116 L110 123 Z" fill="#fff8dc"/>
+      <path d="M145 110 L130 116 L146 123 Z" fill="#fff8dc"/>
+      <path d="M103 151 C119 142 140 142 154 151" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="165" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="189" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 175 C150 173 149 186 158 184 M164 161 C156 159 156 170 164 169" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="209" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="220" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(512,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+    
+    <g>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 94 47.27210771952295 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 94 47.27210771952295 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.27210771952295 108 C35.27210771952295 114 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.27210771952295 108 C35.27210771952295 114 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.27210771952295" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.27210771952295 104 L41.27210771952295 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.27210771952295 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 94 208.72789228047705 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 94 208.72789228047705 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.72789228047705 108 C220.72789228047705 114 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.72789228047705 108 C220.72789228047705 114 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.72789228047705" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.72789228047705 104 L214.72789228047705 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.72789228047705 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(768,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+    
+    <g>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 89 49.5766399758204 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 89 49.5766399758204 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M49.5766399758204 103 C37.5766399758204 109 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M49.5766399758204 103 C37.5766399758204 109 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="49.5766399758204" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M55.5766399758204 99 L43.5766399758204 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(30.5766399758204 123) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 89 206.4233600241796 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 89 206.4233600241796 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206.4233600241796 103 C218.4233600241796 109 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206.4233600241796 103 C218.4233600241796 109 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206.4233600241796" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200.4233600241796 99 L212.4233600241796 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225.4233600241796 123) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 121) rotate(0) translate(-128 -121)">
+      <ellipse cx="128" cy="200" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 68 C83 49 173 49 174 68 L169 182 C166 204 90 204 86 182 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 75 C104 61 153 60 165 75" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 83 C93 118 91 148 96 179" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 78 C167 116 160 153 153 183" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="67" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="62" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="48" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="43" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="91" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 100 L126 106 L110 113 Z" fill="#fff8dc"/>
+      <path d="M145 100 L130 106 L146 113 Z" fill="#fff8dc"/>
+      <path d="M103 141 C119 132 140 132 154 141" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="155" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="179" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 165 C150 163 149 176 158 174 M164 151 C156 149 156 160 164 159" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="199" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="210" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(0,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    <g filter="url(#colaGlow)"><circle cx="43" cy="59" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="39" cy="50" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="62.207354924039485" cy="180.16120922347255" r="9" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="54" cy="173" r="2.5200000000000005" fill="#ffffff" opacity="0.82"/><circle cx="206.5464871341284" cy="48.33541265381143" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="198" cy="45" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="213.70560004029934" cy="168.04003001359823" r="10" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="209" cy="167" r="2.8000000000000003" fill="#ffffff" opacity="0.82"/><circle cx="26.21598752346036" cy="119.38542551654555" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="26" cy="117" r="2.24" fill="#ffffff" opacity="0.82"/><circle cx="221.2053786266843" cy="119.1346487418529" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="222" cy="113" r="2.24" fill="#ffffff" opacity="0.82"/></g>
+    
+    <g>
+      <path d="M79 119 C53 99 41 94 41 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C53 99 41 94 41 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M41 108 C29 114 33 113 22 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M41 108 C29 114 33 113 22 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="41" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M47 104 L35 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(22 123) rotate(-18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C203 99 215 94 215 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C203 99 215 94 215 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M215 108 C227 114 223 113 234 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M215 108 C227 114 223 113 234 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="215" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M209 104 L221 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(234 123) rotate(18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(256,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    <g filter="url(#colaGlow)"><circle cx="47.207354924039485" cy="57.78682683738866" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="39" cy="50" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="62.54648713412841" cy="177.09119162122767" r="9" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="54" cy="173" r="2.5200000000000005" fill="#ffffff" opacity="0.82"/><circle cx="202.70560004029934" cy="46.231110637325365" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="198" cy="45" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="209.21598752346037" cy="168.83612915234232" r="10" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="209" cy="167" r="2.8000000000000003" fill="#ffffff" opacity="0.82"/><circle cx="25.205378626684308" cy="122.34999593375778" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="26" cy="117" r="2.24" fill="#ffffff" opacity="0.82"/><circle cx="224.60292250900537" cy="121.54207806776527" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="222" cy="113" r="2.24" fill="#ffffff" opacity="0.82"/></g>
+    
+    <g>
+      <path d="M79 121.1 C51 101.1 39 99 39 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.1 C51 101.1 39 99 39 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M39 113 C27 119 31 118 20 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M39 113 C27 119 31 118 20 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="39" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M45 109 L33 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(20 128) rotate(-18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.1 C205 101.1 217 99 217 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.1 C205 101.1 217 99 217 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M217 113 C229 119 225 118 236 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M217 113 C229 119 225 118 236 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="217" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M211 109 L223 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(236 128) rotate(18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 131) rotate(0) translate(-128 -131)">
+      <ellipse cx="128" cy="210" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 78 C83 59 173 59 174 78 L169 192 C166 214 90 214 86 192 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 85 C104 71 153 70 165 85" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 93 C93 128 91 158 96 189" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 88 C167 126 160 163 153 193" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="77" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="72" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="58" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="53" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="101" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 110 L126 116 L110 123 Z" fill="#fff8dc"/>
+      <path d="M145 110 L130 116 L146 123 Z" fill="#fff8dc"/>
+      <path d="M103 151 C119 142 140 142 154 151" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="165" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="189" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 175 C150 173 149 186 158 184 M164 161 C156 159 156 170 164 169" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="209" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="220" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(512,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    <g filter="url(#colaGlow)"><circle cx="47.54648713412841" cy="54.883201910794845" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="39" cy="50" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="58.70560004029934" cy="174.5724449865242" r="9" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="54" cy="173" r="2.5200000000000005" fill="#ffffff" opacity="0.82"/><circle cx="198.21598752346037" cy="46.41296633466341" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="198" cy="45" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="208.2053786266843" cy="171.55138989225978" r="10" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="209" cy="167" r="2.8000000000000003" fill="#ffffff" opacity="0.82"/><circle cx="28.60292250900537" cy="125.102263514041" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="26" cy="117" r="2.24" fill="#ffffff" opacity="0.82"/><circle cx="229.28493299359394" cy="121.80093036783411" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="222" cy="113" r="2.24" fill="#ffffff" opacity="0.82"/></g>
+    
+    <g>
+      <path d="M79 119 C49 99 37 94 37 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C49 99 37 94 37 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M37 108 C25 114 29 113 18 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M37 108 C25 114 29 113 18 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="37" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M43 104 L31 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(18 123) rotate(-18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C207 99 219 94 219 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C207 99 219 94 219 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M219 108 C231 114 227 113 238 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M219 108 C231 114 227 113 238 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="219" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M213 104 L225 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(238 123) rotate(18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(768,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    <g filter="url(#colaGlow)"><circle cx="43.70560004029934" cy="52.05042513783502" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="39" cy="50" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="54.215987523460356" cy="174.13280722968216" r="9" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="54" cy="173" r="2.5200000000000005" fill="#ffffff" opacity="0.82"/><circle cx="197.2053786266843" cy="48.770668520086325" r="12" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="198" cy="45" r="3.3600000000000003" fill="#ffffff" opacity="0.82"/><circle cx="211.60292250900537" cy="174.53877150377053" r="10" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="209" cy="167" r="2.8000000000000003" fill="#ffffff" opacity="0.82"/><circle cx="33.28493299359395" cy="125.97273967503277" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="26" cy="117" r="2.24" fill="#ffffff" opacity="0.82"/><circle cx="230.9467912331169" cy="119.75418931029756" r="8" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="4"/><circle cx="222" cy="113" r="2.24" fill="#ffffff" opacity="0.82"/></g>
+    
+    <g>
+      <path d="M79 116.9 C47 96.9 35 89 35 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.9 C47 96.9 35 89 35 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M35 103 C23 109 27 108 16 118" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M35 103 C23 109 27 108 16 118" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="35" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M41 99 L29 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(16 118) rotate(-18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.9 C209 96.9 221 89 221 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.9 C209 96.9 221 89 221 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M221 103 C233 109 229 108 240 118" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M221 103 C233 109 229 108 240 118" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="221" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M215 99 L227 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(240 118) rotate(18)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 121) rotate(0) translate(-128 -121)">
+      <ellipse cx="128" cy="200" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 68 C83 49 173 49 174 68 L169 182 C166 204 90 204 86 182 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 75 C104 61 153 60 165 75" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 83 C93 118 91 148 96 179" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 78 C167 116 160 153 153 183" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="67" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="62" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="48" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="43" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="91" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 100 L126 106 L110 113 Z" fill="#fff8dc"/>
+      <path d="M145 100 L130 106 L146 113 Z" fill="#fff8dc"/>
+      <path d="M103 141 C119 132 140 132 154 141" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="155" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="179" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 165 C150 163 149 176 158 174 M164 151 C156 149 156 160 164 159" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="199" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="210" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(0,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <g opacity="0.76">
+        <path d="M160 99 H244" stroke="#fff4c4" stroke-width="7" stroke-linecap="round"/>
+        <path d="M160 99 H244" stroke="#67d5ff" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="189" cy="99" r="8" fill="#fff8dc" opacity="0.32"/>
+      </g>
+    
+    <g>
+      <path d="M79 119 C44 99 32 94 32 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C44 99 32 94 32 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M32 108 C20 114 24 87 13 97" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M32 108 C20 114 24 87 13 97" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="32" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M38 104 L26 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(13 97) rotate(22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C212 99 224 94 224 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C212 99 224 94 224 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M224 108 C236 114 232 87 243 97" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M224 108 C236 114 232 87 243 97" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="224" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M218 104 L230 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(243 97) rotate(-22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(256,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <g opacity="0.8">
+        <path d="M160 104 H244" stroke="#fff4c4" stroke-width="8" stroke-linecap="round"/>
+        <path d="M160 104 H244" stroke="#67d5ff" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="198" cy="104" r="9" fill="#fff8dc" opacity="0.32"/>
+      </g>
+    
+    <g>
+      <path d="M79 121.1 C44 101.1 32 99 32 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.1 C44 101.1 32 99 32 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M32 113 C20 119 24 92 13 102" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M32 113 C20 119 24 92 13 102" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="32" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M38 109 L26 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(13 102) rotate(22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.1 C212 101.1 224 99 224 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.1 C212 101.1 224 99 224 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M224 113 C236 119 232 92 243 102" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M224 113 C236 119 232 92 243 102" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="224" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M218 109 L230 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(243 102) rotate(-22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 131) rotate(-2) translate(-128 -131)">
+      <ellipse cx="128" cy="210" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 78 C83 59 173 59 174 78 L169 192 C166 214 90 214 86 192 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 85 C104 71 153 70 165 85" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 93 C93 128 91 158 96 189" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 88 C167 126 160 163 153 193" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="77" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="72" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="58" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="53" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="101" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 110 L126 116 L110 123 Z" fill="#fff8dc"/>
+      <path d="M145 110 L130 116 L146 123 Z" fill="#fff8dc"/>
+      <path d="M103 151 C119 142 140 142 154 151" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="165" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="189" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 175 C150 173 149 186 158 184 M164 161 C156 159 156 170 164 169" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="209" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="220" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(512,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <g opacity="0.84">
+        <path d="M160 99 H244" stroke="#fff4c4" stroke-width="9" stroke-linecap="round"/>
+        <path d="M160 99 H244" stroke="#67d5ff" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="207" cy="99" r="10" fill="#fff8dc" opacity="0.32"/>
+      </g>
+    
+    <g>
+      <path d="M79 119 C44 99 32 94 32 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C44 99 32 94 32 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M32 108 C20 114 24 87 13 97" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M32 108 C20 114 24 87 13 97" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="32" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M38 104 L26 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(13 97) rotate(22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C212 99 224 94 224 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C212 99 224 94 224 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M224 108 C236 114 232 87 243 97" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M224 108 C236 114 232 87 243 97" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="224" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M218 104 L230 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(243 97) rotate(-22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(-4) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(768,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <g opacity="0.88">
+        <path d="M160 94 H244" stroke="#fff4c4" stroke-width="10" stroke-linecap="round"/>
+        <path d="M160 94 H244" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="216" cy="94" r="11" fill="#fff8dc" opacity="0.32"/>
+      </g>
+    
+    <g>
+      <path d="M79 116.9 C44 96.9 32 89 32 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.9 C44 96.9 32 89 32 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M32 103 C20 109 24 82 13 92" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M32 103 C20 109 24 82 13 92" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="32" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M38 99 L26 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(13 92) rotate(22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.9 C212 96.9 224 89 224 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.9 C212 96.9 224 89 224 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M224 103 C236 109 232 82 243 92" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M224 103 C236 109 232 82 243 92" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="224" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M218 99 L230 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(243 92) rotate(-22)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 121) rotate(-2) translate(-128 -121)">
+      <ellipse cx="128" cy="200" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 68 C83 49 173 49 174 68 L169 182 C166 204 90 204 86 182 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 75 C104 61 153 60 165 75" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 83 C93 118 91 148 96 179" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 78 C167 116 160 153 153 183" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="67" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="62" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="48" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="43" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="91" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 100 L126 106 L110 113 Z" fill="#fff8dc"/>
+      <path d="M145 100 L130 106 L146 113 Z" fill="#fff8dc"/>
+      <path d="M103 141 C119 132 140 132 154 141" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="155" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="179" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 165 C150 163 149 176 158 174 M164 151 C156 149 156 160 164 159" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="199" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="210" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(0,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <ellipse cx="128" cy="215" rx="42" ry="15" fill="#5b3322" opacity="0.36" stroke="#67d5ff" stroke-width="3"/>
+      <path d="M112 142 C126 123 143 141 132 164 C122 179 105 166 112 142 Z" fill="#5b3322" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="122" cy="141" r="5" fill="#ffffff" opacity="0.58"/>
+      <path d="M89 191 C105 181 124 183 145 191 C165 199 181 196 196 188" fill="none" stroke="#67d5ff" stroke-width="4" stroke-linecap="round" opacity="0.52"/>
+    
+    <g>
+      <path d="M79 119 C62 99 50 106 50 120" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C62 99 50 106 50 120" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 120 C38 126 42 118 31 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M50 120 C38 126 42 118 31 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="50" cy="120" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M56 116 L44 124" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(31 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C194 99 206 106 206 120" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C194 99 206 106 206 120" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206 120 C218 126 214 118 225 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206 120 C218 126 214 118 225 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206" cy="120" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200 116 L212 124" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(-7) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(256,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <ellipse cx="128" cy="215" rx="45" ry="15" fill="#5b3322" opacity="0.36" stroke="#67d5ff" stroke-width="3"/>
+      <path d="M112 147.9499888627148 C126 128.9499888627148 143 146.9499888627148 132 169.9499888627148 C122 184.9499888627148 105 171.9499888627148 112 147.9499888627148 Z" fill="#5b3322" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="122" cy="146.9499888627148" r="5" fill="#ffffff" opacity="0.58"/>
+      <path d="M89 191 C105 181 124 183 145 191 C165 199 181 196 196 188" fill="none" stroke="#67d5ff" stroke-width="4" stroke-linecap="round" opacity="0.52"/>
+    
+    <g>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 111 47.475587045576304 125" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 111 47.475587045576304 125" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.475587045576304 125 C35.475587045576304 131 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.475587045576304 125 C35.475587045576304 131 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.475587045576304" cy="125" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.475587045576304 121 L41.475587045576304 129" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.475587045576304 133) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 111 208.5244129544237 125" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 111 208.5244129544237 125" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.5244129544237 125 C220.5244129544237 131 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.5244129544237 125 C220.5244129544237 131 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.5244129544237" cy="125" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.5244129544237 121 L214.5244129544237 129" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.5244129544237 133) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 131) rotate(-3) translate(-128 -131)">
+      <ellipse cx="128" cy="210" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 78 C83 59 173 59 174 78 L169 192 C166 214 90 214 86 192 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 85 C104 71 153 70 165 85" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 93 C93 128 91 158 96 189" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 88 C167 126 160 163 153 193" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="77" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="72" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="58" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="53" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="101" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 110 L126 116 L110 123 Z" fill="#fff8dc"/>
+      <path d="M145 110 L130 116 L146 123 Z" fill="#fff8dc"/>
+      <path d="M103 151 C119 142 140 142 154 151" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="165" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="189" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 175 C150 173 149 186 158 184 M164 161 C156 159 156 170 164 169" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="209" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="220" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(512,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <ellipse cx="128" cy="215" rx="48" ry="15" fill="#5b3322" opacity="0.36" stroke="#67d5ff" stroke-width="3"/>
+      <path d="M112 140.46675338783902 C126 121.46675338783902 143 139.46675338783902 132 162.46675338783902 C122 177.46675338783902 105 164.46675338783902 112 140.46675338783902 Z" fill="#5b3322" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="122" cy="139.46675338783902" r="5" fill="#ffffff" opacity="0.58"/>
+      <path d="M89 191 C105 181 124 183 145 191 C165 199 181 196 196 188" fill="none" stroke="#67d5ff" stroke-width="4" stroke-linecap="round" opacity="0.52"/>
+    
+    <g>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 106 47.27210771952295 120" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 106 47.27210771952295 120" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.27210771952295 120 C35.27210771952295 126 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.27210771952295 120 C35.27210771952295 126 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.27210771952295" cy="120" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.27210771952295 116 L41.27210771952295 124" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.27210771952295 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 106 208.72789228047705 120" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 106 208.72789228047705 120" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.72789228047705 120 C220.72789228047705 126 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.72789228047705 120 C220.72789228047705 126 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.72789228047705" cy="120" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.72789228047705 116 L214.72789228047705 124" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.72789228047705 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(6) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(768,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    
+    
+      <ellipse cx="128" cy="215" rx="51" ry="15" fill="#5b3322" opacity="0.36" stroke="#67d5ff" stroke-width="3"/>
+      <path d="M112 136.44511190603362 C126 117.44511190603362 143 135.44511190603362 132 158.44511190603362 C122 173.44511190603362 105 160.44511190603362 112 136.44511190603362 Z" fill="#5b3322" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="122" cy="135.44511190603362" r="5" fill="#ffffff" opacity="0.58"/>
+      <path d="M89 191 C105 181 124 183 145 191 C165 199 181 196 196 188" fill="none" stroke="#67d5ff" stroke-width="4" stroke-linecap="round" opacity="0.52"/>
+    
+    <g>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 101 49.5766399758204 115" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 101 49.5766399758204 115" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M49.5766399758204 115 C37.5766399758204 121 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M49.5766399758204 115 C37.5766399758204 121 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="49.5766399758204" cy="115" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M55.5766399758204 111 L43.5766399758204 119" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(30.5766399758204 123) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 101 206.4233600241796 115" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 101 206.4233600241796 115" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206.4233600241796 115 C218.4233600241796 121 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206.4233600241796 115 C218.4233600241796 121 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206.4233600241796" cy="115" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200.4233600241796 111 L212.4233600241796 119" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225.4233600241796 123) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(128 121) rotate(2) translate(-128 -121)">
+      <ellipse cx="128" cy="200" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 68 C83 49 173 49 174 68 L169 182 C166 204 90 204 86 182 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 75 C104 61 153 60 165 75" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 83 C93 118 91 148 96 179" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 78 C167 116 160 153 153 183" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="67" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="62" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="48" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="43" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="91" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 100 L126 106 L110 113 Z" fill="#fff8dc"/>
+      <path d="M145 100 L130 106 L146 113 Z" fill="#fff8dc"/>
+      <path d="M103 141 C119 132 140 132 154 141" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="155" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="179" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 165 C150 163 149 176 158 174 M164 151 C156 149 156 160 164 159" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="199" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="128" cy="210" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="150" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(0,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="129" r="96" fill="#67d5ff" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="128" r="72" fill="#67d5ff" opacity="0.08" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="128" cy="128" r="94" fill="none" stroke="#fff8dc" stroke-width="3" opacity="0.28"/>
+      <path d="M97 73 C87 42 106 31 116 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M159 74 C177 42 153 27 143 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M81 97 C51 84 44 110 69 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+      <path d="M175 97 C205 84 212 110 187 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 119 C49 99 37 94 37 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C49 99 37 94 37 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M37 108 C25 114 29 95 18 105" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M37 108 C25 114 29 95 18 105" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="37" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M43 104 L31 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(18 105) rotate(8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C207 99 219 94 219 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C207 99 219 94 219 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M219 108 C231 114 227 95 238 105" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M219 108 C231 114 227 95 238 105" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="219" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M213 104 L225 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(238 105) rotate(-8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.95"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.95"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.95"/>
+    </g></g><g transform="translate(256,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="136" r="96" fill="#67d5ff" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="135" r="80" fill="#67d5ff" opacity="0.08" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="128" cy="135" r="102" fill="none" stroke="#fff8dc" stroke-width="3" opacity="0.28"/>
+      <path d="M97 80 C87 42 106 31 116 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M159 81 C177 42 153 27 143 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M81 104 C51 84 44 110 69 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+      <path d="M175 104 C205 84 212 110 187 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 121.94 C47 101.94 35 101 35 115" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.94 C47 101.94 35 101 35 115" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M35 115 C23 121 27 102 16 112" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M35 115 C23 121 27 102 16 112" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.94" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="35" cy="115" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M41 111 L29 119" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(16 112) rotate(8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.94 C209 101.94 221 101 221 115" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.94 C209 101.94 221 101 221 115" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M221 115 C233 121 229 102 240 112" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M221 115 C233 121 229 102 240 112" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.94" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="221" cy="115" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M215 111 L227 119" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(240 112) rotate(-8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 133) rotate(0) translate(-128 -133)">
+      <ellipse cx="128" cy="212" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 80 C83 61 173 61 174 80 L169 194 C166 216 90 216 86 194 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 87 C104 73 153 72 165 87" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 95 C93 130 91 160 96 191" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 90 C167 128 160 165 153 195" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="79" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="74" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="60" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="55" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="103" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 112 L126 118 L110 125 Z" fill="#fff8dc"/>
+      <path d="M145 112 L130 118 L146 125 Z" fill="#fff8dc"/>
+      <path d="M103 153 C119 144 140 144 154 153" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="167" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="191" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 177 C150 175 149 188 158 186 M164 163 C156 161 156 172 164 171" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="211" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="218" r="7" fill="#ffb04a" opacity="0.95"/>
+      <circle cx="128" cy="222" r="8" fill="#ffcc69" opacity="0.95"/>
+      <circle cx="150" cy="218" r="7" fill="#ffb04a" opacity="0.95"/>
+    </g></g><g transform="translate(512,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="129" r="96" fill="#67d5ff" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="128" r="88" fill="#67d5ff" opacity="0.08" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="128" cy="128" r="110" fill="none" stroke="#fff8dc" stroke-width="3" opacity="0.28"/>
+      <path d="M97 73 C87 42 106 31 116 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M159 74 C177 42 153 27 143 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M81 97 C51 84 44 110 69 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+      <path d="M175 97 C205 84 212 110 187 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 119 C45 99 33 94 33 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C45 99 33 94 33 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M33 108 C21 114 25 95 14 105" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M33 108 C21 114 25 95 14 105" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="33" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M39 104 L27 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(14 105) rotate(8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C211 99 223 94 223 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C211 99 223 94 223 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M223 108 C235 114 231 95 242 105" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M223 108 C235 114 231 95 242 105" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="223" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M217 104 L229 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(242 105) rotate(-8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 126) rotate(0) translate(-128 -126)">
+      <ellipse cx="128" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="96" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff8dc"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff8dc"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="211" r="7" fill="#ffb04a" opacity="0.95"/>
+      <circle cx="128" cy="215" r="8" fill="#ffcc69" opacity="0.95"/>
+      <circle cx="150" cy="211" r="7" fill="#ffb04a" opacity="0.95"/>
+    </g></g><g transform="translate(768,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="122" r="96" fill="#67d5ff" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="121" r="96" fill="#67d5ff" opacity="0.08" stroke="#b9f4ff" stroke-width="4"/>
+      <circle cx="128" cy="121" r="118" fill="none" stroke="#fff8dc" stroke-width="3" opacity="0.28"/>
+      <path d="M97 66 C87 42 106 31 116 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M159 67 C177 42 153 27 143 58" fill="none" stroke="#fff8dc" stroke-width="7" stroke-linecap="round"/>
+      <path d="M81 90 C51 84 44 110 69 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+      <path d="M175 90 C205 84 212 110 187 119" fill="none" stroke="#67d5ff" stroke-width="6" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 116.06 C43 96.06 31 87 31 101" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.06 C43 96.06 31 87 31 101" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M31 101 C19 107 23 88 12 98" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M31 101 C19 107 23 88 12 98" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.06" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="31" cy="101" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M37 97 L25 105" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(12 98) rotate(8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M-8 -2 C-30 -16 -43 -8 -55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.06 C213 96.06 225 87 225 101" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.06 C213 96.06 225 87 225 101" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M225 101 C237 107 233 88 244 98" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M225 101 C237 107 233 88 244 98" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.06" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="225" cy="101" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M219 97 L231 105" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(244 98) rotate(-8)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.95"/>
+      <path d="M8 -2 C30 -16 43 -8 55 -20" fill="none" stroke="#b9f4ff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    </g>
+    
+    <g transform="translate(128 119) rotate(0) translate(-128 -119)">
+      <ellipse cx="128" cy="198" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 66 C83 47 173 47 174 66 L169 180 C166 202 90 202 86 180 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 73 C104 59 153 58 165 73" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 81 C93 116 91 146 96 177" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 76 C167 114 160 151 153 181" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="128" cy="65" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="128" cy="60" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="113" y="46" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="119" y="41" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="99" y="89" width="58" height="39" rx="12" fill="#17110f" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 98 L126 104 L110 111 Z" fill="#fff8dc"/>
+      <path d="M145 98 L130 104 L146 111 Z" fill="#fff8dc"/>
+      <path d="M103 139 C119 130 140 130 154 139" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="128" y="153" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="128" y="177" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 163 C150 161 149 174 158 172 M164 149 C156 147 156 158 164 157" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="128" cy="197" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="106" cy="204" r="7" fill="#ffb04a" opacity="0.95"/>
+      <circle cx="128" cy="208" r="8" fill="#ffcc69" opacity="0.95"/>
+      <circle cx="150" cy="204" r="7" fill="#ffb04a" opacity="0.95"/>
+    </g></g><g transform="translate(0,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="129" r="96" fill="#ff6f61" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="132" r="84" fill="#ff6f61" opacity="0.12"/>
+      <path d="M47 64 L57 52 M49 177 L61 164 M205 58 L193 48 M209 176 L195 163" stroke="#fff4c4" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 113 L42 105 M191 116 L214 105" stroke="#ffb04a" stroke-width="4" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 119 C62 99 50 94 50 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C62 99 50 94 50 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 108 C38 114 42 118 31 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M50 108 C38 114 42 118 31 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="50" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M56 104 L44 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(31 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C194 99 206 94 206 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C194 99 206 94 206 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206 108 C218 114 214 118 225 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206 108 C218 114 214 118 225 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200 104 L212 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(124 126) rotate(0) translate(-124 -126)">
+      <ellipse cx="124" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="124" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="124" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="109" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="115" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="95" y="96" width="58" height="39" rx="12" fill="#140909" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff0a3"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff0a3"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="124" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="124" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="124" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="102" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="124" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="146" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(256,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="134" r="96" fill="#ff6f61" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="137" r="86" fill="#ff6f61" opacity="0.12"/>
+      <path d="M47 64 L57 52 M49 177 L61 164 M205 58 L193 48 M209 176 L195 163" stroke="#fff4c4" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 113 L42 105 M191 116 L214 105" stroke="#ffb04a" stroke-width="4" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 99 47.475587045576304 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 121.1 C59.475587045576304 101.1 47.475587045576304 99 47.475587045576304 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.475587045576304 113 C35.475587045576304 119 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.475587045576304 113 C35.475587045576304 119 39.475587045576304 123 28.475587045576304 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.475587045576304" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.475587045576304 109 L41.475587045576304 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.475587045576304 133) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 99 208.5244129544237 113" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 121.1 C196.5244129544237 101.1 208.5244129544237 99 208.5244129544237 113" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.5244129544237 113 C220.5244129544237 119 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.5244129544237 113 C220.5244129544237 119 216.5244129544237 123 227.5244129544237 133" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="121.1" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.5244129544237" cy="113" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.5244129544237 109 L214.5244129544237 117" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.5244129544237 133) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(131 131) rotate(0) translate(-131 -131)">
+      <ellipse cx="131" cy="210" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 78 C83 59 173 59 174 78 L169 192 C166 214 90 214 86 192 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 85 C104 71 153 70 165 85" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 93 C93 128 91 158 96 189" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 88 C167 126 160 163 153 193" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="131" cy="77" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="131" cy="72" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="116" y="58" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="122" y="53" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="102" y="101" width="58" height="39" rx="12" fill="#140909" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 110 L126 116 L110 123 Z" fill="#fff0a3"/>
+      <path d="M145 110 L130 116 L146 123 Z" fill="#fff0a3"/>
+      <path d="M103 151 C119 142 140 142 154 151" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="131" y="165" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="131" y="189" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 175 C150 173 149 186 158 184 M164 161 C156 159 156 170 164 169" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="131" cy="209" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="109" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="131" cy="220" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="153" cy="216" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(512,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="129" r="96" fill="#ff6f61" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="132" r="88" fill="#ff6f61" opacity="0.12"/>
+      <path d="M47 64 L57 52 M49 177 L61 164 M205 58 L193 48 M209 176 L195 163" stroke="#fff4c4" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 113 L42 105 M191 116 L214 105" stroke="#ffb04a" stroke-width="4" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 94 47.27210771952295 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 119 C59.27210771952295 99 47.27210771952295 94 47.27210771952295 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M47.27210771952295 108 C35.27210771952295 114 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M47.27210771952295 108 C35.27210771952295 114 39.27210771952295 118 28.27210771952295 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="47.27210771952295" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M53.27210771952295 104 L41.27210771952295 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(28.27210771952295 128) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 94 208.72789228047705 108" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 119 C196.72789228047705 99 208.72789228047705 94 208.72789228047705 108" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M208.72789228047705 108 C220.72789228047705 114 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M208.72789228047705 108 C220.72789228047705 114 216.72789228047705 118 227.72789228047705 128" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="119" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="208.72789228047705" cy="108" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M202.72789228047705 104 L214.72789228047705 112" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(227.72789228047705 128) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(126 126) rotate(0) translate(-126 -126)">
+      <ellipse cx="126" cy="205" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 73 C83 54 173 54 174 73 L169 187 C166 209 90 209 86 187 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 80 C104 66 153 65 165 80" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 88 C93 123 91 153 96 184" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 83 C167 121 160 158 153 188" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="126" cy="72" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="126" cy="67" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="111" y="53" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="117" y="48" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="97" y="96" width="58" height="39" rx="12" fill="#140909" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 105 L126 111 L110 118 Z" fill="#fff0a3"/>
+      <path d="M145 105 L130 111 L146 118 Z" fill="#fff0a3"/>
+      <path d="M103 146 C119 137 140 137 154 146" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="126" y="160" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="126" y="184" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 170 C150 168 149 181 158 179 M164 156 C156 154 156 165 164 164" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="126" cy="204" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="104" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="126" cy="215" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="148" cy="211" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g><g transform="translate(768,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="220" rx="70" ry="18" fill="#000000" opacity="0.22"/>
+    <circle cx="128" cy="124" r="96" fill="#ff6f61" opacity="0.12" filter="url(#colaGlow)"/>
+    
+      <circle cx="128" cy="127" r="90" fill="#ff6f61" opacity="0.12"/>
+      <path d="M47 64 L57 52 M49 177 L61 164 M205 58 L193 48 M209 176 L195 163" stroke="#fff4c4" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 113 L42 105 M191 116 L214 105" stroke="#ffb04a" stroke-width="4" stroke-linecap="round"/>
+    
+    <g>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 89 49.5766399758204 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M79 116.9 C61.5766399758204 96.9 49.5766399758204 89 49.5766399758204 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M49.5766399758204 103 C37.5766399758204 109 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M49.5766399758204 103 C37.5766399758204 109 41.5766399758204 113 30.5766399758204 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="79" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="49.5766399758204" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M55.5766399758204 99 L43.5766399758204 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(30.5766399758204 123) rotate(-10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 89 206.4233600241796 103" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M177 116.9 C194.4233600241796 96.9 206.4233600241796 89 206.4233600241796 103" fill="none" stroke="#62534a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M206.4233600241796 103 C218.4233600241796 109 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#17110f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M206.4233600241796 103 C218.4233600241796 109 214.4233600241796 113 225.4233600241796 123" fill="none" stroke="#6b5a50" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="177" cy="116.9" r="12" fill="#2a2220" stroke="#17110f" stroke-width="4"/>
+      <circle cx="206.4233600241796" cy="103" r="12" fill="#302825" stroke="#17110f" stroke-width="4"/>
+      <path d="M200.4233600241796 99 L212.4233600241796 107" stroke="#958474" stroke-width="3" stroke-linecap="round"/>
+      
+    <g transform="translate(225.4233600241796 123) rotate(10)">
+      <rect x="-13" y="-22" width="26" height="44" rx="7" fill="url(#colaBody)" stroke="#17110f" stroke-width="4"/>
+      <rect x="-10" y="-25" width="20" height="8" rx="3" fill="url(#colaMetal)" stroke="#17110f" stroke-width="3"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="4" fill="#2b1711" opacity="0.42"/>
+      <path d="M-5 7 L2 -5 L1 5 L7 4 L-1 18 L0 8 Z" fill="#fff4c4" opacity="0.62"/>
+      
+    </g>
+    </g>
+    
+    <g transform="translate(132 121) rotate(0) translate(-132 -121)">
+      <ellipse cx="132" cy="200" rx="45" ry="13" fill="#11100f" opacity="0.35"/>
+      <path d="M82 68 C83 49 173 49 174 68 L169 182 C166 204 90 204 86 182 Z" fill="url(#colaBody)" stroke="#17110f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M91 75 C104 61 153 60 165 75" fill="none" stroke="#ff8b66" stroke-width="4" opacity="0.44"/>
+      <path d="M94 83 C93 118 91 148 96 179" fill="none" stroke="#ff9a75" stroke-width="5" opacity="0.22"/>
+      <path d="M158 78 C167 116 160 153 153 183" fill="none" stroke="#5e1414" stroke-width="8" opacity="0.2"/>
+      <ellipse cx="132" cy="67" rx="48" ry="16" fill="url(#colaMetal)" stroke="#17110f" stroke-width="5"/>
+      <ellipse cx="132" cy="62" rx="38" ry="10" fill="#d9d6cb" stroke="#17110f" stroke-width="3"/>
+      <rect x="117" y="48" width="30" height="18" rx="7" fill="#f2efe6" stroke="#17110f" stroke-width="4"/>
+      <rect x="123" y="43" width="18" height="13" rx="5" fill="#c8c2b6" stroke="#17110f" stroke-width="3"/>
+      <rect x="103" y="91" width="58" height="39" rx="12" fill="#140909" stroke="#42110f" stroke-width="5"/>
+      <path d="M111 100 L126 106 L110 113 Z" fill="#fff0a3"/>
+      <path d="M145 100 L130 106 L146 113 Z" fill="#fff0a3"/>
+      <path d="M103 141 C119 132 140 132 154 141" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+      <text x="132" y="155" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">BIG</text>
+      <text x="132" y="179" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="25" fill="#fff4e1" stroke="#7b211e" stroke-width="1.2">COLA</text>
+      <path d="M158 165 C150 163 149 176 158 174 M164 151 C156 149 156 160 164 159" fill="none" stroke="#f5d9bf" stroke-width="3" opacity="0.5"/>
+      <ellipse cx="132" cy="199" rx="43" ry="11" fill="#17110f" opacity="0.42"/>
+      <circle cx="110" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+      <circle cx="132" cy="210" r="8" fill="#ffcc69" opacity="0.62"/>
+      <circle cx="154" cy="206" r="7" fill="#ffb04a" opacity="0.54"/>
+    </g></g></svg>

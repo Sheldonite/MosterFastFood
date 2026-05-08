@@ -1,0 +1,872 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="2048" viewBox="0 0 1024 2048" role="img">
+    <defs>
+      <linearGradient id="burgerBun" x1="0" x2="0" y1="0" y2="1">
+        <stop stop-color="#ffc766"/>
+        <stop offset="0.5" stop-color="#c47a32"/>
+        <stop offset="1" stop-color="#8a4e27"/>
+      </linearGradient>
+    </defs><g transform="translate(0,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,0)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="72" cy="76" r="15" fill="#e94b3d" stroke="#ffd09a" stroke-width="4"/><path d="M45 78 C58 66 74 66 88 78" fill="none" stroke="#ff6b58" stroke-width="6" stroke-linecap="round"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="67" cy="80" r="15" fill="#e94b3d" stroke="#ffd09a" stroke-width="4"/><path d="M45 81 C58 66 74 66 88 78" fill="none" stroke="#ff6b58" stroke-width="6" stroke-linecap="round"/></g>
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="62" cy="84" r="15" fill="#e94b3d" stroke="#ffd09a" stroke-width="4"/><path d="M45 84 C58 66 74 66 88 78" fill="none" stroke="#ff6b58" stroke-width="6" stroke-linecap="round"/></g>
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,256)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="57" cy="88" r="15" fill="#e94b3d" stroke="#ffd09a" stroke-width="4"/><path d="M45 87 C58 66 74 66 88 78" fill="none" stroke="#ff6b58" stroke-width="6" stroke-linecap="round"/></g>
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#9fdf45" opacity="0.08"/>
+    <g opacity="0.72"><ellipse cx="187" cy="88" rx="23" ry="13" fill="#9fdf45" stroke="#2b1711" stroke-width="4"/><circle cx="181" cy="85" r="3" fill="#f7ffbd"/><path d="M172 115 C188 126 207 125 220 113" stroke="#eaff7a" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#9fdf45" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><ellipse cx="191" cy="93" rx="23" ry="13" fill="#9fdf45" stroke="#2b1711" stroke-width="4"/><circle cx="185" cy="90" r="3" fill="#f7ffbd"/><path d="M172 120 C188 126 207 125 220 113" stroke="#eaff7a" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#9fdf45" opacity="0.08"/>
+    <g opacity="0.72"><ellipse cx="195" cy="88" rx="23" ry="13" fill="#9fdf45" stroke="#2b1711" stroke-width="4"/><circle cx="189" cy="85" r="3" fill="#f7ffbd"/><path d="M172 115 C188 126 207 125 220 113" stroke="#eaff7a" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,512)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#9fdf45" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><ellipse cx="199" cy="83" rx="23" ry="13" fill="#9fdf45" stroke="#2b1711" stroke-width="4"/><circle cx="193" cy="80" r="3" fill="#f7ffbd"/><path d="M172 110 C188 126 207 125 220 113" stroke="#eaff7a" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#aa58ff" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="68" cy="137" r="27" fill="none" stroke="#aa58ff" stroke-width="10"/><circle cx="198" cy="126" r="22" fill="none" stroke="#ffd5ff" stroke-width="8"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#aa58ff" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="74" cy="132" r="27" fill="none" stroke="#aa58ff" stroke-width="10"/><circle cx="194" cy="131" r="22" fill="none" stroke="#ffd5ff" stroke-width="8"/></g>
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#aa58ff" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="80" cy="137" r="27" fill="none" stroke="#aa58ff" stroke-width="10"/><circle cx="190" cy="126" r="22" fill="none" stroke="#ffd5ff" stroke-width="8"/></g>
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,768)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#aa58ff" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="86" cy="142" r="27" fill="none" stroke="#aa58ff" stroke-width="10"/><circle cx="186" cy="121" r="22" fill="none" stroke="#ffd5ff" stroke-width="8"/></g>
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><path d="M184 45 C206 75 214 101 195 127 C174 110 169 77 184 45 Z" fill="#e07a2a" stroke="#ffe0a0" stroke-width="5"/><ellipse cx="75" cy="176" rx="38" ry="11" fill="#c06a23" opacity="0.52"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 119 C63 80 96 60 137 62 C181 63 203 86 209 120 C181 108 83 108 52 119 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 120 C92 139 164 139 196 119 L191 147 C157 162 93 162 63 147 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="133" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 158 C84 143 104 172 126 156 C151 142 168 171 197 154 L198 179 C154 193 94 193 58 177 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="153" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="153" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 172 H181 C190 172 197 179 197 188 V198 H61 V194 C61 179 69 172 79 172 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 99 C104 92 153 92 176 100" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="78" rx="4" ry="2.2"/><ellipse cx="120" cy="71" rx="4" ry="2.2"/><ellipse cx="151" cy="74" rx="4" ry="2.2"/><ellipse cx="177" cy="90" rx="4" ry="2.2"/><ellipse cx="71" cy="98" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="107" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 123 L119 116 L113 129 Z" fill="#fff1b6"/>
+      <path d="M157 123 L137 116 L143 129 Z" fill="#fff1b6"/>
+      <path d="M102 113 L121 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 113 L135 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 55 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><path d="M184 45 C206 75 214 101 195 127 C174 110 169 77 184 45 Z" fill="#e07a2a" stroke="#ffe0a0" stroke-width="5"/><ellipse cx="83" cy="176" rx="38" ry="11" fill="#c06a23" opacity="0.52"/></g>
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 119 C63 80 96 60 137 62 C181 63 203 86 209 120 C181 108 83 108 52 119 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 120 C92 139 164 139 196 119 L191 147 C157 162 93 162 63 147 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="133" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 158 C84 143 104 172 126 156 C151 142 168 171 197 154 L198 179 C154 193 94 193 58 177 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="153" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="153" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 172 H181 C190 172 197 179 197 188 V198 H61 V194 C61 179 69 172 79 172 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 99 C104 92 153 92 176 100" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="78" rx="4" ry="2.2"/><ellipse cx="120" cy="71" rx="4" ry="2.2"/><ellipse cx="151" cy="74" rx="4" ry="2.2"/><ellipse cx="177" cy="90" rx="4" ry="2.2"/><ellipse cx="71" cy="98" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="107" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 123 L119 116 L113 129 Z" fill="#fff1b6"/>
+      <path d="M157 123 L137 116 L143 129 Z" fill="#fff1b6"/>
+      <path d="M102 113 L121 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 113 L135 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 55 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><path d="M184 45 C206 75 214 101 195 127 C174 110 169 77 184 45 Z" fill="#e07a2a" stroke="#ffe0a0" stroke-width="5"/><ellipse cx="91" cy="176" rx="38" ry="11" fill="#c06a23" opacity="0.52"/></g>
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 119 C63 80 96 60 137 62 C181 63 203 86 209 120 C181 108 83 108 52 119 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 120 C92 139 164 139 196 119 L191 147 C157 162 93 162 63 147 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="133" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 158 C84 143 104 172 126 156 C151 142 168 171 197 154 L198 179 C154 193 94 193 58 177 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="153" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="153" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 172 H181 C190 172 197 179 197 188 V198 H61 V194 C61 179 69 172 79 172 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 99 C104 92 153 92 176 100" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="78" rx="4" ry="2.2"/><ellipse cx="120" cy="71" rx="4" ry="2.2"/><ellipse cx="151" cy="74" rx="4" ry="2.2"/><ellipse cx="177" cy="90" rx="4" ry="2.2"/><ellipse cx="71" cy="98" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="107" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 123 L119 116 L113 129 Z" fill="#fff1b6"/>
+      <path d="M157 123 L137 116 L143 129 Z" fill="#fff1b6"/>
+      <path d="M102 113 L121 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 113 L135 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 55 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,1024)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><path d="M184 45 C206 75 214 101 195 127 C174 110 169 77 184 45 Z" fill="#e07a2a" stroke="#ffe0a0" stroke-width="5"/><ellipse cx="99" cy="176" rx="38" ry="11" fill="#c06a23" opacity="0.52"/></g>
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 119 C63 80 96 60 137 62 C181 63 203 86 209 120 C181 108 83 108 52 119 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 120 C92 139 164 139 196 119 L191 147 C157 162 93 162 63 147 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="133" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 158 C84 143 104 172 126 156 C151 142 168 171 197 154 L198 179 C154 193 94 193 58 177 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="153" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="153" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 172 H181 C190 172 197 179 197 188 V198 H61 V194 C61 179 69 172 79 172 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 99 C104 92 153 92 176 100" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="78" rx="4" ry="2.2"/><ellipse cx="120" cy="71" rx="4" ry="2.2"/><ellipse cx="151" cy="74" rx="4" ry="2.2"/><ellipse cx="177" cy="90" rx="4" ry="2.2"/><ellipse cx="71" cy="98" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="107" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 123 L119 116 L113 129 Z" fill="#fff1b6"/>
+      <path d="M157 123 L137 116 L143 129 Z" fill="#fff1b6"/>
+      <path d="M102 113 L121 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M154 113 L135 119" stroke="#2b1711" stroke-width="4" stroke-linecap="round"/>
+      <path d="M124 55 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><path d="M18 190 H232" stroke="#ff6b58" stroke-width="11" stroke-linecap="round" opacity="0.55"/><path d="M34 164 L63 190 L34 216 M182 164 L211 190 L182 216" fill="none" stroke="#ffd66b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g transform="translate(11,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><path d="M18 190 H232" stroke="#ff6b58" stroke-width="11" stroke-linecap="round" opacity="0.55"/><path d="M34 164 L63 190 L34 216 M182 164 L211 190 L182 216" fill="none" stroke="#ffd66b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g transform="translate(15,2)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><path d="M18 190 H232" stroke="#ff6b58" stroke-width="11" stroke-linecap="round" opacity="0.55"/><path d="M34 164 L63 190 L34 216 M182 164 L211 190 L182 216" fill="none" stroke="#ffd66b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g transform="translate(19,2.4492935982947064e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,1280)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><path d="M18 190 H232" stroke="#ff6b58" stroke-width="11" stroke-linecap="round" opacity="0.55"/><path d="M34 164 L63 190 L34 216 M182 164 L211 190 L182 216" fill="none" stroke="#ffd66b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g transform="translate(23,-2)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(0,1536)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="128" cy="137" r="76" fill="none" stroke="#f0c35b" stroke-width="8" opacity="0.42"/><path d="M128 35 V60 M128 213 V238 M25 137 H51 M205 137 H231" stroke="#ff5d48" stroke-width="7" stroke-linecap="round"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 107 C63 80 96 60 137 62 C181 63 203 86 209 108 C181 96 83 96 52 107 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 108 C92 127 164 127 196 107 L191 135 C157 150 93 150 63 135 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="121" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 146 C84 131 104 160 126 144 C151 130 168 159 197 142 L198 167 C154 181 94 181 58 165 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="141" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="141" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 160 H181 C190 160 197 167 197 176 V198 H61 V194 C61 167 69 160 79 160 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 87 C104 80 153 80 176 88" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="66" rx="4" ry="2.2"/><ellipse cx="120" cy="59" rx="4" ry="2.2"/><ellipse cx="151" cy="62" rx="4" ry="2.2"/><ellipse cx="177" cy="78" rx="4" ry="2.2"/><ellipse cx="71" cy="86" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="95" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 111 L119 104 L113 117 Z" fill="#fff1b6"/>
+      <path d="M157 111 L137 104 L143 117 Z" fill="#fff1b6"/>
+      <path d="M102 101 L121 107" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 101 L135 107" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 43 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      <path d="M82 148 C116 173 156 174 191 147" fill="none" stroke="#120807" stroke-width="12" stroke-linecap="round"/>
+    </g></g><g transform="translate(256,1536)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="128" cy="137" r="81" fill="none" stroke="#f0c35b" stroke-width="8" opacity="0.42"/><path d="M128 35 V60 M128 213 V238 M25 137 H51 M205 137 H231" stroke="#ff5d48" stroke-width="7" stroke-linecap="round"/></g>
+    <g transform="translate(2.5244129544236893,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 104 C63 80 96 60 137 62 C181 63 203 86 209 105 C181 93 83 93 52 104 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 105 C92 124 164 124 196 104 L191 132 C157 147 93 147 63 132 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="118" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 143 C84 128 104 157 126 141 C151 127 168 156 197 139 L198 164 C154 178 94 178 58 162 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="138" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="138" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 157 H181 C190 157 197 164 197 173 V198 H61 V194 C61 164 69 157 79 157 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 84 C104 77 153 77 176 85" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="63" rx="4" ry="2.2"/><ellipse cx="120" cy="56" rx="4" ry="2.2"/><ellipse cx="151" cy="59" rx="4" ry="2.2"/><ellipse cx="177" cy="75" rx="4" ry="2.2"/><ellipse cx="71" cy="83" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="92" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 108 L119 101 L113 114 Z" fill="#fff1b6"/>
+      <path d="M157 108 L137 101 L143 114 Z" fill="#fff1b6"/>
+      <path d="M102 98 L121 104" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 98 L135 104" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 40 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      <path d="M82 145 C116 170 156 171 191 144" fill="none" stroke="#120807" stroke-width="12" stroke-linecap="round"/>
+    </g></g><g transform="translate(512,1536)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.72"><circle cx="128" cy="137" r="86" fill="none" stroke="#f0c35b" stroke-width="8" opacity="0.42"/><path d="M128 35 V60 M128 213 V238 M25 137 H51 M205 137 H231" stroke="#ff5d48" stroke-width="7" stroke-linecap="round"/></g>
+    <g transform="translate(2.727892280477045,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 101 C63 80 96 60 137 62 C181 63 203 86 209 102 C181 90 83 90 52 101 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 102 C92 121 164 121 196 101 L191 129 C157 144 93 144 63 129 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="115" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 140 C84 125 104 154 126 138 C151 124 168 153 197 136 L198 161 C154 175 94 175 58 159 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="135" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="135" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 154 H181 C190 154 197 161 197 170 V198 H61 V194 C61 161 69 154 79 154 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 81 C104 74 153 74 176 82" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="60" rx="4" ry="2.2"/><ellipse cx="120" cy="53" rx="4" ry="2.2"/><ellipse cx="151" cy="56" rx="4" ry="2.2"/><ellipse cx="177" cy="72" rx="4" ry="2.2"/><ellipse cx="71" cy="80" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="89" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 105 L119 98 L113 111 Z" fill="#fff1b6"/>
+      <path d="M157 105 L137 98 L143 111 Z" fill="#fff1b6"/>
+      <path d="M102 95 L121 101" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 95 L135 101" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 37 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      <path d="M82 142 C116 167 156 168 191 141" fill="none" stroke="#120807" stroke-width="12" stroke-linecap="round"/>
+    </g></g><g transform="translate(768,1536)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#f05d47" opacity="0.08"/>
+    <g opacity="0.8999999999999999"><circle cx="128" cy="137" r="91" fill="none" stroke="#f0c35b" stroke-width="8" opacity="0.42"/><path d="M128 35 V60 M128 213 V238 M25 137 H51 M205 137 H231" stroke="#ff5d48" stroke-width="7" stroke-linecap="round"/></g>
+    <g transform="translate(0.4233600241796016,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.62"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 98 C63 80 96 60 137 62 C181 63 203 86 209 99 C181 87 83 87 52 98 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 99 C92 118 164 118 196 98 L191 126 C157 141 93 141 63 126 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="112" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 137 C84 122 104 151 126 135 C151 121 168 150 197 133 L198 158 C154 172 94 172 58 156 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="132" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="132" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 151 H181 C190 151 197 158 197 167 V198 H61 V194 C61 158 69 151 79 151 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 78 C104 71 153 71 176 79" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="57" rx="4" ry="2.2"/><ellipse cx="120" cy="50" rx="4" ry="2.2"/><ellipse cx="151" cy="53" rx="4" ry="2.2"/><ellipse cx="177" cy="69" rx="4" ry="2.2"/><ellipse cx="71" cy="77" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="86" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 102 L119 95 L113 108 Z" fill="#fff1b6"/>
+      <path d="M157 102 L137 95 L143 108 Z" fill="#fff1b6"/>
+      <path d="M102 92 L121 98" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 92 L135 98" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 34 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      <path d="M82 139 C116 164 156 165 191 138" fill="none" stroke="#120807" stroke-width="12" stroke-linecap="round"/>
+    </g></g><g transform="translate(0,1792)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#ff3148" opacity="0.08"/>
+    <g opacity="0.7"><circle cx="128" cy="137" r="92" fill="#ff3148" opacity="0.08"/><path d="M43 206 C82 178 170 178 214 204" stroke="#ff3148" stroke-width="8" stroke-linecap="round" opacity="0.46"/></g>
+    <g transform="translate(0,0)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.88"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(256,1792)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#ff3148" opacity="0.08"/>
+    <g opacity="0.7"><circle cx="128" cy="137" r="96" fill="#ff3148" opacity="0.08"/><path d="M43 206 C82 178 170 178 214 204" stroke="#ff3148" stroke-width="8" stroke-linecap="round" opacity="0.46"/></g>
+    <g transform="translate(0,5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.88"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(512,1792)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#ff3148" opacity="0.08"/>
+    <g opacity="0.7"><circle cx="128" cy="137" r="100" fill="#ff3148" opacity="0.08"/><path d="M43 206 C82 178 170 178 214 204" stroke="#ff3148" stroke-width="8" stroke-linecap="round" opacity="0.46"/></g>
+    <g transform="translate(0,6.123233995736766e-16)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.88"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g><g transform="translate(768,1792)">
+    <rect x="0" y="0" width="256" height="256" fill="none"/>
+    <ellipse cx="128" cy="221" rx="74" ry="18" fill="#000000" opacity="0.28"/>
+    <circle cx="128" cy="136" r="96" fill="#ff3148" opacity="0.08"/>
+    <g opacity="0.7"><circle cx="128" cy="137" r="104" fill="#ff3148" opacity="0.08"/><path d="M43 206 C82 178 170 178 214 204" stroke="#ff3148" stroke-width="8" stroke-linecap="round" opacity="0.46"/></g>
+    <g transform="translate(0,-5)">
+      <ellipse cx="128" cy="211" rx="75" ry="14" fill="#461a1c" opacity="0.88"/>
+      <rect x="58" y="196" width="140" height="19" rx="9" fill="#26211d" stroke="#7f2b32" stroke-width="5"/>
+      <path d="M52 125 C63 80 96 60 137 62 C181 63 203 86 209 126 C181 114 83 114 52 125 Z" fill="url(#burgerBun)" stroke="#3a1d12" stroke-width="6"/>
+      <path d="M66 126 C92 145 164 145 196 125 L191 153 C157 168 93 168 63 153 Z" fill="#f5c348" stroke="#704018" stroke-width="5"/>
+      <rect x="67" y="139" width="123" height="30" rx="14" fill="#3c2118" stroke="#22120e" stroke-width="5"/>
+      <path d="M61 164 C84 149 104 178 126 162 C151 148 168 177 197 160 L198 185 C154 199 94 199 58 183 Z" fill="#5fbd4d" stroke="#2f5d25" stroke-width="4"/>
+      <ellipse cx="92" cy="159" rx="21" ry="9" fill="#c92e2d" opacity="0.92"/>
+      <ellipse cx="151" cy="159" rx="23" ry="9" fill="#7a3d97" opacity="0.9"/>
+      <path d="M79 178 H181 C190 178 197 185 197 194 V198 H61 V194 C61 185 69 178 79 178 Z" fill="#8b4f2d" stroke="#3a1d12" stroke-width="5"/>
+      <path d="M82 105 C104 98 153 98 176 106" fill="none" stroke="#fff0b8" stroke-width="3" opacity="0.22"/>
+      <g fill="#fff0b8" opacity="0.78">
+        <ellipse cx="94" cy="84" rx="4" ry="2.2"/><ellipse cx="120" cy="77" rx="4" ry="2.2"/><ellipse cx="151" cy="80" rx="4" ry="2.2"/><ellipse cx="177" cy="96" rx="4" ry="2.2"/><ellipse cx="71" cy="104" rx="4" ry="2.2"/>
+      </g>
+      <rect x="81" y="113" width="94" height="39" rx="16" fill="#20110f"/>
+      <path d="M99 129 L119 122 L113 135 Z" fill="#fff1b6"/>
+      <path d="M157 129 L137 122 L143 135 Z" fill="#fff1b6"/>
+      <path d="M102 119 L121 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M154 119 L135 125" stroke="#2b1711" stroke-width="6" stroke-linecap="round"/>
+      <path d="M124 61 V36 M124 36 H166 L158 47 L166 58 H124" fill="#d64b28" stroke="#3a1d12" stroke-width="4"/>
+      <text x="146" y="52" font-family="Arial Black, Impact, sans-serif" font-size="17" text-anchor="middle" fill="#ffd66b">BB</text>
+      
+    </g></g></svg>

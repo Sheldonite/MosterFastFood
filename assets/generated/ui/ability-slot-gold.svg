@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="74" viewBox="0 0 260 74" role="img">
+    <defs>
+      <linearGradient id="slotBg" x1="0" x2="1">
+        <stop stop-color="#08101a"/>
+        <stop offset="0.52" stop-color="#0a1520"/>
+        <stop offset="1" stop-color="#07111c"/>
+      </linearGradient>
+      <linearGradient id="slotLine" x1="0" x2="1">
+        <stop stop-color="#b47c24" stop-opacity="0.72"/>
+        <stop offset="0.5" stop-color="#b47c24" stop-opacity="0.36"/>
+        <stop offset="1" stop-color="#b47c24" stop-opacity="0.72"/>
+      </linearGradient>
+      <radialGradient id="slotGlow" cx="0.22" cy="0.45" r="0.72">
+        <stop stop-color="#3a2710" stop-opacity="0.72"/>
+        <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect x="1" y="1" width="258" height="72" rx="3" fill="url(#slotBg)" stroke="url(#slotLine)" stroke-width="1.5"/>
+    <rect x="2" y="2" width="256" height="70" rx="2" fill="url(#slotGlow)" opacity="0.44"/>
+    <path d="M1.5 9 H258.5 M1.5 65 H258.5" stroke="#b47c24" stroke-opacity="0.18" stroke-width="1"/>
+  </svg>

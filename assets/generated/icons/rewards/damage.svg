@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+    <defs><filter id="softGlow"><feGaussianBlur stdDeviation="2.8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#softGlow)"><path d="M83 12 C76 42 60 73 32 100 L24 92 C51 64 63 43 71 9 Z" fill="#f0c35b" stroke="#07101b" stroke-width="5"/><path d="M36 88 L19 105" stroke="#f0c35b" stroke-width="10" stroke-linecap="round"/></g>
+  </svg>

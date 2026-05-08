@@ -156,6 +156,16 @@ const mazeRewardPool = [
   { id: "cooldown", name: "Clear Focus", description: "+10% ability cooldown recovery for this run.", values: { cooldownRecovery: 0.1 } },
 ];
 
+const mazeRewardVisuals = {
+  damage: { tone: "gold", category: "Damage", icon: "damage" },
+  speed: { tone: "blue", category: "Speed", icon: "speed" },
+  hp: { tone: "green", category: "Health", icon: "hp" },
+  armor: { tone: "blue", category: "Defense", icon: "armor" },
+  attackSpeed: { tone: "blue", category: "Speed", icon: "attackSpeed" },
+  potion: { tone: "green", category: "Utility", icon: "potion" },
+  cooldown: { tone: "purple", category: "Cooldown", icon: "cooldown" },
+};
+
 const mazeWallThickness = 8;
 const mazePlayerWallPadding = 8;
 const gauntletPlayerObstaclePadding = 3;
@@ -248,129 +258,245 @@ const talentClassNames = {
   bard: "Bard",
 };
 
-function buildTalentBranch(classKey, branch, column, nodes) {
-  return nodes.map((node, row) => ({
+function buildTalentPath(classKey, path, pathIndex, nodes) {
+  const layout = talentPathBranchLayout(nodes.length);
+  return nodes.map((node, index) => {
+    const slot = layout[index] || { row: index + 1, column: 3 };
+    const defaultParents = slot.parents?.map((parentIndex) => nodes[parentIndex]?.id).filter(Boolean) || [];
+    const defaultParentsAny = slot.parentsAny?.map((parentIndex) => nodes[parentIndex]?.id).filter(Boolean) || [];
+    return ({
     id: node.id,
     classKey,
-    branch,
-    row,
-    column,
+    branch: path,
+    path,
+    pathIndex,
+    row: slot.row,
+    column: slot.column,
     name: node.name,
+    rarity: node.rarity || (index === nodes.length - 1 ? "legendary" : index >= nodes.length - 3 ? "epic" : index >= 2 ? "rare" : "common"),
     description: node.description,
-    type: node.type || (row === nodes.length - 1 ? "capstone" : row === 0 ? "minor" : "major"),
-    parents: row === 0 ? [] : [nodes[row - 1].id],
-    effect: node.effect,
-  }));
+    synergy: node.synergy || "",
+    type: node.type || (index === nodes.length - 1 ? "capstone" : index === 0 ? "minor" : "major"),
+    parents: node.parents || defaultParents,
+    parentsAny: node.parentsAny || defaultParentsAny,
+    effect: node.effect || node.description,
+    effectKey: node.effectKey || node.id,
+  });
+  });
+}
+
+function talentPathBranchLayout(count) {
+  if (count >= 9) {
+    return [
+      { row: 1, column: 3 },
+      { row: 2, column: 2, parents: [0] },
+      { row: 2, column: 4, parents: [0] },
+      { row: 3, column: 1, parents: [1] },
+      { row: 3, column: 3, parentsAny: [1, 2] },
+      { row: 3, column: 5, parents: [2] },
+      { row: 4, column: 2, parentsAny: [3, 4] },
+      { row: 4, column: 4, parentsAny: [4, 5] },
+      { row: 5, column: 3, parentsAny: [6, 7] },
+    ];
+  }
+  return [
+    { row: 1, column: 3 },
+    { row: 2, column: 2, parents: [0] },
+    { row: 2, column: 4, parents: [0] },
+    { row: 3, column: 2, parents: [1] },
+    { row: 3, column: 4, parents: [2] },
+    { row: 4, column: 2, parents: [3] },
+    { row: 4, column: 4, parents: [4] },
+    { row: 5, column: 3, parentsAny: [5, 6] },
+  ];
 }
 
 const talentDefinitions = [
-  ...buildTalentBranch("melee", "Iron Wall", 0, [
-    { id: "melee_iron_hp", name: "Iron Stomach", description: "+25 maximum health.", effect: "+25 HP" },
-    { id: "melee_iron_wall", name: "Reinforced Guard", description: "Shield Wall lasts longer and blocks more damage.", effect: "Better Shield Wall" },
-    { id: "melee_iron_heal", name: "Deflecting Bite", description: "Shield Bash heals when it blocks projectiles.", effect: "Block heal" },
-    { id: "melee_iron_last", name: "Last Stand", description: "Once per fight, survive lethal damage and gain Shield Wall.", type: "capstone", effect: "Cheat death" },
+  ...buildTalentPath("melee", "Iron Vanguard", 0, [
+    { id: "melee_iron_hp", name: "Iron Stomach", rarity: "common", description: "+25 maximum health.", synergy: "Gives Warrior room to stand close during boss patterns." },
+    { id: "warrior_vanguard_shield_hook", name: "Shield Hook", rarity: "common", description: "Shield Bash pulls small enemies and slightly drags bosses toward you.", synergy: "Improves melee uptime before Groundbreaker." },
+    { id: "warrior_vanguard_brace", name: "Brace And Break", rarity: "rare", description: "Standing still briefly empowers your next Shield Bash into a wider cone.", synergy: "Rewards tank timing during safe windows." },
+    { id: "melee_iron_wall", name: "Reinforced Guard", rarity: "rare", description: "Shield Wall lasts longer and blocks more damage.", synergy: "Combines with projectile-heavy boss phases." },
+    { id: "melee_iron_heal", name: "Deflecting Bite", rarity: "rare", description: "Shield Bash heals when it blocks projectiles.", synergy: "Turns defense into sustain." },
+    { id: "warrior_vanguard_counterquake", name: "Counterquake", rarity: "epic", description: "Blocking or reducing damage charges Groundbreaker.", synergy: "Feeds tank play into AoE pressure." },
+    { id: "warrior_vanguard_bulwark_echo", name: "Bulwark Echo", rarity: "epic", description: "The next ability after Shield Wall repeats at reduced power.", synergy: "Creates Shield Wall into Groundbreaker burst lines." },
+    { id: "melee_iron_last", name: "Unmoving Mountain", rarity: "legendary", description: "Once per fight, survive lethal damage and gain Shield Wall.", synergy: "Lets Warrior recover during final boss chaos." },
   ]),
-  ...buildTalentBranch("melee", "Bloodblade", 1, [
-    { id: "melee_blood_bleed", name: "Serrated Edge", description: "Basic attacks apply bleed.", effect: "Bleed basics" },
-    { id: "melee_blood_deep", name: "Deep Cuts", description: "Bleeds last longer and tick harder.", effect: "Stronger bleed" },
-    { id: "melee_blood_whirl", name: "Red Whirl", description: "Whirlwind Dash applies bleed.", effect: "Dash bleed" },
-    { id: "melee_blood_hemo", name: "Hemorrhage", description: "Groundbreaker bursts bleeding targets for bonus damage.", type: "capstone", effect: "Bleed burst" },
+  ...buildTalentPath("melee", "Blood Reaver", 1, [
+    { id: "melee_blood_bleed", name: "Serrated Opening", rarity: "common", description: "Basic attacks apply Bleed.", synergy: "Starts the Warrior bleed engine." },
+    { id: "melee_blood_whirl", name: "Red Sweep", rarity: "common", description: "Whirlwind Dash applies Bleed to all targets hit.", synergy: "Strong in gauntlets and add phases." },
+    { id: "melee_blood_deep", name: "Deep Cuts", rarity: "rare", description: "Bleeds last longer and tick harder.", synergy: "Improves every Reaver payoff." },
+    { id: "warrior_blood_price", name: "Blood Price", rarity: "rare", description: "Spend a little HP to cast Groundbreaker if its cooldown is almost ready.", synergy: "Risky burst during exposed windows." },
+    { id: "melee_blood_hemo", name: "Hemorrhage Pulse", rarity: "rare", description: "Groundbreaker bursts bleeding targets for bonus damage.", synergy: "Core Q/E/Space bleed combo payoff." },
+    { id: "warrior_blood_crimson_trail", name: "Crimson Trail", rarity: "epic", description: "Whirlwind leaves a blood trail that damages bleeding enemies more.", synergy: "Turns movement into a DoT lane." },
+    { id: "warrior_blood_reaver_rhythm", name: "Reaver Rhythm", rarity: "epic", description: "Alternating basic attacks and abilities extends Bleed duration.", synergy: "Rewards clean rotations." },
+    { id: "warrior_blood_bloodstorm", name: "Bloodstorm", rarity: "legendary", description: "Whirlwind consumes long Bleeds for a huge spinning burst.", synergy: "Big setup payoff for boss burn windows." },
   ]),
-  ...buildTalentBranch("melee", "Earthbreaker", 2, [
-    { id: "melee_earth_radius", name: "Wider Quake", description: "Groundbreaker radius is larger.", effect: "+Radius" },
-    { id: "melee_earth_after", name: "Aftershock", description: "Groundbreaker hits a second time after a short delay.", effect: "Aftershock" },
-    { id: "melee_earth_bash", name: "Shock Bash", description: "Shield Bash reaches farther and hits harder.", effect: "Bigger bash" },
-    { id: "melee_earth_cap", name: "Earthsplitter", description: "Groundbreaker destroys nearby small projectiles.", type: "capstone", effect: "Projectile clear" },
+  ...buildTalentPath("melee", "Earthbreaker", 2, [
+    { id: "melee_earth_radius", name: "Wider Quake", rarity: "common", description: "Groundbreaker radius is larger.", synergy: "Makes Warrior AoE more forgiving." },
+    { id: "warrior_earth_stonefist", name: "Stonefist", rarity: "common", description: "Basic attacks after Groundbreaker create tiny aftershocks.", synergy: "Adds sustained melee splash." },
+    { id: "warrior_earth_fault_line", name: "Fault Line", rarity: "rare", description: "Groundbreaker travels forward in a short line.", synergy: "Lets melee threaten from safer spacing." },
+    { id: "melee_earth_after", name: "Aftershock", rarity: "rare", description: "Groundbreaker hits a second time after a short delay.", synergy: "Excellent on bosses held in place." },
+    { id: "melee_earth_bash", name: "Shock Bash", rarity: "rare", description: "Shield Bash reaches farther and hits harder.", synergy: "Gives Earthbreaker a ranged opener." },
+    { id: "warrior_earth_rubble_guard", name: "Rubble Guard", rarity: "epic", description: "Groundbreaker creates a brief projectile-blocking rubble ring.", synergy: "Adds survival to AoE timing." },
+    { id: "melee_earth_cap", name: "Earth Battery", rarity: "epic", description: "Groundbreaker destroys nearby small projectiles.", synergy: "Projectile clears feed safer melee windows." },
+    { id: "warrior_earth_worldsplitter", name: "Worldsplitter", rarity: "legendary", description: "Every third Groundbreaker creates three branching shockwaves.", synergy: "Huge arena pressure against large bosses." },
+    { id: "warrior_earth_titan_stance", name: "Titan Stance", rarity: "legendary", description: "Groundbreaker radius grows near the boss, but movement speed drops briefly.", synergy: "High-risk close-range mastery." },
   ]),
-  ...buildTalentBranch("ranger", "Deadeye", 0, [
-    { id: "ranger_deadeye_mark", name: "Long Mark", description: "Marked Shot grants more marked hits.", effect: "+Marked hits" },
-    { id: "ranger_deadeye_damage", name: "Clean Angle", description: "Marked basic shots deal more damage.", effect: "+Marked damage" },
-    { id: "ranger_deadeye_tumble", name: "Snap Aim", description: "Tumble Shot empowers your next basic attack.", effect: "Tumble buff" },
-    { id: "ranger_deadeye_cap", name: "Perfect Mark", description: "Marked Shot marks longer and enables bigger damage windows.", type: "capstone", effect: "Longer mark" },
+  ...buildTalentPath("ranger", "Deadeye", 0, [
+    { id: "ranger_deadeye_mark", name: "Long Mark", rarity: "common", description: "Marked Shot lasts longer and stores more marked hits.", synergy: "Core boss DPS setup." },
+    { id: "ranger_deadeye_damage", name: "Clean Angle", rarity: "common", description: "Marked basic shots deal more damage.", synergy: "Rewards ranged spacing." },
+    { id: "ranger_deadeye_pierce", name: "Piercing Mark", rarity: "rare", description: "Marked Shot pierces and marks the first two targets hit.", synergy: "Improves gauntlet and add pressure." },
+    { id: "ranger_deadeye_tumble", name: "Snap Aim", rarity: "rare", description: "Tumble Shot empowers your next basic attack.", synergy: "Turns dodging into burst." },
+    { id: "ranger_deadeye_refund", name: "Bullseye Refund", rarity: "rare", description: "Consuming the final mark reduces Marked Shot cooldown.", synergy: "Rewards precise mark spending." },
+    { id: "ranger_deadeye_detonation", name: "Marked Detonation", rarity: "epic", description: "When the last mark is consumed, the target emits an AoE burst.", synergy: "Adds splash to single-target play." },
+    { id: "ranger_deadeye_distance", name: "Perfect Distance", rarity: "epic", description: "Staying in a sweet-spot range charges your next Marked Shot.", synergy: "Builds a positioning minigame." },
+    { id: "ranger_deadeye_cap", name: "Execution Mark", rarity: "legendary", description: "Marked targets below 30% HP take escalating damage from consumed marks.", synergy: "Strong final phase finisher." },
   ]),
-  ...buildTalentBranch("ranger", "Trapmaster", 1, [
-    { id: "ranger_trap_size", name: "Wide Net", description: "Volley Trap trigger radius is larger.", effect: "+Trap size" },
-    { id: "ranger_trap_tumble", name: "Pocket Trap", description: "Tumble Shot drops a short-lived mini trap.", effect: "Tumble trap" },
-    { id: "ranger_trap_damage", name: "Barbed Springs", description: "Volley Trap shots hit harder.", effect: "+Trap damage" },
-    { id: "ranger_trap_cap", name: "Kill Zone", description: "Volley Trap fires more shots and refreshes faster.", type: "capstone", effect: "More trap shots" },
+  ...buildTalentPath("ranger", "Trapmaster", 1, [
+    { id: "ranger_trap_tumble", name: "Pocket Trap", rarity: "common", description: "Tumble Shot drops a short-lived mini trap.", synergy: "Kiting leaves damage behind." },
+    { id: "ranger_trap_size", name: "Wide Net", rarity: "common", description: "Volley Trap trigger radius is larger.", synergy: "Makes setup more reliable." },
+    { id: "ranger_trap_barbed", name: "Barbed Springs", rarity: "rare", description: "Trap hits briefly slow enemies.", synergy: "Sets up Arrow Storm and Deadeye." },
+    { id: "ranger_trap_chain", name: "Trap Chain", rarity: "rare", description: "A triggered trap arms a second smaller trap nearby.", synergy: "Rewards dense trap placement." },
+    { id: "ranger_trap_damage", name: "Barbed Volley", rarity: "rare", description: "Volley Trap shots hit harder.", synergy: "Simple trap damage payoff." },
+    { id: "ranger_trap_tripwire", name: "Tripwire Volley", rarity: "epic", description: "Traps fire toward marked enemies when triggered.", synergy: "Connects Trapmaster with Deadeye." },
+    { id: "ranger_trap_snare_field", name: "Snare Field", rarity: "epic", description: "Multiple traps close together link into a slowing field.", synergy: "Creates safe ranged lanes." },
+    { id: "ranger_trap_cap", name: "Hunting Grounds", rarity: "legendary", description: "Volley Trap fires more shots and refreshes faster.", synergy: "Turns Ranger into a setup turret." },
   ]),
-  ...buildTalentBranch("ranger", "Arrow Storm", 2, [
-    { id: "ranger_storm_radius", name: "Broad Storm", description: "Arrow Storm radius is larger.", effect: "+Storm size" },
-    { id: "ranger_storm_pulses", name: "Rapid Rain", description: "Arrow Storm pulses more often.", effect: "Faster pulses" },
-    { id: "ranger_storm_duration", name: "Lingering Clouds", description: "Arrow Storm lasts longer.", effect: "+Duration" },
-    { id: "ranger_storm_cap", name: "Skyfall", description: "Arrow Storm hits much harder.", type: "capstone", effect: "+Storm damage" },
+  ...buildTalentPath("ranger", "Arrow Storm", 2, [
+    { id: "ranger_storm_radius", name: "Broad Storm", rarity: "common", description: "Arrow Storm radius is larger.", synergy: "Easier AoE coverage." },
+    { id: "ranger_storm_pulses", name: "Rapid Rain", rarity: "common", description: "Arrow Storm pulses more often.", synergy: "More on-hit triggers." },
+    { id: "ranger_storm_follow", name: "Storm Follows", rarity: "rare", description: "Arrow Storm slowly follows your aimed target.", synergy: "Helps against mobile bosses." },
+    { id: "ranger_storm_duration", name: "Lingering Clouds", rarity: "rare", description: "Arrow Storm lasts longer.", synergy: "Longer boss damage windows." },
+    { id: "ranger_storm_marking", name: "Rain Marking", rarity: "rare", description: "Arrow Storm has a chance to apply a weak mark.", synergy: "Feeds Deadeye builds." },
+    { id: "ranger_storm_cyclone", name: "Cyclone Step", rarity: "epic", description: "Tumble through Arrow Storm to fire a ring of arrows.", synergy: "Combines mobility with AoE." },
+    { id: "ranger_storm_cloudburst", name: "Cloudburst", rarity: "epic", description: "Casting another ability inside Arrow Storm causes an extra pulse.", synergy: "Rewards ability weaving." },
+    { id: "ranger_storm_cap", name: "Skyfall Engine", rarity: "legendary", description: "Arrow Storm hits much harder.", synergy: "Primary Ranger burn-window payoff." },
+    { id: "ranger_storm_endless_quiver", name: "Endless Quiver", rarity: "legendary", description: "During Arrow Storm, every third basic shot fires an extra falling arrow.", synergy: "Attack-speed storm build." },
   ]),
-  ...buildTalentBranch("mage", "Pyromancer", 0, [
-    { id: "mage_pyro_radius", name: "Hotter Blast", description: "Fire Blast explosion radius is larger.", effect: "+Blast size" },
-    { id: "mage_pyro_burn", name: "Scorch", description: "Fire Blast burns enemies over time.", effect: "Burn" },
-    { id: "mage_pyro_damage", name: "Combustion", description: "Fire Blast deals more damage.", effect: "+Blast damage" },
-    { id: "mage_pyro_cap", name: "Inferno Core", description: "Fire Blast becomes a huge, high-damage explosion.", type: "capstone", effect: "Huge blast" },
+  ...buildTalentPath("mage", "Pyromancer", 0, [
+    { id: "mage_pyro_burn", name: "Scorching Blast", rarity: "common", description: "Fire Blast applies Burn.", synergy: "Starts the Mage burn loop." },
+    { id: "mage_pyro_radius", name: "Hotter Blast", rarity: "common", description: "Fire Blast explosion radius is larger.", synergy: "Easier add and donut minion clears." },
+    { id: "mage_pyro_kindling", name: "Kindling Rune", rarity: "rare", description: "Blink leaves a fire rune that detonates.", synergy: "Turns movement into setup damage." },
+    { id: "mage_pyro_damage", name: "Combustion", rarity: "rare", description: "Fire Blast deals more damage.", synergy: "Simple burst upgrade for the main nuke." },
+    { id: "mage_pyro_molten_splash", name: "Molten Splash", rarity: "rare", description: "Burning enemies hit by Meteor leave small lava puddles.", synergy: "Connects Pyromancer and Meteor Savant." },
+    { id: "mage_pyro_chain_ignite", name: "Chain Ignite", rarity: "epic", description: "Killing a burning enemy spreads Burn nearby.", synergy: "Strong gauntlet wave clear." },
+    { id: "mage_pyro_flame_debt", name: "Flame Debt", rarity: "epic", description: "Casting Fire Blast near-ready spends HP to fire instantly.", synergy: "Risky exposed-window burst." },
+    { id: "mage_pyro_cap", name: "Inferno Core", rarity: "legendary", description: "Fire Blast becomes a huge, high-damage explosion.", synergy: "Big payoff for grouped targets." },
   ]),
-  ...buildTalentBranch("mage", "Meteor Savant", 1, [
-    { id: "mage_meteor_radius", name: "Wide Field", description: "Meteor Field radius is larger.", effect: "+Meteor size" },
-    { id: "mage_meteor_speed", name: "Falling Stars", description: "Meteor Field impacts more often.", effect: "Faster meteors" },
-    { id: "mage_meteor_duration", name: "Molten Sky", description: "Meteor Field lasts longer.", effect: "+Duration" },
-    { id: "mage_meteor_cap", name: "Cataclysm", description: "Meteor impacts are larger and hit harder.", type: "capstone", effect: "Big meteors" },
+  ...buildTalentPath("mage", "Meteor Savant", 1, [
+    { id: "mage_meteor_radius", name: "Wide Field", rarity: "common", description: "Meteor Field radius is larger.", synergy: "Better boss zone control." },
+    { id: "mage_meteor_speed", name: "Falling Stars", rarity: "common", description: "Meteor Field impacts more often.", synergy: "More status and hit triggers." },
+    { id: "mage_meteor_duration", name: "Molten Sky", rarity: "rare", description: "Meteor Field lasts longer.", synergy: "Longer damage windows." },
+    { id: "mage_meteor_gravity", name: "Gravity Well", rarity: "rare", description: "Meteor Field gently pulls small enemies inward.", synergy: "Gauntlet control and Fire Blast setup." },
+    { id: "mage_meteor_impact_echo", name: "Impact Echo", rarity: "rare", description: "Every third meteor repeats as a smaller impact.", synergy: "Sustained AoE pressure." },
+    { id: "mage_meteor_star_brand", name: "Star Brand", rarity: "epic", description: "Meteor hits brand targets; Fire Blast detonates brands.", synergy: "Rotation payoff." },
+    { id: "mage_meteor_armor", name: "Meteor Armor", rarity: "epic", description: "Standing in Meteor Field grants brief damage reduction.", synergy: "Supports risky stationary casting." },
+    { id: "mage_meteor_cap", name: "Cataclysm", rarity: "legendary", description: "Meteor impacts are larger and hit harder.", synergy: "Best during Shell Crack and boss exposes." },
+    { id: "mage_meteor_orbiting_star", name: "Orbiting Star", rarity: "legendary", description: "A mini meteor orbits you and crashes into your next Fire Blast target.", synergy: "Burst setup for skilled timing." },
   ]),
-  ...buildTalentBranch("mage", "Chronomancer", 2, [
-    { id: "mage_chrono_duration", name: "Long Warp", description: "Time Warp lasts longer.", effect: "+Warp time" },
-    { id: "mage_chrono_radius", name: "Wide Warp", description: "Time Warp radius is larger.", effect: "+Warp size" },
-    { id: "mage_chrono_blink", name: "Echo Rune", description: "Blink Rune is larger and stronger.", effect: "+Blink rune" },
-    { id: "mage_chrono_cap", name: "Time Loop", description: "Once per fight, lethal damage rewinds into a heal.", type: "capstone", effect: "Cheat death" },
+  ...buildTalentPath("mage", "Chronomancer", 2, [
+    { id: "mage_chrono_radius", name: "Wide Warp", rarity: "common", description: "Time Warp radius is larger.", synergy: "More room to slow hazards." },
+    { id: "mage_chrono_duration", name: "Long Warp", rarity: "common", description: "Time Warp lasts longer.", synergy: "More cooldown and safety value." },
+    { id: "mage_chrono_blink", name: "Echo Blink", rarity: "rare", description: "Blink Rune is larger and stronger.", synergy: "Mobility becomes damage." },
+    { id: "mage_chrono_frozen_second", name: "Frozen Second", rarity: "rare", description: "Enemies hit inside Time Warp briefly freeze after enough hits.", synergy: "Works with Meteor and Arrow Storm allies." },
+    { id: "mage_chrono_borrowed_time", name: "Borrowed Time", rarity: "rare", description: "Casting inside Time Warp reduces your longest cooldown.", synergy: "Rewards playing inside the zone." },
+    { id: "mage_chrono_delayed_blast", name: "Delayed Blast", rarity: "epic", description: "Fire Blast inside Time Warp detonates again after a delay.", synergy: "Pyro/Chrono combo." },
+    { id: "mage_chrono_rewind_ward", name: "Rewind Ward", rarity: "epic", description: "Taking lethal damage inside Time Warp rewinds you once per fight.", synergy: "Survival for glass armor." },
+    { id: "mage_chrono_cap", name: "Time Loop", rarity: "legendary", description: "Once per fight, lethal damage rewinds into a heal.", synergy: "Keeps Mage alive in late phases." },
   ]),
-  ...buildTalentBranch("rogue", "Venomancer", 0, [
-    { id: "rogue_venom_stacks", name: "Toxic Edge", description: "Poison can stack higher.", effect: "+Poison stacks" },
-    { id: "rogue_venom_damage", name: "Vile Dose", description: "Poison ticks harder.", effect: "+Poison damage" },
-    { id: "rogue_venom_cloud", name: "Spreading Cloud", description: "Poison Cloud is larger and lasts longer.", effect: "+Cloud" },
-    { id: "rogue_venom_cap", name: "Venom Nova", description: "Max poison stacks burst for bonus damage.", type: "capstone", effect: "Poison burst" },
+  ...buildTalentPath("rogue", "Venomancer", 0, [
+    { id: "rogue_venom_stacks", name: "Toxic Edge", rarity: "common", description: "Poison can stack higher.", synergy: "Core Rogue ramp." },
+    { id: "rogue_venom_damage", name: "Vile Dose", rarity: "common", description: "Poison ticks harder.", synergy: "Improves all poison sources." },
+    { id: "rogue_venom_cloud", name: "Spreading Cloud", rarity: "rare", description: "Poison Cloud is larger and lasts longer.", synergy: "Zone control." },
+    { id: "rogue_venom_volatile", name: "Volatile Toxin", rarity: "rare", description: "Poisoned enemies explode on death.", synergy: "Excellent gauntlet wave clear." },
+    { id: "rogue_smoke_poison", name: "Contaminated Smoke", rarity: "rare", description: "Smoke Bomb poisons enemies inside it.", synergy: "Connects Smoke Trickster to Venomancer." },
+    { id: "rogue_venom_bloom", name: "Toxin Bloom", rarity: "epic", description: "Max poison stacks spread poison to nearby targets.", synergy: "Scales DoT into AoE." },
+    { id: "rogue_venom_bank", name: "Venom Bank", rarity: "epic", description: "Poison damage charges your next Backstab.", synergy: "Turns DoT ramp into burst." },
+    { id: "rogue_venom_cap", name: "Venom Nova", rarity: "legendary", description: "Max poison stacks burst for bonus damage.", synergy: "Boss ramp payoff." },
+    { id: "rogue_venom_plague_artist", name: "Plague Artist", rarity: "legendary", description: "Poison Cloud follows your last poisoned boss for a few seconds.", synergy: "Keeps pressure on mobile bosses." },
   ]),
-  ...buildTalentBranch("rogue", "Shadow Duelist", 1, [
-    { id: "rogue_shadow_backstab", name: "Dirty Knife", description: "Backstab hits harder.", effect: "+Backstab" },
-    { id: "rogue_shadow_exposed", name: "Deep Expose", description: "Exposed stacks last longer.", effect: "+Expose time" },
-    { id: "rogue_shadow_step", name: "Long Shadow", description: "Shadow Step keeps Backstab ready longer.", effect: "+Backstab window" },
-    { id: "rogue_shadow_cap", name: "Deathblow", description: "Empowered Backstab consumes Exposed for bonus damage.", type: "capstone", effect: "Execute burst" },
+  ...buildTalentPath("rogue", "Shadow Duelist", 1, [
+    { id: "rogue_shadow_backstab", name: "Dirty Knife", rarity: "common", description: "Backstab hits harder.", synergy: "Direct burst identity." },
+    { id: "rogue_shadow_exposed", name: "Deep Expose", rarity: "common", description: "Exposed stacks last longer.", synergy: "Longer execute setup." },
+    { id: "rogue_shadow_step", name: "Long Shadow", rarity: "rare", description: "Shadow Step keeps Backstab ready longer.", synergy: "More forgiving positioning." },
+    { id: "rogue_shadow_ambush_echo", name: "Ambush Echo", rarity: "rare", description: "Shadow Step creates an echo slash behind the target.", synergy: "Boss positioning reward." },
+    { id: "rogue_shadow_expose_bleed", name: "Expose Bleed", rarity: "rare", description: "Backstab applies Bleed when hitting an exposed target.", synergy: "Hybrid DoT setup." },
+    { id: "rogue_shadow_death_mark", name: "Death Mark", rarity: "epic", description: "Exposed targets take bonus damage from Poison ticks.", synergy: "Venomancer hybrid." },
+    { id: "rogue_shadow_knife_dance", name: "Knife Dance", rarity: "epic", description: "Killing an enemy with Backstab resets part of Shadow Step.", synergy: "Gauntlet chain kills." },
+    { id: "rogue_shadow_cap", name: "Deathblow", rarity: "legendary", description: "Empowered Backstab consumes Exposed for bonus damage.", synergy: "Final phase execute." },
   ]),
-  ...buildTalentBranch("rogue", "Smoke Trickster", 2, [
-    { id: "rogue_smoke_size", name: "Heavy Smoke", description: "Smoke Bomb radius is larger.", effect: "+Smoke size" },
-    { id: "rogue_smoke_duration", name: "Lingering Cover", description: "Smoke Bomb lasts longer.", effect: "+Duration" },
-    { id: "rogue_smoke_poison", name: "Noxious Cover", description: "Smoke Bomb poisons enemies inside it.", effect: "Poison smoke" },
-    { id: "rogue_smoke_cap", name: "Blackout", description: "Smoke Bomb clears small projectiles when dropped.", type: "capstone", effect: "Projectile clear" },
+  ...buildTalentPath("rogue", "Smoke Trickster", 2, [
+    { id: "rogue_smoke_size", name: "Heavy Smoke", rarity: "common", description: "Smoke Bomb radius is larger.", synergy: "Safer setup zone." },
+    { id: "rogue_smoke_duration", name: "Lingering Cover", rarity: "common", description: "Smoke Bomb lasts longer.", synergy: "More time to play around cover." },
+    { id: "rogue_smoke_cap", name: "Black Powder", rarity: "rare", description: "Smoke Bomb clears small projectiles when dropped.", synergy: "Bullet hell defense." },
+    { id: "rogue_smoke_step", name: "Smoke Step", rarity: "rare", description: "Dashing through Smoke Bomb grants brief invisibility.", synergy: "Melee uptime and escape." },
+    { id: "rogue_smoke_noxious_cover", name: "Noxious Cover", rarity: "rare", description: "Poison Cloud cast inside Smoke Bomb deals extra poison ticks.", synergy: "Smoke/Venom combo." },
+    { id: "rogue_smoke_blind_spot", name: "Blind Spot", rarity: "epic", description: "Enemies inside Smoke Bomb take bonus Backstab damage from any direction.", synergy: "Removes strict rear-angle requirement inside smoke." },
+    { id: "rogue_smoke_vanishing_act", name: "Vanishing Act", rarity: "epic", description: "Taking heavy damage drops a mini Smoke Bomb.", synergy: "Emergency defense." },
+    { id: "rogue_smoke_blackout", name: "Blackout", rarity: "legendary", description: "Smoke Bomb becomes a dark zone that slows hazards and empowers Rogue attacks inside.", synergy: "Full Rogue kit payoff." },
   ]),
-  ...buildTalentBranch("paladin", "Consecrated Ground", 0, [
-    { id: "paladin_consecrate_size", name: "Wider Light", description: "Consecration radius is larger.", effect: "+Consecration size" },
-    { id: "paladin_consecrate_duration", name: "Lasting Prayer", description: "Consecration lasts longer.", effect: "+Duration" },
-    { id: "paladin_consecrate_damage", name: "Holy Burn", description: "Consecration deals more damage.", effect: "+Holy damage" },
-    { id: "paladin_consecrate_cap", name: "Divine Domain", description: "Abilities recover faster while you stand in Consecration.", type: "capstone", effect: "Cooldown haste" },
+  ...buildTalentPath("paladin", "Consecrated Ground", 0, [
+    { id: "paladin_consecrate_size", name: "Wider Light", rarity: "common", description: "Consecration radius is larger.", synergy: "Bigger safe/damage zone." },
+    { id: "paladin_consecrate_duration", name: "Lasting Prayer", rarity: "common", description: "Consecration lasts longer.", synergy: "More sustained boss uptime." },
+    { id: "paladin_consecrate_damage", name: "Holy Burn", rarity: "rare", description: "Consecration deals more damage.", synergy: "Core ground damage payoff." },
+    { id: "paladin_consecrate_footing", name: "Sacred Footing", rarity: "rare", description: "Standing in Consecration reduces knockback and slow.", synergy: "Helps against Taco and Shake mechanics." },
+    { id: "paladin_consecrate_edge", name: "Radiant Edge", rarity: "rare", description: "Basic attacks inside Consecration release small holy arcs.", synergy: "Rewards staying in your field." },
+    { id: "paladin_consecrate_cap", name: "Divine Domain", rarity: "epic", description: "Abilities recover faster while you stand in Consecration.", synergy: "Cooldown engine for Paladin." },
+    { id: "paladin_consecrate_echo", name: "Hallowed Echo", rarity: "epic", description: "Radiant Smite inside Consecration pulses twice.", synergy: "Combines Ground and Judgment paths." },
+    { id: "paladin_consecrate_cathedral", name: "Cathedral Field", rarity: "legendary", description: "Consecration grows while you remain inside it, then detonates when you leave.", synergy: "Risk/reward zone mastery." },
+    { id: "paladin_consecrate_sunlit_march", name: "Sunlit March", rarity: "legendary", description: "Aegis Step drags a strip of Consecration behind you.", synergy: "Movement plus holy ground control." },
   ]),
-  ...buildTalentBranch("paladin", "Guardian", 1, [
-    { id: "paladin_guard_heal", name: "Mercy Ward", description: "Divine Bulwark heals more.", effect: "+Bulwark heal" },
-    { id: "paladin_guard_mitigation", name: "Blessed Plate", description: "Shield Wall and Bulwark reduce more damage.", effect: "+Mitigation" },
-    { id: "paladin_guard_projectiles", name: "Projectile Ward", description: "Divine Bulwark clears nearby projectiles.", effect: "Projectile clear" },
-    { id: "paladin_guard_cap", name: "Unfallen", description: "Once per fight, survive lethal damage and gain Bulwark.", type: "capstone", effect: "Cheat death" },
+  ...buildTalentPath("paladin", "Guardian", 1, [
+    { id: "paladin_guard_heal", name: "Mercy Ward", rarity: "common", description: "Divine Bulwark heals more.", synergy: "Reliable sustain." },
+    { id: "paladin_guard_mitigation", name: "Blessed Plate", rarity: "common", description: "Shield Wall and Bulwark reduce more damage.", synergy: "Improves all tank windows." },
+    { id: "paladin_guard_projectiles", name: "Projectile Ward", rarity: "rare", description: "Divine Bulwark clears nearby projectiles.", synergy: "Protects melee and allies." },
+    { id: "paladin_guard_vow", name: "Vow Of Return", rarity: "rare", description: "Damage absorbed by Bulwark empowers your next Radiant Smite.", synergy: "Defense turns into burst." },
+    { id: "paladin_guard_anchor", name: "Aegis Anchor", rarity: "rare", description: "Aegis Step grants a shield when ending near the boss.", synergy: "Safe re-entry tool." },
+    { id: "paladin_guard_shared", name: "Shared Bulwark", rarity: "epic", description: "Divine Bulwark also shields nearby allies.", synergy: "Strong multiplayer support." },
+    { id: "paladin_guard_martyr", name: "Martyr Spark", rarity: "epic", description: "Taking damage while shielded emits holy pulses.", synergy: "Tank pressure while soaking." },
+    { id: "paladin_guard_cap", name: "Unfallen", rarity: "legendary", description: "Once per fight, survive lethal damage and gain Bulwark.", synergy: "Late-fight safety net." },
   ]),
-  ...buildTalentBranch("paladin", "Judgment", 2, [
-    { id: "paladin_judgment_damage", name: "Sharp Judgment", description: "Radiant Smite hits harder.", effect: "+Smite damage" },
-    { id: "paladin_judgment_radius", name: "Wide Verdict", description: "Radiant Smite radius is larger.", effect: "+Smite size" },
-    { id: "paladin_judgment_mark", name: "Marked Guilty", description: "Radiant Smite marks enemies to take more damage.", effect: "Judgment mark" },
-    { id: "paladin_judgment_cap", name: "Final Judgment", description: "Radiant Smite bursts marked enemies for bonus damage.", type: "capstone", effect: "Judgment burst" },
+  ...buildTalentPath("paladin", "Judgment", 2, [
+    { id: "paladin_judgment_damage", name: "Sharp Judgment", rarity: "common", description: "Radiant Smite hits harder.", synergy: "Direct burst upgrade." },
+    { id: "paladin_judgment_radius", name: "Wide Verdict", rarity: "common", description: "Radiant Smite radius is larger.", synergy: "Easier AoE tagging." },
+    { id: "paladin_judgment_mark", name: "Marked Guilty", rarity: "rare", description: "Radiant Smite marks enemies to take more damage.", synergy: "Class-wide damage amplifier." },
+    { id: "paladin_judgment_chain", name: "Chain Verdict", rarity: "rare", description: "Radiant Smite chains to another nearby enemy.", synergy: "Gauntlet and add clear." },
+    { id: "paladin_judgment_trial", name: "Trial By Fire", rarity: "rare", description: "Holy Burned enemies hit by Smite burst.", synergy: "Connects Consecration to Smite." },
+    { id: "paladin_judgment_day", name: "Judgment Day", rarity: "epic", description: "Every third Radiant Smite is larger and leaves a holy zone.", synergy: "Rotation payoff." },
+    { id: "paladin_judgment_appeal", name: "Final Appeal", rarity: "epic", description: "Smite heals you if it hits a judged target.", synergy: "Offense into sustain." },
+    { id: "paladin_judgment_cap", name: "Final Judgment", rarity: "legendary", description: "Radiant Smite bursts marked enemies for bonus damage.", synergy: "Setup payoff for boss phases." },
   ]),
-  ...buildTalentBranch("bard", "Power Chord", 0, [
-    { id: "bard_chord_damage", name: "Louder Chord", description: "Power Chord deals more base damage.", effect: "+Chord damage" },
-    { id: "bard_chord_harmonic", name: "Harmonic Strike", description: "Power Chord gains more damage per active song.", effect: "+Song scaling" },
-    { id: "bard_chord_extend", name: "Resonant Finale", description: "Power Chord hits extend active songs slightly.", effect: "Extend songs" },
-    { id: "bard_chord_cap", name: "Grand Finale", description: "Power Chord gains a large bonus when all three songs are active.", type: "capstone", effect: "All-song burst" },
+  ...buildTalentPath("bard", "Power Chord", 0, [
+    { id: "bard_chord_damage", name: "Louder Chord", rarity: "common", description: "Power Chord deals more base damage.", synergy: "Direct damage Bard opener." },
+    { id: "bard_chord_harmonic", name: "Harmonic Strike", rarity: "common", description: "Power Chord gains more damage per active song.", synergy: "Rewards keeping songs active." },
+    { id: "bard_chord_extend", name: "Resonant Finale", rarity: "rare", description: "Power Chord hits extend active songs slightly.", synergy: "Rotation upkeep." },
+    { id: "bard_chord_bass_cleave", name: "Bass Cleave", rarity: "rare", description: "Power Chord becomes a wider wave.", synergy: "Better gauntlet clear." },
+    { id: "bard_chord_dissonance", name: "Dissonance", rarity: "rare", description: "Power Chord weakens enemy damage briefly.", synergy: "Offensive support." },
+    { id: "bard_chord_echo", name: "Echo Note", rarity: "epic", description: "Every second Power Chord repeats at reduced damage.", synergy: "Cooldown and rhythm builds." },
+    { id: "bard_chord_shatter", name: "Shatter Chord", rarity: "epic", description: "Power Chord deals bonus damage to marked, poisoned, burning, or bleeding targets.", synergy: "Co-op status payoff." },
+    { id: "bard_chord_cap", name: "Grand Finale", rarity: "legendary", description: "Power Chord gains a large bonus when all three songs are active.", synergy: "Full Bard rotation burst." },
+    { id: "bard_chord_encore_blast", name: "Encore Blast", rarity: "legendary", description: "Defeating an enemy with Power Chord casts a free weaker Power Chord.", synergy: "Gauntlet chain kills." },
   ]),
-  ...buildTalentBranch("bard", "Battle Hymn", 1, [
-    { id: "bard_hymn_damage", name: "Brave Tempo", description: "Battle Hymn grants a stronger damage buff.", effect: "+Damage buff" },
-    { id: "bard_hymn_speed", name: "Fast Rhythm", description: "Battle Hymn grants more attack speed.", effect: "+Attack speed" },
-    { id: "bard_hymn_radius", name: "Wide Chorus", description: "Battle Hymn radius is larger.", effect: "+Song radius" },
-    { id: "bard_hymn_cap", name: "War Anthem", description: "Battle Hymn lasts longer and gives Power Chord extra scaling.", type: "capstone", effect: "Longer anthem" },
+  ...buildTalentPath("bard", "Battle Hymn", 1, [
+    { id: "bard_hymn_damage", name: "Brave Tempo", rarity: "common", description: "Battle Hymn grants a stronger damage buff.", synergy: "Party burst support." },
+    { id: "bard_hymn_speed", name: "Fast Rhythm", rarity: "common", description: "Battle Hymn grants more attack speed.", synergy: "Great with Ranger and Rogue allies." },
+    { id: "bard_hymn_radius", name: "Wide Chorus", rarity: "rare", description: "Battle Hymn radius is larger.", synergy: "Easier co-op positioning." },
+    { id: "bard_hymn_marching", name: "Marching Beat", rarity: "rare", description: "Allies inside Battle Hymn gain movement speed.", synergy: "Boss dodging support." },
+    { id: "bard_hymn_war", name: "War Anthem", rarity: "rare", description: "Power Chord gains bonus damage while Battle Hymn is active.", synergy: "Offensive Bard loop." },
+    { id: "bard_hymn_haste", name: "Haste Verse", rarity: "epic", description: "Ability cooldowns tick faster inside Battle Hymn.", synergy: "Team cooldown engine." },
+    { id: "bard_hymn_rally", name: "Rallying Echo", rarity: "epic", description: "Battle Hymn pulses damage whenever an ally uses an ability.", synergy: "Multiplayer burst windows." },
+    { id: "bard_hymn_cap", name: "Anthem Of Chaos", rarity: "legendary", description: "Battle Hymn lasts longer and gives Power Chord extra scaling.", synergy: "Song-stacking payoff." },
   ]),
-  ...buildTalentBranch("bard", "Healing Verse", 2, [
-    { id: "bard_heal_power", name: "Warm Notes", description: "Healing Ballad heals more.", effect: "+Healing" },
-    { id: "bard_heal_duration", name: "Lingering Melody", description: "Healing Ballad lasts longer.", effect: "+Duration" },
-    { id: "bard_heal_armor", name: "Shared Breath", description: "Healing Ballad also grants minor armor.", effect: "+Armor aura" },
-    { id: "bard_heal_cap", name: "Encore Recovery", description: "Once per fight at low HP, automatically play a short Healing Ballad.", type: "capstone", effect: "Auto ballad" },
+  ...buildTalentPath("bard", "Healing Verse", 2, [
+    { id: "bard_heal_power", name: "Warm Notes", rarity: "common", description: "Healing Ballad heals more.", synergy: "Core sustain." },
+    { id: "bard_heal_duration", name: "Lingering Melody", rarity: "common", description: "Healing Ballad lasts longer.", synergy: "Longer safe zone." },
+    { id: "bard_heal_armor", name: "Shared Breath", rarity: "rare", description: "Healing Ballad also grants minor armor.", synergy: "Team survival." },
+    { id: "bard_heal_cleanse", name: "Cleansing Note", rarity: "rare", description: "Healing Ballad removes one negative effect.", synergy: "Useful against Taco, Shake, and Sushi." },
+    { id: "bard_heal_reprise", name: "Gentle Reprise", rarity: "rare", description: "Leaving Healing Ballad grants a small delayed heal.", synergy: "Mobile fight sustain." },
+    { id: "bard_heal_rescue", name: "Rescue Verse", rarity: "epic", description: "Dropping low HP auto-plays a short Healing Ballad once per fight.", synergy: "Clutch safety." },
+    { id: "bard_heal_sanctuary", name: "Sanctuary Song", rarity: "epic", description: "Projectiles passing through Healing Ballad slow down.", synergy: "Defensive support field." },
+    { id: "bard_heal_cap", name: "Encore Recovery", rarity: "legendary", description: "Once per fight at low HP, automatically play a short Healing Ballad.", synergy: "Recovery capstone." },
   ]),
 ];
 
@@ -432,6 +558,178 @@ curlyFriesSprite.addEventListener("load", () => {
   cleanedCurlyFriesSprite = createTransparentSprite(curlyFriesSprite);
 });
 
+const generatedClassArtKeys = ["warrior", "ranger", "mage", "rogue", "paladin", "bard"];
+const generatedBossArtKeys = [
+  "burger",
+  "cola",
+  "fries",
+  "sauce",
+  "shake",
+  "nacho",
+  "pizza",
+  "taco",
+  "donut",
+  "sushi",
+  "ketchup",
+  "mustard",
+  "mayo",
+];
+const generatedProjectileArtKeys = [
+  "arrow",
+  "magic-bolt",
+  "fireball",
+  "bard-note",
+  "sword-wave",
+  "dagger",
+  "holy-smite",
+  "fry",
+  "cola-bubble",
+  "pizza-slice",
+  "peanut",
+  "sauce-blob",
+  "mustard-seed",
+  "cherry-shot",
+  "nacho-chip",
+  "taco-shard",
+  "cheese-bolt",
+  "sprinkle",
+  "burger-tomato-slice",
+  "burger-pickle-splash",
+  "burger-onion-ring",
+];
+const generatedHazardArtKeys = [
+  "grease",
+  "puddle",
+  "glaze-ring",
+  "warning-circle",
+  "beam",
+  "wasabi-wave",
+  "slam",
+  "cola-straw-snipe",
+  "cola-fizz-burst",
+  "cola-soda-drop",
+  "cola-soda-puddle",
+  "burger-pickle-puddle",
+  "burger-sauce-drop",
+  "burger-sauce-burst",
+  "burger-charge-lane",
+  "burger-burst-ring",
+];
+const generatedBossAbilityIcons = {
+  burger: ["tomato", "pickle", "onion", "sauce", "charge", "burst"],
+  cola: ["bubbles", "straw", "spill", "fizz"],
+};
+const generatedAbilityIconSlugs = {
+  melee: ["shield-bash", "groundbreaker", "whirlwind-dash", "shield-wall"],
+  ranger: ["marked-shot", "arrow-storm", "tumble-shot", "volley-trap"],
+  mage: ["fire-blast", "meteor-field", "blink-step", "time-warp"],
+  rogue: ["backstab", "poison-cloud", "shadow-step", "smoke-bomb"],
+  paladin: ["radiant-smite", "consecration", "aegis-step", "divine-bulwark"],
+  bard: ["power-chord", "battle-hymn", "quickstep-verse", "healing-ballad"],
+};
+const generatedArtImages = new Map();
+
+function registerGeneratedArt(id, src) {
+  const image = new Image();
+  image.src = src;
+  generatedArtImages.set(id, image);
+  return image;
+}
+
+function preloadGeneratedArtAssets() {
+  generatedClassArtKeys.forEach((key) => registerGeneratedArt(`classes.${key}`, `./assets/generated/classes/${key}-spritesheet.svg`));
+  generatedBossArtKeys.forEach((key) => registerGeneratedArt(`bosses.${key}`, `./assets/generated/bosses/${key}-spritesheet.svg`));
+  registerGeneratedArt("bosses.burgerDeluxe", "./assets/generated/bosses/burger-deluxe-spritesheet.svg");
+  registerGeneratedArt("bosses.colaDeluxe", "./assets/generated/bosses/cola-deluxe-spritesheet.svg");
+  generatedProjectileArtKeys.forEach((key) => registerGeneratedArt(`projectiles.${key}`, `./assets/generated/projectiles/${key}.svg`));
+  generatedHazardArtKeys.forEach((key) => registerGeneratedArt(`hazards.${key}`, `./assets/generated/hazards/${key}.svg`));
+  Object.entries(generatedAbilityIconSlugs).forEach(([classKey, slugs]) => {
+    slugs.forEach((slug, index) => registerGeneratedArt(`abilities.${classKey}.${index}`, `./assets/generated/icons/abilities/${classKey}-${index}-${slug}.svg`));
+  });
+  Object.entries(generatedBossAbilityIcons).forEach(([bossKey, slugs]) => {
+    slugs.forEach((slug) => registerGeneratedArt(`bossAbilities.${bossKey}.${slug}`, `./assets/generated/icons/boss-abilities/${bossKey}-${slug}.svg`));
+  });
+  generatedClassArtKeys.forEach((key) => registerGeneratedArt(`icons.classes.${key}`, `./assets/generated/icons/classes/${key}.svg`));
+  registerGeneratedArt("ui.buttonPrimary", "./assets/generated/ui/button-primary.svg");
+  registerGeneratedArt("ui.buttonSecondary", "./assets/generated/ui/button-secondary.svg");
+  registerGeneratedArt("ui.abilitySlotGold", "./assets/generated/ui/ability-slot-gold.svg");
+  registerGeneratedArt("ui.abilitySlotBlue", "./assets/generated/ui/ability-slot-blue.svg");
+  registerGeneratedArt("ui.abilityKeycapGold", "./assets/generated/ui/ability-keycap-gold.svg");
+  registerGeneratedArt("ui.abilityKeycapBlue", "./assets/generated/ui/ability-keycap-blue.svg");
+  registerGeneratedArt("ui.abilityIconRingGold", "./assets/generated/ui/ability-icon-ring-gold.svg");
+  registerGeneratedArt("ui.abilityIconRingPurple", "./assets/generated/ui/ability-icon-ring-purple.svg");
+  registerGeneratedArt("ui.abilityIconRingBlue", "./assets/generated/ui/ability-icon-ring-blue.svg");
+  registerGeneratedArt("ui.cooldownClockShade", "./assets/generated/ui/cooldown-clock-shade.svg");
+  registerGeneratedArt("ui.potion", "./assets/generated/ui/potion.svg");
+}
+
+function generatedArtImage(id) {
+  return generatedArtImages.get(id) || null;
+}
+
+function isImageReady(image) {
+  return !!(image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
+}
+
+function drawGeneratedImage(id, x, y, w, h, options = {}) {
+  const image = generatedArtImage(id);
+  if (!isImageReady(image)) return false;
+  const { centered = true, alpha = 1, rotation = 0, shadowColor = "", shadowBlur = 0 } = options;
+  ctx.save();
+  ctx.translate(x, y);
+  if (rotation) ctx.rotate(rotation);
+  ctx.globalAlpha *= alpha;
+  if (shadowColor && shadowBlur > 0) {
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = shadowBlur;
+  }
+  ctx.drawImage(image, centered ? -w / 2 : 0, centered ? -h / 2 : 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawGeneratedSpriteFrame(id, row, col, x, y, w, h, options = {}) {
+  const image = generatedArtImage(id);
+  if (!isImageReady(image)) return false;
+  const { centered = true, alpha = 1, shadowColor = "", shadowBlur = 0, cols = 4, rows = 4 } = options;
+  const safeCols = Math.max(1, cols);
+  const safeRows = Math.max(1, rows);
+  const safeCol = ((col % safeCols) + safeCols) % safeCols;
+  const safeRow = clamp(row, 0, safeRows - 1);
+  const frameW = image.naturalWidth / safeCols;
+  const frameH = image.naturalHeight / safeRows;
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  if (shadowColor && shadowBlur > 0) {
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = shadowBlur;
+  }
+  ctx.drawImage(
+    image,
+    safeCol * frameW,
+    safeRow * frameH,
+    frameW,
+    frameH,
+    centered ? x - w / 2 : x,
+    centered ? y - h / 2 : y,
+    w,
+    h,
+  );
+  ctx.restore();
+  return true;
+}
+
+function generatedClassArtKeyForWeapon(weaponId) {
+  if (weaponId === "emberBow") return "ranger";
+  if (weaponId === "pulseStaff") return "mage";
+  if (weaponId === "shadowDaggers") return "rogue";
+  if (weaponId === "dawnHammer") return "paladin";
+  if (weaponId === "oakLute") return "bard";
+  return "warrior";
+}
+
+preloadGeneratedArtAssets();
+
 let player = createPlayer();
 let boss = createBoss("cola");
 let trainingDummy = createTrainingDummy();
@@ -464,6 +762,7 @@ let classSelectorSignature = "";
 let armorSelectorSignature = "";
 let bossSelectorSignature = "";
 let talentTreeSignature = "";
+let selectedTalentId = "";
 let lastCanvasPointerAttackAt = 0;
 let primaryAttackHeld = false;
 let primaryAttackPointerId = null;
@@ -511,6 +810,7 @@ const multiplayer = {
   hostileNetState: new Map(),
   hostileHostSendState: new Map(),
   consumedRemoteHazards: new Map(),
+  lastVisualEventAt: new Map(),
   peers: new Map(),
 };
 
@@ -536,6 +836,12 @@ const hostileSnapshotBufferLimit = 8;
 const hostileSnapDistance = 280;
 const hostileMaxExtrapolateMs = 140;
 const hostileDeadKeepMs = 900;
+const visualEventMinIntervalMs = {
+  attack: 70,
+  ability: 110,
+};
+const visualEventDropBufferedAmount = 180000;
+const hostileSyncDropBufferedAmount = 260000;
 const maxParticles = 160;
 const maxRemoteProjectiles = 90;
 const maxRemoteAbilityEffects = 48;
@@ -586,6 +892,7 @@ function createPlayer() {
     consecrationTimer: 0,
     guardSpeedTimer: 0,
     tacoGreaseTimer: 0,
+    pickleSlowTimer: 0,
     gateCooldown: 0,
     room: "starter",
     dead: false,
@@ -612,8 +919,8 @@ function createBoss(kind = "burger") {
     burger: {
       kind: "burger",
       name: "Big Burger",
-      radius: 58,
-      maxHp: 600,
+      radius: 70,
+      maxHp: 880,
       color: "#a76e3e",
       enrageColor: "#b94835",
       attackTimer: 1.8,
@@ -729,7 +1036,7 @@ function createBoss(kind = "burger") {
     y: 450,
     hp: scaledMaxHp,
     phase: 1,
-    totalPhases: kind === "donut" ? 6 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
+    totalPhases: kind === "donut" ? 6 : kind === "burger" ? 2 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -890,6 +1197,7 @@ function resetRunTalents() {
   runState.lockedTalentClass = null;
   runState.mazeCount = 0;
   runState.mazeBuffs = {};
+  selectedTalentId = "";
   talentTreeSignature = "";
 }
 
@@ -909,7 +1217,10 @@ function canLearnTalent(talentId) {
   const talent = talentById.get(talentId);
   if (!talent || talent.classKey !== activeTalentClass()) return false;
   if (hasTalent(talentId) || runState.talentPoints <= 0) return false;
-  return talent.parents.every((parentId) => hasTalent(parentId));
+  const requiredParents = talent.parents || [];
+  const optionalParents = talent.parentsAny || [];
+  return requiredParents.every((parentId) => hasTalent(parentId))
+    && (!optionalParents.length || optionalParents.some((parentId) => hasTalent(parentId)));
 }
 
 function learnTalent(talentId) {
@@ -951,6 +1262,64 @@ function talentAbilityCooldownMultiplier(index) {
   return multiplier;
 }
 
+function runTalentHook(hook, payload = {}) {
+  if (payload.options?.talentHook) return;
+  if (hook === "onAbilityCast") {
+    if (hasTalent("mage_chrono_borrowed_time") && playerInTimeWarp()) reduceLongestAbilityCooldown(0.65, payload.index);
+    if (hasTalent("bard_hymn_haste") && player.bardSongs?.some((song) => song.type === "battle")) reduceLongestAbilityCooldown(0.35, payload.index);
+  }
+  if (hook === "onBasicHit") {
+    if (hasTalent("ranger_deadeye_refund") && payload.target?.markedTimer > 0) {
+      player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 0.18);
+    }
+    if (hasTalent("warrior_earth_stonefist") && currentClassKey() === "melee" && Math.random() < 0.08) {
+      damageEnemiesInRadius(payload.target.x, payload.target.y, 52, playerDamage(0.18), "Stonefist", [], { talentHook: true });
+    }
+  }
+  if (hook === "onProjectileDestroyed") {
+    if (hasTalent("warrior_vanguard_counterquake") && payload.cleared > 0) {
+      damageEnemiesInRadius(payload.x, payload.y, 72, playerDamage(0.28), "Counterquake", [], { talentHook: true });
+    }
+    if (hasTalent("paladin_guard_anchor") && payload.cleared > 0) {
+      player.hp = Math.min(player.maxHp, player.hp + Math.min(8, payload.cleared * 2));
+    }
+  }
+  if (hook === "onEnemyDeath") {
+    const target = payload.target;
+    if (!target) return;
+    if (hasTalent("rogue_venom_volatile") && target.poisonStacks > 0) {
+      damageEnemiesInRadius(target.x, target.y, 76, playerDamage(0.34), "Volatile Toxin", [], { talentHook: true, poison: true });
+    }
+    if (hasTalent("mage_pyro_chain_ignite") && target.burnTimer > 0) {
+      livingBosses().forEach((nearby) => {
+        if (nearby !== target && distance(target, nearby) < 150 + nearby.radius) applyBurn(nearby);
+      });
+    }
+    if (hasTalent("ranger_deadeye_detonation") && target.markedTimer > 0) {
+      damageEnemiesInRadius(target.x, target.y, 82, playerDamage(0.4), "Marked Detonation", [], { talentHook: true });
+    }
+  }
+  if (hook === "onDamageTaken") {
+    if (hasTalent("paladin_guard_vow") && payload.hit > 0) player.shieldWallTimer = Math.max(player.shieldWallTimer, 0.45);
+    if (hasTalent("rogue_smoke_vanishing_act") && payload.hit > 0 && player.hp <= player.maxHp * 0.35) {
+      player.invulnerableTimer = Math.max(player.invulnerableTimer, 0.35);
+    }
+  }
+}
+
+function reduceLongestAbilityCooldown(amount, excludeIndex = -1) {
+  let longestIndex = -1;
+  let longestCooldown = 0;
+  player.abilityCooldowns.forEach((cooldown, index) => {
+    if (index === excludeIndex) return;
+    if (cooldown > longestCooldown) {
+      longestCooldown = cooldown;
+      longestIndex = index;
+    }
+  });
+  if (longestIndex >= 0) player.abilityCooldowns[longestIndex] = Math.max(0, player.abilityCooldowns[longestIndex] - amount);
+}
+
 function destroyProjectilesInRadius(x, y, radius) {
   let cleared = 0;
   const hazardIds = [];
@@ -964,6 +1333,7 @@ function destroyProjectilesInRadius(x, y, radius) {
     return false;
   });
   if (hazardIds.length) sendHazardControlIntent("destroy", hazardIds, { x, y, radius });
+  if (cleared > 0) runTalentHook("onProjectileDestroyed", { cleared, x, y, radius });
   return cleared;
 }
 
@@ -1086,6 +1456,7 @@ function clearPlayerTransientState() {
   player.consecrationTimer = 0;
   player.guardSpeedTimer = 0;
   player.tacoGreaseTimer = 0;
+  player.pickleSlowTimer = 0;
   player.backstabTimer = 0;
   player.deadeyeTimer = 0;
   player.bardHealTickTimer = 0;
@@ -1509,11 +1880,15 @@ function shouldSimulateBossAI() {
 }
 
 function shouldBroadcastBossSync() {
-  return isMultiplayerHost() && multiplayer.room?.state === "inGame" && player.room === "arena";
+  return false;
 }
 
 function isRemoteBossHazard(hazard) {
   return Boolean(hazard?.remoteBossHazard) && isMultiplayerGame() && !isMultiplayerHost();
+}
+
+function isRemoteSharedHazard(hazard) {
+  return Boolean(hazard?.remoteBossHazard || hazard?.remoteGauntletHazard) && isMultiplayerGame() && !isMultiplayerHost();
 }
 
 function isPartySyncActive() {
@@ -2639,6 +3014,10 @@ function chooseMazeRewards(seed) {
   return rewards;
 }
 
+function mazeRewardVisual(reward) {
+  return mazeRewardVisuals[reward?.id] || { tone: "blue", category: "Reward", icon: "potion" };
+}
+
 function createMazeEnemy(kind, x, y, index, miniBoss, rng) {
   const theme = mazeThemes[kind] || mazeThemes.burger;
   const ranged = !miniBoss && index % 4 === 1;
@@ -2775,7 +3154,8 @@ function movePlayer(dt) {
 function playerSpeed() {
   const haste = player.guardSpeedTimer > 0 ? 1.45 : 1;
   const greaseSlow = player.tacoGreaseTimer > 0 ? 0.58 : 1;
-  return player.stats.speed * haste * greaseSlow * bardMoveSpeedMultiplier();
+  const pickleSlow = player.pickleSlowTimer > 0 ? 0.72 : 1;
+  return player.stats.speed * haste * greaseSlow * pickleSlow * bardMoveSpeedMultiplier();
 }
 
 function moveSlidingPlayer(dt) {
@@ -3533,6 +3913,10 @@ function updateBossCombatLocal(dt) {
     updateBigCola(dt);
     return;
   }
+  if (boss.kind === "burger") {
+    updateBigBurger(dt);
+    return;
+  }
   if (boss.kind === "shake") {
     updatePeanutBusterShake(dt);
     return;
@@ -3584,6 +3968,336 @@ function updateBossCombatLocal(dt) {
       boss.attackTimer = attackInterval("burger");
     }
   }
+}
+
+function updateBigBurger(dt) {
+  boss.animationTime += dt;
+  player.attackCooldown -= dt;
+  boss.swingTimer -= dt;
+  boss.attackTimer -= dt;
+  boss.animationDuration = Math.max(0, (boss.animationDuration || 0) - dt);
+  if (boss.animationDuration <= 0 && boss.state !== "burgerChargeWarn" && boss.state !== "burgerCharging") {
+    boss.animation = boss.enraged ? "burgerEnraged" : "burgerIdle";
+  }
+
+  updateBigBurgerCharge(dt);
+  updateBigBurgerPhase();
+
+  if (boss.swingTimer <= 0 && distance(player, boss) < boss.radius + 42) {
+    damagePlayer(boss.enraged ? 19 : 14, "Burger bite");
+    knockPlayerFrom(boss.x, boss.y, boss.enraged ? 250 : 190);
+    boss.swingTimer = boss.enraged ? 0.82 : 1.12;
+  }
+
+  if (boss.attackTimer <= 0 && boss.state !== "burgerChargeWarn" && boss.state !== "burgerCharging") {
+    spawnBigBurgerPattern();
+    boss.attackTimer = attackInterval("burger") + (boss.phase >= 2 ? 0.12 : 0.28);
+  }
+}
+
+function updateBigBurgerPhase() {
+  const hpPercent = boss.hp / boss.maxHp;
+  if (hpPercent <= 0.55 && boss.phase === 1) {
+    boss.phase = 2;
+    boss.attackTimer = Math.max(0.65, Math.min(boss.attackTimer, 1.05));
+    playBigBurgerAnimation("burgerBurst", 0.9);
+    log("Phase 2: Big Burger starts mixing ingredients.");
+    showFloat("Phase 2");
+  }
+  if (hpPercent <= 0.24 && !boss.enraged) {
+    boss.enraged = true;
+    boss.attackTimer = Math.max(0.45, Math.min(boss.attackTimer, 0.8));
+    playBigBurgerAnimation("burgerEnraged", 1.4);
+    log("Big Burger is enraged.");
+  }
+}
+
+function playBigBurgerAnimation(animation, duration = 0.75) {
+  boss.animation = animation;
+  boss.animationDuration = Math.max(boss.animationDuration || 0, duration);
+  boss.animationTime = 0;
+}
+
+function spawnBigBurgerPattern() {
+  boss.burgerPatternCount = (boss.burgerPatternCount || 0) + 1;
+  const teaching = ["tomato", "pickle", "onion", "sauce"];
+  if (boss.phase === 1 && boss.burgerPatternCount <= teaching.length) {
+    spawnBigBurgerAttack(teaching[boss.burgerPatternCount - 1]);
+    return;
+  }
+
+  if (boss.phase >= 2) {
+    const comboEvery = boss.enraged ? 2 : 3;
+    if (boss.burgerPatternCount % comboEvery === 0) {
+      const combos = [
+        ["tomato", "pickle"],
+        ["onion", "sauce"],
+        ["tomato", "onion"],
+        ["pickle", "sauce"],
+      ];
+      const combo = combos[Math.floor(Math.random() * combos.length)];
+      combo.forEach((kind, index) => setTimeoutLikeBurger(kind, index * 0.18));
+      return;
+    }
+    if (boss.enraged && boss.burgerPatternCount % 5 === 0) {
+      spawnBigBurgerAttack("burst");
+      return;
+    }
+  }
+
+  const pool = boss.phase >= 2 ? ["tomato", "pickle", "onion", "sauce", "charge", "burst"] : ["tomato", "pickle", "onion", "sauce", "charge"];
+  let choice = pool[Math.floor(Math.random() * pool.length)];
+  if (choice === boss.burgerLastPattern) choice = pool[(pool.indexOf(choice) + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length];
+  spawnBigBurgerAttack(choice);
+}
+
+function setTimeoutLikeBurger(kind, delay) {
+  if (delay <= 0) {
+    spawnBigBurgerAttack(kind);
+    return;
+  }
+  hazards.push({
+    type: "burgerQueuedAttack",
+    x: boss.x,
+    y: boss.y,
+    r: 1,
+    ttl: delay + 0.05,
+    warn: delay,
+    damage: 0,
+    kind,
+    localOnly: true,
+    source: "Big Burger",
+  });
+}
+
+function spawnBigBurgerAttack(kind) {
+  boss.burgerLastPattern = kind;
+  if (kind === "tomato") {
+    playBigBurgerAnimation("burgerTomato", 0.72);
+    spawnBurgerTomatoSlices();
+    log("Big Burger fires tomato slices.");
+  } else if (kind === "pickle") {
+    playBigBurgerAnimation("burgerPickle", 0.76);
+    spawnBurgerPickleSplash();
+    log("Big Burger throws pickle splash.");
+  } else if (kind === "onion") {
+    playBigBurgerAnimation("burgerOnion", 0.82);
+    spawnBurgerOnionRings();
+    log("Big Burger spins onion rings.");
+  } else if (kind === "sauce") {
+    playBigBurgerAnimation("burgerSauce", 0.82);
+    spawnBurgerSauceDrips();
+    log("Big Burger drips hot sauce.");
+  } else if (kind === "charge") {
+    beginBurgerCharge();
+    log("Big Burger lines up a charge.");
+  } else {
+    playBigBurgerAnimation("burgerBurst", 1.0);
+    spawnBurgerBurst();
+    log("Big Burger releases an ingredient burst.");
+  }
+}
+
+function spawnBurgerTomatoSlices() {
+  const target = bossAimTarget();
+  const baseAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const count = boss.phase >= 2 ? 3 : 2;
+  const spread = boss.phase >= 2 ? 0.22 : 0.16;
+  for (let i = 0; i < count; i += 1) {
+    const offset = (i - (count - 1) / 2) * spread;
+    const angle = baseAngle + offset;
+    const speed = boss.enraged ? 390 : boss.phase >= 2 ? 350 : 310;
+    hazards.push({
+      type: "tomatoSlice",
+      x: boss.x + Math.cos(angle) * (boss.radius + 14),
+      y: boss.y + Math.sin(angle) * (boss.radius + 14),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      angle,
+      r: 20,
+      ttl: 3.2,
+      warn: 0,
+      damage: boss.enraged ? 21 : boss.phase >= 2 ? 18 : 15,
+      knockback: boss.enraged ? 330 : 260,
+      source: "Tomato slice",
+      color: "#e94b3d",
+    });
+  }
+}
+
+function spawnBurgerPickleSplash() {
+  const count = boss.phase >= 2 ? 4 : 3;
+  for (let i = 0; i < count; i += 1) {
+    const target = randomArenaPointNearThreat(boss.phase >= 2 ? 190 : 150, 35);
+    const startAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
+    const flightTime = boss.enraged ? 0.56 : 0.68;
+    hazards.push({
+      type: "pickleSplash",
+      x: boss.x,
+      y: boss.y,
+      startX: boss.x,
+      startY: boss.y,
+      targetX: target.x,
+      targetY: target.y,
+      vx: (target.x - boss.x) / flightTime,
+      vy: (target.y - boss.y) / flightTime,
+      angle: startAngle,
+      age: 0,
+      flightTime,
+      arcHeight: 82,
+      bounces: 1,
+      r: 16,
+      ttl: 3.4,
+      warn: 0,
+      damage: boss.enraged ? 16 : 13,
+      source: "Pickle splash",
+      color: "#9fdf45",
+    });
+  }
+}
+
+function spawnBurgerOnionRings() {
+  const count = boss.phase >= 2 ? 6 : 4;
+  const baseAngle = Math.random() * Math.PI * 2;
+  for (let i = 0; i < count; i += 1) {
+    const angle = baseAngle + (Math.PI * 2 * i) / count;
+    const speed = boss.enraged ? 255 : boss.phase >= 2 ? 230 : 200;
+    hazards.push({
+      type: "onionRing",
+      x: boss.x + Math.cos(angle) * 42,
+      y: boss.y + Math.sin(angle) * 42,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      moveAngle: angle,
+      angle,
+      spin: Math.random() * Math.PI * 2,
+      inner: 14,
+      outer: 34,
+      r: 34,
+      ttl: 3.1,
+      warn: 0,
+      damage: boss.enraged ? 18 : 14,
+      knockback: 210,
+      source: "Onion ring",
+      color: "#aa58ff",
+    });
+  }
+}
+
+function spawnBurgerSauceDrips() {
+  const count = boss.phase >= 2 ? 5 : 3;
+  for (let i = 0; i < count; i += 1) {
+    const target = randomArenaPointNearThreat(boss.phase >= 2 ? 240 : 170, 45);
+    hazards.push({
+      type: "burgerSauceDrop",
+      x: target.x,
+      y: target.y,
+      r: boss.enraged ? 52 : 46,
+      ttl: boss.enraged ? 1.12 : 1.28,
+      warn: boss.enraged ? 0.58 : 0.75,
+      warnDuration: boss.enraged ? 0.58 : 0.75,
+      fallHeight: 110 + Math.random() * 25,
+      damage: boss.enraged ? 20 : 16,
+      source: "Sauce drip",
+      color: "#e07a2a",
+      hit: false,
+    });
+  }
+}
+
+function beginBurgerCharge() {
+  const target = bossAimTarget();
+  const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const startX = boss.x;
+  const startY = boss.y;
+  const end = clampArenaPoint(boss.x + Math.cos(angle) * 560, boss.y + Math.sin(angle) * 560, boss.radius);
+  boss.state = "burgerChargeWarn";
+  boss.stateTimer = boss.enraged ? 0.42 : 0.58;
+  boss.chargeStartX = startX;
+  boss.chargeStartY = startY;
+  boss.chargeEndX = end.x;
+  boss.chargeEndY = end.y;
+  boss.chargeAge = 0;
+  boss.chargeDuration = boss.enraged ? 0.48 : 0.58;
+  boss.chargeHitPlayer = false;
+  playBigBurgerAnimation("burgerCharge", 1.25);
+  hazards.push({
+    type: "burgerChargeLane",
+    x: (startX + end.x) / 2,
+    y: (startY + end.y) / 2,
+    startX,
+    startY,
+    endX: end.x,
+    endY: end.y,
+    angle,
+    length: Math.hypot(end.x - startX, end.y - startY),
+    width: boss.enraged ? 104 : 92,
+    r: 1,
+    ttl: boss.stateTimer + boss.chargeDuration + 0.2,
+    warn: boss.stateTimer,
+    damage: boss.enraged ? 27 : 22,
+    source: "Burger charge",
+    color: "#ff6b58",
+    hit: false,
+  });
+  boss.attackTimer = Math.max(boss.attackTimer, boss.stateTimer + boss.chargeDuration + 0.35);
+}
+
+function updateBigBurgerCharge(dt) {
+  if (boss.state === "burgerChargeWarn") {
+    boss.stateTimer -= dt;
+    if (boss.stateTimer <= 0) {
+      boss.state = "burgerCharging";
+      boss.stateTimer = boss.chargeDuration || 0.55;
+      boss.chargeAge = 0;
+    }
+    return;
+  }
+  if (boss.state !== "burgerCharging") return;
+  boss.stateTimer -= dt;
+  boss.chargeAge = (boss.chargeAge || 0) + dt;
+  const duration = Math.max(0.1, boss.chargeDuration || 0.55);
+  const progress = clamp(boss.chargeAge / duration, 0, 1);
+  const eased = 1 - Math.pow(1 - progress, 2);
+  const previousX = boss.x;
+  const previousY = boss.y;
+  boss.x = boss.chargeStartX + (boss.chargeEndX - boss.chargeStartX) * eased;
+  boss.y = boss.chargeStartY + (boss.chargeEndY - boss.chargeStartY) * eased;
+  const swept = Math.hypot(boss.x - previousX, boss.y - previousY);
+  if (!boss.chargeHitPlayer && swept > 1) {
+    const angle = Math.atan2(boss.y - previousY, boss.x - previousX);
+    const hit = distance(player, boss) < boss.radius + player.radius || isPlayerInLine(previousX, previousY, angle, swept, boss.radius * 0.55 + player.radius);
+    if (hit && !player.dead) {
+      boss.chargeHitPlayer = true;
+      damagePlayer(boss.enraged ? 27 : 22, "Burger charge");
+      knockPlayerFrom(previousX, previousY, boss.enraged ? 390 : 320);
+    }
+  }
+  if (progress >= 1 || boss.stateTimer <= 0) {
+    boss.state = "moving";
+    boss.stateTimer = 0;
+    boss.animationDuration = Math.min(boss.animationDuration || 0, 0.25);
+  }
+}
+
+function spawnBurgerBurst() {
+  const gapAngle = Math.atan2(player.y - boss.y, player.x - boss.x) + (Math.random() < 0.5 ? 0.95 : -0.95);
+  hazards.push({
+    type: "burgerBurstRing",
+    x: boss.x,
+    y: boss.y,
+    r: boss.enraged ? 245 : 220,
+    inner: 72,
+    ttl: 1.28,
+    warn: boss.enraged ? 0.62 : 0.82,
+    warnDuration: boss.enraged ? 0.62 : 0.82,
+    gapAngle,
+    gapWidth: boss.enraged ? 0.82 : 1.02,
+    damage: boss.enraged ? 30 : 24,
+    source: "Ingredient burst",
+    color: "#f0c35b",
+    hit: false,
+  });
 }
 
 function updateRemoteBossPassive(dt) {
@@ -3815,6 +4529,10 @@ function updatePizzaClones(dt) {
 
 function updateBigCola(dt) {
   boss.animationTime += dt;
+  if (boss.animation && boss.animation !== "idle" && boss.animationTime > (boss.animationDuration || 0.85)) {
+    boss.animation = "idle";
+    boss.animationDuration = 0;
+  }
   player.attackCooldown -= dt;
   boss.attackTimer -= dt;
   boss.pressureTimer -= dt;
@@ -3834,6 +4552,13 @@ function updateBigCola(dt) {
     spawnBigColaPattern();
     boss.attackTimer = attackInterval("cola");
   }
+}
+
+function playBigColaAnimation(animation, duration = 0.85) {
+  if (!boss || boss.kind !== "cola") return;
+  boss.animation = animation;
+  boss.animationTime = 0;
+  boss.animationDuration = duration;
 }
 
 function updateTacoTitan(dt) {
@@ -5211,6 +5936,7 @@ function abilityIndexForKey(event) {
 
 function spendAbility(index, ability) {
   player.abilityCooldowns[index] = ability.cooldown * talentAbilityCooldownMultiplier(index);
+  runTalentHook("onAbilityCast", { index, ability });
   ui.status.textContent = `${ability.name}.`;
   showFloat(ability.name);
   sendAbilityUseEvent(index, ability);
@@ -5768,11 +6494,11 @@ function damageTargetsInCone(x, y, angle, range, halfAngle, amount, source) {
   });
 }
 
-function damageTargetsInRadius(x, y, radius, amount, source, hitTargets = []) {
+function damageTargetsInRadius(x, y, radius, amount, source, hitTargets = [], options = {}) {
   return livingBosses().filter((target) => {
     if (hitTargets.includes(target)) return false;
     if (distance({ x, y }, target) > radius + target.radius) return false;
-    const hit = damageBossTarget(target, amount, source);
+    const hit = damageBossTarget(target, amount, source, options);
     if (hit) hitTargets.push(target);
     return hit;
   });
@@ -5789,8 +6515,8 @@ function damageDonutMinionsInRadius(x, y, radius, amount, source, hitTargets = [
   });
 }
 
-function damageEnemiesInRadius(x, y, radius, amount, source, hitTargets = []) {
-  const bossHits = damageTargetsInRadius(x, y, radius, amount, source, hitTargets);
+function damageEnemiesInRadius(x, y, radius, amount, source, hitTargets = [], options = {}) {
+  const bossHits = damageTargetsInRadius(x, y, radius, amount, source, hitTargets, options);
   const donutHits = damageDonutMinionsInRadius(x, y, radius, amount, source, hitTargets);
   return bossHits.concat(donutHits);
 }
@@ -6127,12 +6853,15 @@ function spawnSpecialSaucePattern() {
 function spawnBigColaPattern() {
   const roll = Math.random();
   if (roll < 0.38) {
+    playBigColaAnimation("colaBubbles", 0.95);
     spawnColaBubbles(boss.enraged ? 7 : boss.phase === 2 ? 6 : 5);
     log("Big Cola releases bubbles.");
   } else if (roll < 0.7) {
+    playBigColaAnimation("colaStraw", 0.9);
     spawnStrawSnipe();
     log("Big Cola lines up a straw snipe.");
   } else {
+    playBigColaAnimation("colaSpill", 0.95);
     spawnSodaSpill();
     log("Big Cola spills soda.");
   }
@@ -6171,6 +6900,7 @@ function spawnStrawSnipe() {
 }
 
 function spawnFizzBurst() {
+  playBigColaAnimation("colaFizz", 1.08);
   hazards.push({
     type: "fizzBurst",
     x: boss.x,
@@ -6814,9 +7544,10 @@ function isConsumedRemoteHazard(hazardOrId) {
 
 function consumeRemoteHazard(hazard, ttlMs = 2200) {
   const key = remoteHazardKey(hazard);
-  if (!key || !isRemoteBossHazard(hazard)) return;
+  if (!key || !isRemoteSharedHazard(hazard)) return;
   multiplayer.consumedRemoteHazards.set(key, performance.now() + ttlMs);
   multiplayer.hostileNetState.delete(key);
+  if (hazard.syncId) sendHazardControlIntent("destroy", [hazard.syncId], { x: hazard.x, y: hazard.y, radius: Math.max(72, (hazard.r || 10) + player.radius + 34) });
 }
 
 function updateHazards(dt) {
@@ -6843,6 +7574,7 @@ function updateHazards(dt) {
       if (!mazeState || !isMazeSegmentWalkable(previousX, previousY, hazard.x, hazard.y, hazard.r || 0)) return false;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         damagePlayer(hazard.damage, hazard.source || "Maze shot");
+        consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
     } else if (hazard.type === "mazeCircle") {
@@ -6903,11 +7635,11 @@ function updateHazards(dt) {
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (hazard.storm) {
-      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, "Pico de gallo storm");
-        consumeRemoteHazard(hazard);
-        hazard.ttl = 0;
-      }
+        if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+          damagePlayer(hazard.damage, "Pico de gallo storm");
+          consumeRemoteHazard(hazard);
+          hazard.ttl = 0;
+        }
       } else {
         hazard.vx *= Math.pow(0.84, dt * 4);
         hazard.vy *= Math.pow(0.84, dt * 4);
@@ -7165,7 +7897,8 @@ function updateHazards(dt) {
         if (hazard.damageTimer <= 0) {
           if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           damagePlayer(hazard.damage, "Shell shard");
-          hazard.damageTimer = 0.55;
+          consumeRemoteHazard(hazard);
+          hazard.ttl = 0;
         }
       }
     } else if (hazard.type === "ingredientDrop") {
@@ -7179,6 +7912,7 @@ function updateHazards(dt) {
           if (hazard.ingredient === "lettuce") knockPlayerFrom(hazard.x, hazard.y, 220);
           addStuffedStack();
           damagePlayer(hazard.ingredient === "beef" ? 18 : 12, `${hazard.ingredient} drop`);
+          consumeRemoteHazard(hazard);
         }
         if (hazard.ingredient === "beef") {
           hazard.type = "tacoGrease";
@@ -7410,6 +8144,103 @@ function updateHazards(dt) {
           hazard.damageTimer = 0.35;
         }
       }
+    } else if (hazard.type === "burgerQueuedAttack") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.spawned) {
+        hazard.spawned = true;
+        spawnBigBurgerAttack(hazard.kind);
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "tomatoSlice") {
+      hazard.ttl -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      hazard.angle = Math.atan2(hazard.vy, hazard.vx);
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, hazard.source || "Tomato slice");
+        knockPlayerFrom(hazard.x - hazard.vx * dt, hazard.y - hazard.vy * dt, hazard.knockback || 250);
+        consumeRemoteHazard(hazard);
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "pickleSplash") {
+      hazard.ttl -= dt;
+      hazard.age = (hazard.age || 0) + dt;
+      const progress = clamp(hazard.age / Math.max(0.1, hazard.flightTime || 0.65), 0, 1);
+      const previousX = hazard.x;
+      const previousY = hazard.y;
+      hazard.x = hazard.startX + (hazard.targetX - hazard.startX) * progress;
+      hazard.y = hazard.startY + (hazard.targetY - hazard.startY) * progress;
+      hazard.vx = (hazard.x - previousX) / Math.max(dt, 0.001);
+      hazard.vy = (hazard.y - previousY) / Math.max(dt, 0.001);
+      hazard.angle = Math.atan2(hazard.vy || 0, hazard.vx || 1);
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, hazard.source || "Pickle splash");
+        consumeRemoteHazard(hazard);
+        turnBurgerPickleIntoPuddle(hazard);
+      } else if (progress >= 1) {
+        if ((hazard.bounces || 0) > 0) {
+          bounceBurgerPickle(hazard);
+        } else {
+          turnBurgerPickleIntoPuddle(hazard);
+        }
+      }
+    } else if (hazard.type === "picklePuddle") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        player.pickleSlowTimer = Math.max(player.pickleSlowTimer || 0, hazard.slowDuration || 0.16);
+      }
+    } else if (hazard.type === "onionRing") {
+      hazard.ttl -= dt;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      hazard.spin = (hazard.spin || 0) + dt * (hazard.turn || 8);
+      hazard.angle = hazard.spin;
+      const dist = distance(player, hazard);
+      if (dist < (hazard.outer || hazard.r) + player.radius && dist > (hazard.inner || 10) - player.radius && !player.dead) {
+        damagePlayer(hazard.damage, hazard.source || "Onion ring");
+        knockPlayerFrom(hazard.x, hazard.y, hazard.knockback || 190);
+        consumeRemoteHazard(hazard);
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "burgerSauceDrop") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        hazard.type = "burgerSauceBurst";
+        hazard.ttl = 0.36;
+        hazard.warn = 0;
+        hazard.r = Math.max(hazard.r || 46, boss.enraged ? 62 : 56);
+        if (!remoteBossHazard) particles.push({ x: hazard.x, y: hazard.y - 18, text: "splash", color: "#ffd06a", ttl: 0.45 });
+      }
+    } else if (hazard.type === "burgerSauceBurst") {
+      hazard.ttl -= dt;
+      if (!hazard.hitPlayer && distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        hazard.hitPlayer = true;
+        damagePlayer(hazard.damage, hazard.source || "Sauce burst");
+      }
+    } else if (hazard.type === "burgerChargeLane") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit && isPlayerInLine(hazard.startX, hazard.startY, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+        hazard.hit = true;
+        damagePlayer(hazard.damage, hazard.source || "Burger charge");
+        knockPlayerFrom(hazard.startX, hazard.startY, boss.enraged ? 360 : 300);
+      }
+    } else if (hazard.type === "burgerBurstRing") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        const dist = distance(player, hazard);
+        const angleToPlayer = Math.atan2(player.y - hazard.y, player.x - hazard.x);
+        const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < (hazard.gapWidth || 0.9) / 2;
+        if (dist < hazard.r + player.radius && dist > (hazard.inner || 0) - player.radius && !inGap && !player.dead) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, hazard.source || "Ingredient burst");
+          knockPlayerFrom(hazard.x, hazard.y, boss.enraged ? 360 : 285);
+        }
+      }
     } else if (hazard.type === "bolt" || hazard.type === "fry" || hazard.type === "mustardSeed" || hazard.type === "sauceBlob" || hazard.type === "peanut" || hazard.type === "cherryShot" || hazard.type === "nachoCrumb" || hazard.type === "pepperoni" || hazard.type === "cheeseBolt" || hazard.type === "sprinkle") {
       hazard.ttl -= dt;
       if (hazard.turn) {
@@ -7455,6 +8286,38 @@ function popColaBubble(hazard) {
   if (distance(player, hazard) < player.radius + hazard.r + 22 && !player.dead) {
     damagePlayer(hazard.damage, "Bubble pop");
   }
+}
+
+function bounceBurgerPickle(hazard) {
+  const target = bossAimTarget(hazard);
+  const next = clampArenaPoint(
+    hazard.x + (target.x - hazard.x) * 0.45 + (Math.random() - 0.5) * 150,
+    hazard.y + (target.y - hazard.y) * 0.45 + (Math.random() - 0.5) * 150,
+    hazard.r || 16,
+  );
+  hazard.startX = hazard.x;
+  hazard.startY = hazard.y;
+  hazard.targetX = next.x;
+  hazard.targetY = next.y;
+  hazard.age = 0;
+  hazard.flightTime = boss.enraged ? 0.42 : 0.5;
+  hazard.arcHeight = Math.max(45, (hazard.arcHeight || 82) * 0.72);
+  hazard.bounces = Math.max(0, (hazard.bounces || 0) - 1);
+  hazard.vx = (hazard.targetX - hazard.startX) / hazard.flightTime;
+  hazard.vy = (hazard.targetY - hazard.startY) / hazard.flightTime;
+}
+
+function turnBurgerPickleIntoPuddle(hazard) {
+  hazard.type = "picklePuddle";
+  hazard.vx = 0;
+  hazard.vy = 0;
+  hazard.r = boss.enraged ? 54 : 48;
+  hazard.ttl = boss.enraged ? 4.4 : 3.6;
+  hazard.warn = 0;
+  hazard.damage = 0;
+  hazard.slowDuration = 0.18;
+  hazard.source = "Pickle puddle";
+  if (!isRemoteBossHazard(hazard)) particles.push({ x: hazard.x, y: hazard.y - 16, text: "slow", color: "#dfff71", ttl: 0.45 });
 }
 
 function isPlayerInChocolateBar(hazard) {
@@ -7737,6 +8600,7 @@ function damagePlayer(amount, source, options = {}) {
   if (hit >= player.hp && triggerTalentLethalSave(source)) return;
   player.hp = Math.max(0, player.hp - hit);
   player.lastDamageAt = now;
+  runTalentHook("onDamageTaken", { amount, hit, source, options });
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
     enterDeathState(source);
@@ -7890,6 +8754,7 @@ function updateAbilities(dt) {
   player.consecrationTimer = Math.max(0, player.consecrationTimer - dt);
   player.guardSpeedTimer = Math.max(0, player.guardSpeedTimer - dt);
   player.tacoGreaseTimer = Math.max(0, (player.tacoGreaseTimer || 0) - dt);
+  player.pickleSlowTimer = Math.max(0, (player.pickleSlowTimer || 0) - dt);
   player.backstabTimer = Math.max(0, player.backstabTimer - dt);
   player.deadeyeTimer = Math.max(0, (player.deadeyeTimer || 0) - dt);
 
@@ -8472,6 +9337,10 @@ function applyDamageBossTargetLocal(target, amount, source, options = {}) {
     if (target.exposedFillingTimer > 0) damage = Math.ceil(damage * 2.35);
   }
   target.hp = Math.max(0, target.hp - damage);
+  const hookPayload = { target, amount: damage, source, options };
+  if (!options.remote && !options.remoteIntent) {
+    runTalentHook(source === "Shot" ? "onBasicHit" : "onAbilityHit", hookPayload);
+  }
   if (!target.mazeEnemy && source !== "Co-op" && !options.remote && !isPartySyncActive()) {
     sendMultiplayerEvent({
       kind: "damage",
@@ -8485,7 +9354,10 @@ function applyDamageBossTargetLocal(target, amount, source, options = {}) {
   }
   const color = options.poison ? "#9be06f" : source === "Bleed" || source === "Backstab" ? "#ff6e7f" : "#ffe08a";
   particles.push({ x: target.x, y: target.y - 40, text: `-${damage}`, color, ttl: 0.8 });
-  if (target.hp <= 0) handleBossDefeated(target);
+  if (target.hp <= 0) {
+    runTalentHook("onEnemyDeath", hookPayload);
+    handleBossDefeated(target);
+  }
   return true;
 }
 
@@ -8617,12 +9489,22 @@ function showMazeRewardChoices() {
   }
   mazeState.rewardInputReadyAt = performance.now() + mazeRewardInputDelayMs;
   ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
-  ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => `
-    <button class="reward-card" type="button" data-reward="${reward.id}" disabled>
+  ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => {
+    const visual = mazeRewardVisual(reward);
+    return `
+    <button class="reward-card reward-card--${visual.tone}" type="button" data-reward="${reward.id}" data-tone="${visual.tone}" disabled>
+      <span class="reward-card-corner" aria-hidden="true"><img src="./assets/generated/icons/rewards/${visual.icon}.svg" alt=""></span>
+      <span class="reward-icon-wrap" aria-hidden="true">
+        <span class="reward-icon-disc"></span>
+        <img class="reward-icon" src="./assets/generated/icons/rewards/${visual.icon}.svg" alt="">
+      </span>
       <strong>${escapeHtml(reward.name)}</strong>
-      <span>${escapeHtml(reward.description)}</span>
+      <span class="reward-divider" aria-hidden="true"></span>
+      <span class="reward-description">${escapeHtml(reward.description)}</span>
+      <span class="reward-category">${escapeHtml(visual.category)}</span>
     </button>
-  `).join("");
+  `;
+  }).join("");
   ui.mazeRewardOverlay.hidden = false;
   ui.status.textContent = "Choose one gauntlet reward to open the boss gate.";
   showFloat("Choose a reward");
@@ -8633,15 +9515,42 @@ function showMazeRewardChoices() {
 
 function updateMazeRewardCardLock() {
   if (!mazeState || mazeState.rewardChosen || ui.mazeRewardOverlay?.hidden) return;
+  if (mazeState.rewardConfirming) return;
   const locked = Number.isFinite(mazeState.rewardInputReadyAt) && performance.now() < mazeState.rewardInputReadyAt;
   ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
     card.disabled = locked;
+    card.classList.toggle("is-input-locked", locked);
   });
 }
 
 function chooseMazeReward(rewardId) {
   if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead) return;
   if (Number.isFinite(mazeState.rewardInputReadyAt) && performance.now() < mazeState.rewardInputReadyAt) return;
+  if (mazeState.rewardConfirming) return;
+  const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
+  if (!reward) return;
+  mazeState.rewardConfirming = true;
+  const selectedCard = Array.from(ui.mazeRewardCards?.querySelectorAll(".reward-card") || [])
+    .find((card) => card.dataset.reward === rewardId);
+  ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
+    card.disabled = true;
+    card.classList.remove("is-input-locked");
+    card.classList.toggle("is-selected", card === selectedCard);
+    card.classList.toggle("is-dimmed", card !== selectedCard);
+  });
+  selectedCard?.classList.add("is-confirming");
+  ui.status.textContent = `${reward.name} selected. Confirming reward.`;
+  window.setTimeout(() => {
+    selectedCard?.classList.remove("is-confirming");
+    selectedCard?.classList.add("is-confirmed");
+  }, 280);
+  window.setTimeout(() => {
+    applyMazeRewardChoice(rewardId);
+  }, 560);
+}
+
+function applyMazeRewardChoice(rewardId) {
+  if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead) return;
   const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
   if (!reward) return;
   const oldMaxHp = player.maxHp;
@@ -8654,6 +9563,7 @@ function chooseMazeReward(rewardId) {
   });
   applyGear();
   if (player.maxHp > oldMaxHp) player.hp = Math.min(player.maxHp, player.hp + player.maxHp - oldMaxHp);
+  mazeState.rewardConfirming = false;
   mazeState.rewardPending = false;
   mazeState.rewardChosen = true;
   mazeState.exitOpen = !isPartySyncActive();
@@ -9011,6 +9921,14 @@ function drawStands() {
     ctx.beginPath();
     ctx.arc(stand.x, stand.y - 10, 22, 0, Math.PI * 2);
     ctx.fill();
+    if (stand.type === "weapon") {
+      const classIconKey = generatedClassArtKeyForWeapon(stand.id);
+      drawGeneratedImage(`icons.classes.${classIconKey}`, stand.x, stand.y - 10, 48, 48, {
+        alpha: selected ? 1 : 0.78,
+        shadowColor: selected ? "rgba(240, 212, 124, 0.65)" : "",
+        shadowBlur: selected ? 8 : 0,
+      });
+    }
     ctx.fillStyle = "#f4f1e6";
     ctx.font = "12px sans-serif";
     ctx.textAlign = "center";
@@ -9064,6 +9982,27 @@ function drawMazeEnemies() {
   });
 }
 
+function generatedBossArtRow(target) {
+  if (target.hp <= 0) return 3;
+  if (target.state === "winding" || target.state === "charging" || target.state === "attack" || target.attackWindup > 0 || target.dashTimer > 0) return 1;
+  if (target.enraged || target.phase > 1 || target.shieldTimer > 0 || target.stunnedTimer > 0) return 2;
+  return 0;
+}
+
+function drawGeneratedBossSprite(target, kind, options = {}) {
+  const image = generatedArtImage(`bosses.${kind}`);
+  if (!isImageReady(image)) return false;
+  const radius = target.radius || 52;
+  const scale = options.scale || 1;
+  const frame = Math.floor(performance.now() / 160 + (target.x + target.y) * 0.01) % 4;
+  const row = generatedBossArtRow(target);
+  const drawW = radius * 2.55 * scale;
+  const drawH = radius * 2.55 * scale;
+  const shadowColor = target.enraged ? "#ff6f61" : "";
+  const shadowBlur = target.enraged ? 16 : 0;
+  return drawGeneratedSpriteFrame(`bosses.${kind}`, row, frame, target.x, target.y - radius * 0.04, drawW, drawH, { shadowColor, shadowBlur });
+}
+
 function drawBoss() {
   if (player.room !== "arena") return;
   if (boss.kind === "trio") {
@@ -9072,10 +10011,17 @@ function drawBoss() {
   }
   if (boss.hp <= 0) return;
   if (selectedBoss === boss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
-  if (boss.kind === "fries") {
+  const generatedBossDrawn = ["sauce", "shake", "nacho", "pizza", "taco"].includes(boss.kind)
+    ? drawGeneratedBossSprite(boss, boss.kind)
+    : false;
+  if (generatedBossDrawn) {
+    // Generated boss sheets replace the simple canvas body while preserving existing telegraphs and HUD.
+  } else if (boss.kind === "fries") {
     drawCurlyFriesBoss();
   } else if (boss.kind === "sauce") {
     drawSpecialSauceBoss();
+  } else if (boss.kind === "burger") {
+    drawBurgerBoss();
   } else if (boss.kind === "cola") {
     drawBigColaBoss();
   } else if (boss.kind === "shake") {
@@ -9098,7 +10044,7 @@ function drawBoss() {
   ctx.fillStyle = "#fff2c6";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "nacho" || boss.kind === "pizza" || boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi" ? ` Phase ${boss.phase}` : "";
+  const phaseText = boss.kind === "shake" ? ` ${boss.phase}/3` : boss.kind === "burger" || boss.kind === "nacho" || boss.kind === "pizza" || boss.kind === "taco" || boss.kind === "donut" || boss.kind === "sushi" ? ` Phase ${boss.phase}` : "";
   ctx.fillText(`${boss.name}${phaseText}`, boss.x, boss.y - boss.radius - 38);
   if (boss.kind === "nacho" && boss.enrageTextTimer > 0) {
     ctx.fillStyle = "#ffda6b";
@@ -9117,9 +10063,12 @@ function drawCondimentBoss(target) {
   if (target.hp <= 0) return;
   if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
   if (target.kind === "mustard" && target.state === "winding") drawRing(target.x, target.y, target.radius + 18, "#fff08a");
-  if (target.kind === "ketchup") drawKetchupBoss(target);
-  else if (target.kind === "mustard") drawMustardBoss(target);
-  else drawMayoBoss(target);
+  const generatedCondimentDrawn = drawGeneratedBossSprite(target, target.kind, { scale: 1.05 });
+  if (!generatedCondimentDrawn) {
+    if (target.kind === "ketchup") drawKetchupBoss(target);
+    else if (target.kind === "mustard") drawMustardBoss(target);
+    else drawMayoBoss(target);
+  }
   drawCondimentHealth(target);
   if (target.shieldTimer > 0) drawRing(target.x, target.y, target.radius + 16, "#f6f0df");
   ctx.textAlign = "left";
@@ -9320,6 +10269,37 @@ function drawCondimentHealth(target) {
 }
 
 function drawBurgerBoss() {
+  const animationRows = {
+    burgerIdle: 0,
+    idle: 0,
+    burgerTomato: 1,
+    burgerPickle: 2,
+    burgerOnion: 3,
+    burgerSauce: 4,
+    burgerCharge: 5,
+    burgerBurst: 6,
+    burgerEnraged: 7,
+  };
+  const row = animationRows[boss.animation] ?? (boss.enraged ? 7 : 0);
+  const frame = Math.floor((boss.animationTime || 0) * (row === 5 ? 9 : 7)) % 4;
+  const radius = boss.radius || 70;
+  if (drawGeneratedSpriteFrame("bosses.burgerDeluxe", row, frame, boss.x, boss.y - radius * 0.18, radius * 3.0, radius * 3.0, {
+    cols: 4,
+    rows: 8,
+    alpha: 0.98,
+    shadowColor: boss.enraged ? "#ff3148" : "#f0c35b",
+    shadowBlur: boss.enraged ? 20 : 12,
+  })) {
+    if (["burgerTomato", "burgerPickle", "burgerOnion", "burgerSauce", "burgerCharge", "burgerBurst"].includes(boss.animation)) {
+      const slug = boss.animation.replace("burger", "").toLowerCase();
+      drawGeneratedImage(`bossAbilities.burger.${slug}`, boss.x + radius * 1.22, boss.y - radius * 1.5, 32, 32, {
+        alpha: 0.8,
+        shadowColor: "#f0c35b",
+        shadowBlur: 9,
+      });
+    }
+    return;
+  }
   ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
   ctx.beginPath();
   ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
@@ -9802,32 +10782,63 @@ function drawSpecialSauceBoss() {
   }
 }
 
+function bigColaAnimationRow() {
+  if (boss.animation === "colaBubbles") return 1;
+  if (boss.animation === "colaStraw") return 2;
+  if (boss.animation === "colaSpill") return 3;
+  if (boss.animation === "colaFizz") return 4;
+  if (boss.enraged || boss.phase >= 2) return 5;
+  return 0;
+}
+
+function bigColaAbilitySlug(row) {
+  if (row === 1) return "bubbles";
+  if (row === 2) return "straw";
+  if (row === 3) return "spill";
+  if (row === 4) return "fizz";
+  return "";
+}
+
 function drawBigColaBoss() {
+  const row = bigColaAnimationRow();
+  const activeCast = boss.animation && boss.animation !== "idle" && row > 0 && row < 5;
+  const frameSource = activeCast ? (boss.animationTime || 0) * 9.5 : performance.now() / 165;
+  const frame = Math.floor(frameSource) % 4;
+  const radius = boss.radius || 58;
+  const drawW = Math.max(220, radius * 4.25);
+  const drawH = Math.max(220, radius * 4.25);
+  const shadowColor = row === 4 ? "#b9f4ff" : row === 5 ? "#ff6f61" : boss.enraged ? "#ff8a66" : "rgba(103, 213, 255, 0.55)";
+  const shadowBlur = row === 4 ? 26 : row === 5 ? 22 : boss.enraged ? 18 : 8;
+  const drawn = drawGeneratedSpriteFrame("bosses.colaDeluxe", row, frame, boss.x, boss.y - radius * 0.2, drawW, drawH, {
+    cols: 4,
+    rows: 6,
+    shadowColor,
+    shadowBlur,
+  });
+  if (drawn) {
+    const slug = activeCast ? bigColaAbilitySlug(row) : "";
+    if (slug) {
+      drawGeneratedImage(`bossAbilities.cola.${slug}`, boss.x + radius * 1.28, boss.y - radius * 1.55, 34, 34, {
+        alpha: 0.88,
+        shadowColor,
+        shadowBlur: 10,
+      });
+    }
+    return;
+  }
+
   ctx.fillStyle = boss.enraged ? boss.enrageColor : boss.color;
   ctx.beginPath();
   ctx.roundRect(boss.x - 46, boss.y - 62, 92, 124, 16);
   ctx.fill();
   ctx.fillStyle = "#f4f1e6";
   ctx.fillRect(boss.x - 48, boss.y - 66, 96, 16);
-  ctx.fillStyle = "#d64235";
+  ctx.fillStyle = "#17110f";
   ctx.fillRect(boss.x - 35, boss.y - 44, 70, 30);
   ctx.fillStyle = "#f7f3e8";
   ctx.font = "bold 14px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("COLA", boss.x, boss.y - 24);
-  ctx.strokeStyle = "#f7f3e8";
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.moveTo(boss.x + 24, boss.y - 68);
-  ctx.lineTo(boss.x + 54, boss.y - 108);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(185, 244, 255, 0.72)";
-  for (let i = 0; i < 5; i += 1) {
-    const angle = boss.animationTime * 1.4 + i * 1.25;
-    ctx.beginPath();
-    ctx.arc(boss.x + Math.cos(angle) * 58, boss.y - 55 + Math.sin(angle * 1.7) * 18, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  ctx.fillText("BIG COLA", boss.x, boss.y + 22);
   ctx.textAlign = "left";
 }
 
@@ -9961,6 +10972,7 @@ function drawCurlyFriesBoss() {
     drawCurlyFriesSprite();
     return;
   }
+  if (drawGeneratedBossSprite(boss, "fries")) return;
   ctx.strokeStyle = boss.enraged ? boss.enrageColor : boss.color;
   ctx.lineWidth = 12;
   ctx.lineCap = "round";
@@ -9985,8 +10997,10 @@ function drawCurlyFriesBoss() {
 
 function drawCurlyFriesSprite() {
   const sprite = cleanedCurlyFriesSprite || curlyFriesSprite;
-  const frameWidth = sprite.width / 4;
-  const frameHeight = sprite.height / 3;
+  const sourceWidth = sprite.naturalWidth || sprite.width;
+  const sourceHeight = sprite.naturalHeight || sprite.height;
+  const frameWidth = sourceWidth / 4;
+  const frameHeight = sourceHeight / 3;
   const rows = { idle: 0, machineGun: 1, spiral: 2 };
   const animationDuration = boss.animation === "idle" ? 999 : boss.animation === "machineGun" ? 1.15 : 1.0;
   if (boss.animation !== "idle" && boss.animationTime > animationDuration) boss.animation = "idle";
@@ -10029,6 +11043,7 @@ function drawNachoWalls() {
 
 function drawHazards() {
   hazards.forEach((hazard) => {
+    if (drawGeneratedHazardProjectile(hazard)) return;
     if (hazard.type === "mazeShot") {
       ctx.fillStyle = hazard.color || "#f0d47c";
       ctx.shadowColor = hazard.color || "#f0d47c";
@@ -10080,6 +11095,97 @@ function drawHazards() {
         ctx.arc(hazard.x, hazard.y, hazard.r * (0.52 + pulse * 0.52), 0, Math.PI * 2);
         ctx.stroke();
       }
+      return;
+    }
+    if (hazard.type === "picklePuddle") {
+      if (drawGeneratedImage("hazards.burger-pickle-puddle", hazard.x, hazard.y, hazard.r * 2.35, hazard.r * 1.45, {
+        alpha: hazard.remoteBossHazard ? 0.78 : 0.9,
+        shadowColor: "#9fdf45",
+        shadowBlur: 8,
+      })) return;
+      ctx.fillStyle = "rgba(111, 158, 36, 0.38)";
+      ctx.strokeStyle = "#dfff71";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(hazard.x, hazard.y, hazard.r, hazard.r * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "burgerSauceDrop") {
+      const warningProgress = clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 0.75), 0, 1);
+      ctx.fillStyle = "rgba(224, 122, 42, 0.12)";
+      ctx.strokeStyle = hazard.warn > 0 ? "#ffe0a0" : "#e07a2a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r * (0.45 + warningProgress * 0.55), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      drawGeneratedImage("hazards.burger-sauce-drop", hazard.x, hazard.y - (hazard.fallHeight || 100) * (1 - warningProgress), hazard.r * 1.45, hazard.r * 1.65, {
+        alpha: 0.92,
+        shadowColor: "#ffd06a",
+        shadowBlur: 10,
+      });
+      return;
+    }
+    if (hazard.type === "burgerSauceBurst") {
+      if (drawGeneratedImage("hazards.burger-sauce-burst", hazard.x, hazard.y, hazard.r * 2.2, hazard.r * 2.2, {
+        alpha: hazard.remoteBossHazard ? 0.78 : 0.9,
+        shadowColor: "#ffd06a",
+        shadowBlur: 13,
+      })) return;
+      ctx.fillStyle = "rgba(224, 122, 42, 0.34)";
+      ctx.strokeStyle = "#ffe0a0";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "burgerChargeLane") {
+      const active = hazard.warn <= 0;
+      drawGeneratedImage("hazards.burger-charge-lane", hazard.x, hazard.y, hazard.length, hazard.width, {
+        alpha: active ? 0.78 : 0.45,
+        rotation: hazard.angle,
+        shadowColor: active ? "#ff6b58" : "#ffd66b",
+        shadowBlur: active ? 14 : 7,
+      });
+      ctx.strokeStyle = active ? "rgba(255, 107, 88, 0.7)" : "rgba(255, 214, 107, 0.62)";
+      ctx.lineWidth = active ? 5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(hazard.startX, hazard.startY);
+      ctx.lineTo(hazard.endX, hazard.endY);
+      ctx.stroke();
+      return;
+    }
+    if (hazard.type === "burgerBurstRing") {
+      const warning = hazard.warn > 0;
+      const progress = warning ? clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 0.8), 0, 1) : 1;
+      const radius = hazard.r * (warning ? 0.55 + progress * 0.45 : 1);
+      drawGeneratedImage("hazards.burger-burst-ring", hazard.x, hazard.y, radius * 2.15, radius * 2.15, {
+        alpha: warning ? 0.44 : 0.76,
+        shadowColor: "#ffd46c",
+        shadowBlur: warning ? 9 : 16,
+      });
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.gapAngle);
+      ctx.fillStyle = "rgba(45, 28, 18, 0.42)";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius + 16, -(hazard.gapWidth || 0.9) / 2, (hazard.gapWidth || 0.9) / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 244, 196, 0.72)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(-(hazard.gapWidth || 0.9) / 2) * (hazard.inner || 70), Math.sin(-(hazard.gapWidth || 0.9) / 2) * (hazard.inner || 70));
+      ctx.lineTo(Math.cos(-(hazard.gapWidth || 0.9) / 2) * radius, Math.sin(-(hazard.gapWidth || 0.9) / 2) * radius);
+      ctx.moveTo(Math.cos((hazard.gapWidth || 0.9) / 2) * (hazard.inner || 70), Math.sin((hazard.gapWidth || 0.9) / 2) * (hazard.inner || 70));
+      ctx.lineTo(Math.cos((hazard.gapWidth || 0.9) / 2) * radius, Math.sin((hazard.gapWidth || 0.9) / 2) * radius);
+      ctx.stroke();
+      ctx.restore();
       return;
     }
     if (hazard.type === "pico") {
@@ -10294,6 +11400,17 @@ function drawHazards() {
     }
     if (hazard.type === "strawSnipe") {
       const active = hazard.warn <= 0;
+      const beamLength = 780;
+      ctx.save();
+      ctx.translate(hazard.x + Math.cos(hazard.angle) * beamLength * 0.5, hazard.y + Math.sin(hazard.angle) * beamLength * 0.5);
+      ctx.rotate(hazard.angle);
+      const beamDrawn = drawGeneratedImage("hazards.cola-straw-snipe", 0, 0, beamLength, active ? 58 : 36, {
+        alpha: active ? 0.92 : 0.5,
+        shadowColor: active ? "#fff4c4" : "#67d5ff",
+        shadowBlur: active ? 18 : 8,
+      });
+      ctx.restore();
+      if (beamDrawn) return;
       ctx.strokeStyle = active ? "rgba(120, 55, 34, 0.85)" : "rgba(255, 245, 176, 0.45)";
       ctx.lineWidth = active ? 9 : 4;
       ctx.beginPath();
@@ -10304,6 +11421,11 @@ function drawHazards() {
     }
     if (hazard.type === "fizzBurst") {
       const warning = hazard.warn > 0;
+      if (drawGeneratedImage("hazards.cola-fizz-burst", hazard.x, hazard.y, hazard.r * 2.08, hazard.r * 2.08, {
+        alpha: warning ? 0.34 : 0.72,
+        shadowColor: warning ? "#67d5ff" : "#ffffff",
+        shadowBlur: warning ? 12 : 24,
+      })) return;
       ctx.fillStyle = warning ? "rgba(185, 244, 255, 0.08)" : "rgba(185, 244, 255, 0.24)";
       ctx.strokeStyle = warning ? "#b9f4ff" : "#ffffff";
       ctx.lineWidth = 4;
@@ -10317,6 +11439,17 @@ function drawHazards() {
       const progress = clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 0.85), 0, 1);
       const dropY = hazard.y - (hazard.fallHeight || 155) + progress * (hazard.fallHeight || 155);
       const pulse = 0.45 + Math.sin(boss.animationTime * 16) * 0.12;
+      const puddleDrawn = drawGeneratedImage("hazards.cola-soda-puddle", hazard.x, hazard.y, hazard.r * 2.05, hazard.r * 1.22, {
+        alpha: 0.24 + pulse * 0.2,
+        shadowColor: "#67d5ff",
+        shadowBlur: 8,
+      });
+      const dropDrawn = drawGeneratedImage("hazards.cola-soda-drop", hazard.x, dropY, 42, 58, {
+        alpha: 0.56 + progress * 0.38,
+        shadowColor: "#67d5ff",
+        shadowBlur: 10,
+      });
+      if (puddleDrawn && dropDrawn) return;
       ctx.fillStyle = `rgba(185, 244, 255, ${0.08 + pulse * 0.08})`;
       ctx.strokeStyle = "rgba(185, 244, 255, 0.82)";
       ctx.lineWidth = 3;
@@ -10349,6 +11482,11 @@ function drawHazards() {
       return;
     }
     if (hazard.type === "sodaPuddle") {
+      if (drawGeneratedImage("hazards.cola-soda-puddle", hazard.x, hazard.y, hazard.r * 2.15, hazard.r * 1.32, {
+        alpha: 0.72,
+        shadowColor: "#67d5ff",
+        shadowBlur: 6,
+      })) return;
       ctx.fillStyle = "rgba(86, 45, 24, 0.34)";
       ctx.strokeStyle = "rgba(185, 244, 255, 0.42)";
       ctx.lineWidth = 2;
@@ -11263,6 +12401,10 @@ function drawPlayerProjectiles() {
     ctx.save();
     ctx.translate(projectile.x, projectile.y);
     ctx.rotate(angle);
+    if (drawGeneratedProjectileAtOrigin(projectile)) {
+      ctx.restore();
+      return;
+    }
     if (projectile.tag === "Magic") {
       if (projectile.fireBlast) {
         const pulse = Math.sin((projectile.age || 0) * 18) * 0.5 + 0.5;
@@ -11338,6 +12480,10 @@ function drawRemoteProjectiles() {
     ctx.globalAlpha = 0.72;
     ctx.shadowColor = projectile.color;
     ctx.shadowBlur = projectile.heavy ? 18 : 8;
+    if (drawGeneratedProjectileAtOrigin(projectile, 0.82)) {
+      ctx.restore();
+      return;
+    }
     if (projectile.tag === "Bard") {
       drawBardNoteProjectile(projectile);
     } else if (projectile.tag === "Ranged") {
@@ -11440,6 +12586,99 @@ function drawBardNoteProjectile(projectile) {
   ctx.ellipse(-16, 0, 28, 9, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function projectileArtKey(projectile) {
+  if (!projectile) return "";
+  if (projectile.tag === "Magic") return projectile.fireBlast || projectile.heavy ? "fireball" : "magic-bolt";
+  if (projectile.tag === "Bard") return "bard-note";
+  if (projectile.tag === "Ranged") return "arrow";
+  if (projectile.tag === "Rogue") return "dagger";
+  if (projectile.tag === "Paladin") return "holy-smite";
+  if (isWarriorTag(projectile.tag)) return "sword-wave";
+  return "";
+}
+
+function projectileArtSize(projectile, key) {
+  const radius = Math.max(8, projectile?.r || 10);
+  const sizes = {
+    arrow: [64, 38],
+    "magic-bolt": [58, 40],
+    fireball: [72, 48],
+    "bard-note": [64, 54],
+    "sword-wave": [72, 48],
+    dagger: [58, 36],
+    "holy-smite": [58, 58],
+    fry: [Math.max(48, radius * 4.8), Math.max(28, radius * 2.4)],
+    "cola-bubble": [Math.max(34, radius * 3.2), Math.max(34, radius * 3.2)],
+    "pizza-slice": [Math.max(52, radius * 4.6), Math.max(38, radius * 3.2)],
+    peanut: [Math.max(48, radius * 4.2), Math.max(30, radius * 2.5)],
+    "sauce-blob": [Math.max(48, radius * 4.2), Math.max(40, radius * 3.2)],
+    "mustard-seed": [Math.max(44, radius * 4), Math.max(28, radius * 2.5)],
+    "cherry-shot": [Math.max(42, radius * 3.6), Math.max(42, radius * 3.6)],
+    "nacho-chip": [Math.max(48, radius * 4.2), Math.max(42, radius * 3.5)],
+    "taco-shard": [Math.max(52, radius * 4.6), Math.max(36, radius * 3.2)],
+    "cheese-bolt": [Math.max(52, radius * 4.4), Math.max(36, radius * 3)],
+    sprinkle: [Math.max(46, radius * 4.2), Math.max(24, radius * 2)],
+    "burger-tomato-slice": [Math.max(56, radius * 3.7), Math.max(56, radius * 3.1)],
+    "burger-pickle-splash": [Math.max(50, radius * 3.6), Math.max(38, radius * 2.8)],
+    "burger-onion-ring": [Math.max(62, radius * 2.2), Math.max(62, radius * 2.2)],
+  };
+  return sizes[key] || [Math.max(42, radius * 3.6), Math.max(32, radius * 2.8)];
+}
+
+function drawGeneratedProjectileAtOrigin(projectile, alpha = 1) {
+  const key = projectileArtKey(projectile);
+  if (!key) return false;
+  const [w, h] = projectileArtSize(projectile, key);
+  const shadowColor = projectile.color || "";
+  const shadowBlur = projectile.heavy || projectile.fireBlast ? 16 : 8;
+  return drawGeneratedImage(`projectiles.${key}`, 0, 0, w, h, { alpha, shadowColor, shadowBlur });
+}
+
+function hazardProjectileArtKey(hazard) {
+  if (!hazard) return "";
+  const map = {
+    mazeShot: "magic-bolt",
+    bolt: "magic-bolt",
+    fry: "fry",
+    mustardSeed: "mustard-seed",
+    sauceBlob: "sauce-blob",
+    peanut: "peanut",
+    cherryShot: "cherry-shot",
+    nachoCrumb: "nacho-chip",
+    nachoChip: "nacho-chip",
+    pepperoni: "pizza-slice",
+    pizzaSlice: "pizza-slice",
+    pizzaSliceReturn: "pizza-slice",
+    cheeseBolt: "cheese-bolt",
+    sprinkle: "sprinkle",
+    colaBubble: "cola-bubble",
+    tomatoSlice: "burger-tomato-slice",
+    pickleSplash: "burger-pickle-splash",
+    onionRing: "burger-onion-ring",
+    tacoShellShard: "taco-shard",
+    lettuceLeaf: "taco-shard",
+  };
+  return map[hazard.type] || "";
+}
+
+function drawGeneratedHazardProjectile(hazard) {
+  const key = hazardProjectileArtKey(hazard);
+  if (!key) return false;
+  if (hazard.warn > 0 && hazard.type !== "mazeShot") return false;
+  const [w, h] = projectileArtSize(hazard, key);
+  const angle = key === "cola-bubble" ? 0 : Number.isFinite(hazard.angle) ? hazard.angle : Math.atan2(hazard.vy || 0, hazard.vx || 1);
+  ctx.save();
+  ctx.translate(hazard.x, hazard.y);
+  ctx.rotate(angle);
+  const drawn = drawGeneratedImage(`projectiles.${key}`, 0, 0, w, h, {
+    alpha: hazard.remoteBossHazard ? 0.88 : 0.96,
+    shadowColor: hazard.color || "",
+    shadowBlur: key === "cola-bubble" ? 13 : 7,
+  });
+  ctx.restore();
+  return drawn;
 }
 
 function drawPlayer() {
@@ -11695,6 +12934,19 @@ function outfitSpriteForGear(weaponId, armorId) {
       topCrop: 0.02,
     };
   }
+  const generatedClassKey = generatedClassArtKeyForWeapon(weaponId);
+  const generatedSprite = generatedArtImage(`classes.${generatedClassKey}`);
+  if (isImageReady(generatedSprite)) {
+    return {
+      sprite: generatedSprite,
+      sideCrop: 0,
+      cropWidth: 1,
+      cropBottom: 1,
+      drawWidth: generatedClassKey === "paladin" || generatedClassKey === "bard" ? 92 : 86,
+      drawHeight: generatedClassKey === "paladin" || generatedClassKey === "bard" ? 92 : 86,
+      topCrop: 0,
+    };
+  }
   return null;
 }
 
@@ -11719,8 +12971,10 @@ function drawPlayerSprite() {
 
 function drawCharacterSprite(character, outfit, sprite) {
   const rows = { down: 0, left: 1, right: 2, up: 3 };
-  const frameWidth = sprite.width / 4;
-  const frameHeight = sprite.height / 4;
+  const sourceWidth = sprite.naturalWidth || sprite.width;
+  const sourceHeight = sprite.naturalHeight || sprite.height;
+  const frameWidth = sourceWidth / 4;
+  const frameHeight = sourceHeight / 4;
   const rangerAttacking = character.rangerAttackTimer > 0 && character.weapon === "emberBow";
   const meleeAttacking = character.meleeAttackTimer > 0 && character.weapon === "ironBlade";
   const rogueAttacking = character.rogueAttackTimer > 0 && character.weapon === "shadowDaggers";
@@ -12215,65 +13469,154 @@ function drawRing(x, y, r, color) {
   ctx.stroke();
 }
 
-function drawAbilityBar() {
-  const abilities = currentAbilities();
-  const slotW = 164;
-  const slotH = 56;
-  const gap = 8;
-  const totalW = abilities.length * slotW + (abilities.length - 1) * gap;
-  const startX = canvas.clientWidth / 2 - totalW / 2;
-  const y = canvas.clientHeight - slotH - 18;
+function abilityHudIconRingKey(classKey, index) {
+  if (classKey === "mage" && (index === 1 || index === 3)) return "ui.abilityIconRingPurple";
+  if (classKey === "rogue") return "ui.abilityIconRingPurple";
+  if (classKey === "ranger" && index === 2) return "ui.abilityIconRingBlue";
+  if (classKey === "paladin" && index === 2) return "ui.abilityIconRingBlue";
+  if (classKey === "bard" && index === 2) return "ui.abilityIconRingBlue";
+  return "ui.abilityIconRingGold";
+}
+
+function drawFittedHudText(text, x, y, maxWidth, size, weight, color) {
+  let fontSize = size;
+  const content = String(text || "");
+  do {
+    ctx.font = `${weight} ${fontSize}px sans-serif`;
+    if (ctx.measureText(content).width <= maxWidth || fontSize <= 10) break;
+    fontSize -= 1;
+  } while (fontSize > 10);
+  ctx.fillStyle = color;
+  ctx.fillText(content, x, y);
+}
+
+function drawAbilityCooldownClock(cx, cy, radius, cooldown, duration) {
+  if (!(cooldown > 0) || !(duration > 0)) return;
+  const fill = clamp(cooldown / duration, 0, 1);
+  drawGeneratedImage("ui.cooldownClockShade", cx, cy, radius * 2.18, radius * 2.18, { alpha: 0.78 });
   ctx.save();
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  abilities.forEach((ability, index) => {
-    const x = startX + index * (slotW + gap);
-    const cooldown = player.abilityCooldowns[index] || 0;
-    const ready = cooldown <= 0 && (player.room === "arena" || player.room === "starter" || player.room === "maze") && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
-    ctx.fillStyle = ready ? "rgba(25, 24, 22, 0.88)" : "rgba(15, 15, 14, 0.82)";
-    ctx.strokeStyle = ready ? "rgba(226, 189, 114, 0.82)" : "rgba(244, 232, 203, 0.22)";
-    ctx.lineWidth = 2;
-    ctx.fillRect(x, y, slotW, slotH);
-    ctx.strokeRect(x, y, slotW, slotH);
-    if (cooldown > 0) {
-      const fill = clamp(cooldown / ability.cooldown, 0, 1);
-      ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
-      ctx.fillRect(x, y + slotH * (1 - fill), slotW, slotH * fill);
-    }
-    const keyW = ability.key.length > 1 ? 56 : 30;
-    ctx.fillStyle = ready ? "rgba(240, 212, 124, 0.16)" : "rgba(244, 232, 203, 0.08)";
-    ctx.strokeStyle = ready ? "rgba(240, 212, 124, 0.62)" : "rgba(244, 232, 203, 0.18)";
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+  ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, radius + 1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * fill, false);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+  ctx.fill();
+  const hand = -Math.PI / 2 + Math.PI * 2 * fill;
+  ctx.strokeStyle = "rgba(247, 239, 217, 0.55)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(hand) * radius, cy + Math.sin(hand) * radius);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAbilityHudSlot({ x, y, w, h, key, title, status, statusColor, iconId, ringId, tone = "gold", cooldown = 0, cooldownDuration = 1 }) {
+  const blue = tone === "blue";
+  const slotId = blue ? "ui.abilitySlotBlue" : "ui.abilitySlotGold";
+  const keycapId = blue ? "ui.abilityKeycapBlue" : "ui.abilityKeycapGold";
+  drawGeneratedImage(slotId, x, y, w, h, { centered: false });
+  if (!isImageReady(generatedArtImage(slotId))) {
+    ctx.fillStyle = blue ? "rgba(4, 18, 34, 0.94)" : "rgba(7, 15, 24, 0.94)";
+    ctx.strokeStyle = blue ? "rgba(45, 142, 232, 0.7)" : "rgba(180, 124, 36, 0.7)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(x + 10, y + 11, keyW, 22, 5);
+    ctx.roundRect(x, y, w, h, 3);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = ready ? "#f0d47c" : "#9e9588";
-    ctx.font = ability.key.length > 1 ? "bold 13px sans-serif" : "bold 18px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(ability.key, x + 10 + keyW / 2, y + 23);
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#f7efd9";
-    ctx.font = "bold 12px sans-serif";
-    ctx.fillText(ability.name, x + keyW + 20, y + 18);
-    ctx.fillStyle = cooldown > 0 ? "#d0c6b4" : "#9be06f";
-    ctx.font = "11px sans-serif";
-    ctx.fillText(cooldown > 0 ? `${cooldown.toFixed(1)}s` : "Ready", x + keyW + 20, y + 38);
+  }
+  const keyW = key === "SPACE" ? 70 : 40;
+  const keyH = 38;
+  const keyX = x + 15;
+  const keyY = y + 18;
+  drawGeneratedImage(keycapId, keyX, keyY, keyW, keyH, { centered: false });
+  if (!isImageReady(generatedArtImage(keycapId))) {
+    ctx.fillStyle = blue ? "rgba(6, 23, 43, 0.92)" : "rgba(35, 23, 6, 0.92)";
+    ctx.strokeStyle = blue ? "#2d8ee8" : "#d1942c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(keyX, keyY, keyW, keyH, 5);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = blue ? "#8ec7ff" : "#f0c35b";
+  ctx.font = key === "SPACE" ? "900 14px sans-serif" : "900 23px sans-serif";
+  ctx.fillText(key, keyX + keyW / 2, keyY + keyH / 2 + 1);
+
+  const iconX = keyX + keyW + 36;
+  const iconY = y + h / 2;
+  drawGeneratedImage(ringId, iconX, iconY, 48, 48);
+  drawGeneratedImage(iconId, iconX, iconY, 38, 38, {
+    alpha: cooldown > 0 ? 0.72 : 1,
+    shadowColor: cooldown > 0 ? "" : (blue ? "rgba(45, 142, 232, 0.55)" : "rgba(209, 148, 44, 0.48)"),
+    shadowBlur: cooldown > 0 ? 0 : 8,
   });
-  const potionX = startX + totalW + gap;
-  ctx.fillStyle = "rgba(25, 24, 22, 0.88)";
-  ctx.strokeStyle = player.potions > 0 ? "rgba(142, 199, 255, 0.62)" : "rgba(244, 232, 203, 0.22)";
-  ctx.fillRect(potionX, y, 96, slotH);
-  ctx.strokeRect(potionX, y, 96, slotH);
-  ctx.fillStyle = "#8ec7ff";
-  ctx.font = "bold 20px sans-serif";
-  ctx.fillText("F", potionX + 12, y + 18);
-  ctx.fillStyle = "#f7efd9";
-  ctx.font = "bold 12px sans-serif";
-  ctx.fillText("Potion", potionX + 38, y + 18);
-  ctx.fillStyle = "#d0c6b4";
-  ctx.font = "11px sans-serif";
-  ctx.fillText(`${player.potions} left`, potionX + 38, y + 38);
+  drawAbilityCooldownClock(iconX, iconY, 23, cooldown, cooldownDuration);
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const textX = iconX + 34;
+  const maxTitleWidth = Math.max(70, x + w - textX - 12);
+  drawFittedHudText(title.toUpperCase(), textX, y + 27, maxTitleWidth, 14, "900", "#f4f1e6");
+  drawFittedHudText(status, textX, y + 49, maxTitleWidth, 14, "800", statusColor);
+}
+
+function drawAbilityBar() {
+  const abilities = currentAbilities();
+  const slotH = 74;
+  const gap = 14;
+  const classKey = currentClassKey();
+  const slotWidths = abilities.map((ability) => ability.key === "Space" ? 256 : 234);
+  const potionW = 218;
+  const totalW = slotWidths.reduce((sum, width) => sum + width, 0) + potionW + gap * abilities.length;
+  const scale = Math.min(1, Math.max(0.68, (canvas.clientWidth - 28) / totalW));
+  const scaledCanvasW = canvas.clientWidth / scale;
+  const scaledCanvasH = canvas.clientHeight / scale;
+  let cursorX = scaledCanvasW / 2 - totalW / 2;
+  const y = scaledCanvasH - slotH - 26;
+  ctx.save();
+  ctx.scale(scale, scale);
+  abilities.forEach((ability, index) => {
+    const x = cursorX;
+    const slotW = slotWidths[index];
+    const cooldown = player.abilityCooldowns[index] || 0;
+    const ready = cooldown <= 0 && (player.room === "arena" || player.room === "starter" || player.room === "maze") && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
+    drawAbilityHudSlot({
+      x,
+      y,
+      w: slotW,
+      h: slotH,
+      key: ability.key.toUpperCase(),
+      title: ability.name,
+      status: cooldown > 0 ? `${cooldown.toFixed(1)}s` : "Ready",
+      statusColor: cooldown > 0 ? "#d0c6b4" : "#29ef57",
+      iconId: `abilities.${classKey}.${index}`,
+      ringId: abilityHudIconRingKey(classKey, index),
+      cooldown,
+      cooldownDuration: ability.cooldown,
+    });
+    cursorX += slotW + gap;
+  });
+  drawAbilityHudSlot({
+    x: cursorX,
+    y,
+    w: potionW,
+    h: slotH,
+    key: "F",
+    title: "Potion",
+    status: `${player.potions} left`,
+    statusColor: player.potions > 0 ? "#5ab9ff" : "#8aa1b5",
+    iconId: "ui.potion",
+    ringId: "ui.abilityIconRingBlue",
+    tone: "blue",
+  });
   ctx.restore();
 }
 
@@ -12715,11 +14058,32 @@ function sendMultiplayerState(force) {
 function sendMultiplayerEvent(event) {
   if (!multiplayer.connected || !multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
   if (multiplayer.mode !== "multiplayer" || !multiplayer.room || multiplayer.room.state !== "inGame") return;
+  if (shouldDropMultiplayerEvent(event)) return;
   try {
     sendServer({ type: "event", event });
   } catch (error) {
     reportRuntimeError(error, { area: "sendMultiplayerEvent", eventKind: event?.kind, phase: multiplayer.partyPhase });
   }
+}
+
+function shouldDropMultiplayerEvent(event) {
+  if (!event?.kind) return false;
+  const bufferedAmount = multiplayer.socket?.bufferedAmount || 0;
+  if (event.kind === "hostile-sync" && bufferedAmount > hostileSyncDropBufferedAmount) {
+    recordDebugEvent("event-coalesced", { kind: event.kind, reason: "buffered", bufferedAmount, seq: event.seq });
+    return true;
+  }
+  const minInterval = visualEventMinIntervalMs[event.kind];
+  if (!minInterval) return false;
+  const key = event.kind === "ability" ? `${event.kind}:${event.abilityIndex ?? "x"}` : event.kind;
+  const now = performance.now();
+  const lastAt = multiplayer.lastVisualEventAt.get(key) || 0;
+  if (bufferedAmount > visualEventDropBufferedAmount || now - lastAt < minInterval) {
+    recordDebugEvent("event-coalesced", { kind: event.kind, key, reason: bufferedAmount > visualEventDropBufferedAmount ? "buffered" : "rate", bufferedAmount });
+    return true;
+  }
+  multiplayer.lastVisualEventAt.set(key, now);
+  return false;
 }
 
 function sendServer(payload) {
@@ -12764,7 +14128,7 @@ function finishBossSyncCapture(capture) {
 }
 
 function isSyncableBossHazard(hazard) {
-  return player.room === "arena" && hazard && !hazard.mazeHazard && typeof hazard.type === "string";
+  return player.room === "arena" && hazard && !hazard.localOnly && !hazard.mazeHazard && typeof hazard.type === "string";
 }
 
 function serializeBossHazard(hazard) {
@@ -12880,12 +14244,7 @@ function applyRemoteBossSyncEvent(peerId, event) {
   if (Number.isFinite(event.phaseSeq) && event.phaseSeq !== multiplayer.phaseSeq) return;
   if (Number.isFinite(event.seq) && event.seq <= multiplayer.lastBossSyncSeq) return;
   if (Number.isFinite(event.seq)) multiplayer.lastBossSyncSeq = event.seq;
-  if (event.bossState) applyBossStateSnapshot(event.bossState);
-  (event.hazards || []).forEach((remoteHazard) => {
-    if (!remoteHazard?.syncId || hazards.some((hazard) => hazard.syncId === remoteHazard.syncId)) return;
-    if (isConsumedRemoteHazard(remoteHazard.syncId)) return;
-    hazards.push(normalizeRemoteBossHazard(remoteHazard, event.serverTime));
-  });
+  if (event.bossState && !hasFreshHostileSync()) applyBossStateSnapshot(event.bossState);
   (event.particles || []).slice(-8).forEach((remoteParticle) => {
     if (!remoteParticle?.syncId || particles.some((particle) => particle.syncId === remoteParticle.syncId)) return;
     particles.push(normalizeRemoteBossParticle(remoteParticle, event.serverTime));
@@ -12895,6 +14254,8 @@ function applyRemoteBossSyncEvent(peerId, event) {
 function normalizeRemoteBossHazard(remoteHazard, serverTime = 0) {
   const hazard = cloneSyncObject(remoteHazard) || {};
   hazard.remoteBossHazard = true;
+  if (Number.isFinite(hazard.hazardVx)) hazard.vx = hazard.hazardVx;
+  if (Number.isFinite(hazard.hazardVy)) hazard.vy = hazard.hazardVy;
   const lag = multiplayerLagSeconds(serverTime);
   if (Number.isFinite(hazard.x) && Number.isFinite(hazard.y) && Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy)) {
     hazard.x += hazard.vx * lag;
@@ -13040,24 +14401,107 @@ function collectHostileActors() {
   return actors.filter(Boolean);
 }
 
+const hostileHazardCommonFields = [
+  "syncId", "type", "mazeHazard", "remoteBossHazard", "r", "radius", "ttl", "warn", "delay",
+  "fireTimer", "explodeTimer", "damageTimer", "damage", "fixedDamage", "source", "color",
+  "angle", "length", "width", "height", "vertical", "horizontal", "orientation", "position",
+  "axis", "direction", "speed", "turn", "sweepSpeed", "storm", "lingering", "chill", "hit",
+];
+
+const hostileHazardTypeFields = {
+  mazeShot: ["turn"],
+  mazeCircle: ["damageTimer", "lingering", "chill", "hit"],
+  mazeWall: ["hit"],
+  bolt: ["turn"],
+  fry: ["turn"],
+  mustardSeed: ["bounces", "turn"],
+  sauceBlob: ["turn"],
+  peanut: ["bounces", "turn"],
+  cherryShot: ["turn"],
+  nachoCrumb: ["turn"],
+  pepperoni: ["turn"],
+  cheeseBolt: ["turn"],
+  sprinkle: ["turn", "donutMinionHazard"],
+  pico: ["turn", "storm"],
+  nachoChip: ["traveled", "shatterDistance"],
+  nachoCheesePuddle: ["damageTimer"],
+  nachoCheeseMortar: ["damageTimer"],
+  cheeseWave: ["damageTimer"],
+  pizzaDash: ["targetX", "targetY", "dashed"],
+  pizzaCheeseTrail: ["damageTimer"],
+  pizzaSlice: ["traveled", "shatterDistance"],
+  pizzaSliceReturn: ["active"],
+  pizzaCrustWall: ["damageTimer"],
+  ovenZone: ["hit"],
+  pizzaBoxSlam: ["hit"],
+  tomatoSlice: ["knockback"],
+  pickleSplash: ["startX", "startY", "targetX", "targetY", "age", "flightTime", "arcHeight", "bounces"],
+  picklePuddle: ["slowDuration"],
+  onionRing: ["moveAngle", "spin", "inner", "outer", "knockback"],
+  burgerSauceDrop: ["hit", "fallHeight", "warnDuration"],
+  burgerSauceBurst: ["hitPlayer"],
+  burgerChargeLane: ["startX", "startY", "endX", "endY", "hit"],
+  burgerBurstRing: ["inner", "gapAngle", "gapWidth", "warnDuration", "hit"],
+  colaBubble: [],
+  strawSnipe: ["hit"],
+  fizzBurst: ["hit"],
+  sodaDrop: ["hit"],
+  sodaPuddle: ["damageTimer"],
+  chocolateBar: ["hit", "fixedDamage"],
+  scoopDrop: ["hit"],
+  frozenPuddle: ["damageTimer"],
+  cherryBomb: ["hit", "burstTimer", "burstShots", "burstDelay"],
+  grease: ["exploded", "explodeTimer"],
+  machineGun: ["fireTimer", "damageTimer", "sweepSpeed"],
+  vent: ["hit"],
+  slam: ["hit"],
+  ketchupMortar: ["startX", "startY", "targetX", "targetY", "age", "flightTime", "permanentAfterLanding"],
+  ketchupPuddle: ["damageTimer"],
+  tacoCharge: ["targetX", "targetY", "tacoPuzzleIngredient"],
+  tacoShellShard: ["tacoPuzzleIngredient", "damageTimer"],
+  ingredientDrop: ["ingredient", "tacoPuzzleIngredient", "hit"],
+  tacoSalsa: ["tacoPuzzleIngredient", "damageTimer"],
+  tacoSlam: ["inner", "gapAngle", "tacoPuzzleIngredient", "hit"],
+  lettuceLeaf: ["wobble", "tacoPuzzleIngredient"],
+  lettuceCleanseZone: ["pulse"],
+  tacoGrease: ["damageTimer"],
+  tacoCheese: ["damageTimer"],
+  tacoIngredientFlood: ["safeX", "safeY", "safeW", "safeH", "cleared", "hit"],
+  glazeRing: ["radiusNow", "maxRadius", "gapAngle", "gapWidth", "spinSpeed", "hit"],
+  frostingRibbon: ["damageTimer"],
+  royalRoll: ["startX", "startY", "endX", "endY", "rollAge", "rollDuration", "prevX", "prevY", "hit"],
+  sugarZone: [],
+  wasabiWave: ["lane", "hit"],
+  soyPuddle: ["damageTimer"],
+  chopstickPin: ["hit"],
+  serpentSweep: ["hit"],
+};
+
+function hostileHazardFieldsFor(hazard) {
+  return [...new Set(hostileHazardCommonFields.concat(hostileHazardTypeFields[hazard?.type] || []))];
+}
+
+function serializeHostileHazard(hazard) {
+  const serialized = player.room === "maze" ? serializeGauntletHazard(hazard) : serializeBossHazard(hazard);
+  const extra = {};
+  if (Number.isFinite(hazard.vx)) extra.hazardVx = hazard.vx;
+  if (Number.isFinite(hazard.vy)) extra.hazardVy = hazard.vy;
+  return serializeHostileActor(serialized, {
+    type: "hazard",
+    syncId: `hazard:${serialized.syncId}`,
+    sourceId: serialized.syncId,
+    fields: hostileHazardFieldsFor(serialized),
+    extra,
+  });
+}
+
 function collectHostileHazards() {
   if (player.room !== "maze" && player.room !== "arena") return [];
   return hazards
     .filter((hazard) => hazard && Number.isFinite(hazard.x) && Number.isFinite(hazard.y))
+    .filter((hazard) => !Number.isFinite(hazard.ttl) || hazard.ttl > 0)
     .filter((hazard) => player.room === "maze" ? hazard.mazeHazard : isSyncableBossHazard(hazard))
-    .map((hazard) => {
-      const serialized = player.room === "maze" ? serializeGauntletHazard(hazard) : serializeBossHazard(hazard);
-      return serializeHostileActor(serialized, {
-        type: "hazard",
-        syncId: `hazard:${serialized.syncId}`,
-        sourceId: serialized.syncId,
-        fields: [
-          "syncId", "type", "mazeHazard", "remoteBossHazard", "r", "ttl", "warn", "delay", "fireTimer",
-          "explodeTimer", "damageTimer", "damage", "color", "angle", "length", "width", "vertical", "axis",
-          "direction", "speed", "turn", "sweepSpeed", "storm", "lingering", "chill",
-        ],
-      });
-    })
+    .map(serializeHostileHazard)
     .filter(Boolean);
 }
 
@@ -13306,6 +14750,14 @@ function applyHostileSnapshotFields(target, snapshot, includePosition = true) {
       target.type = cloneSyncObject(value);
       return;
     }
+    if (key === "hazardVx") {
+      if (Number.isFinite(value)) target.vx = value;
+      return;
+    }
+    if (key === "hazardVy") {
+      if (Number.isFinite(value)) target.vy = value;
+      return;
+    }
     if (key === "hp" && Number.isFinite(value)) {
       target.hp = clamp(value, 0, Number.isFinite(target.maxHp) ? Math.max(1, target.maxHp) : Math.max(1, value));
       return;
@@ -13541,6 +14993,8 @@ function normalizeGauntletHazard(remoteHazard, serverTime = 0) {
   const hazard = cloneSyncObject(remoteHazard) || {};
   hazard.mazeHazard = true;
   hazard.remoteGauntletHazard = true;
+  if (Number.isFinite(hazard.hazardVx)) hazard.vx = hazard.hazardVx;
+  if (Number.isFinite(hazard.hazardVy)) hazard.vy = hazard.hazardVy;
   const lag = multiplayerLagSeconds(serverTime);
   if (Number.isFinite(hazard.x) && Number.isFinite(hazard.y) && Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy)) {
     hazard.x += hazard.vx * lag;
@@ -13646,6 +15100,7 @@ function mergeRemoteGauntletHazards(remoteHazards, serverTime = 0) {
   const previousById = new Map(hazards.filter((hazard) => hazard.mazeHazard && hazard.syncId).map((hazard) => [hazard.syncId, hazard]));
   const synced = [];
   remoteHazards.forEach((remoteHazard) => {
+    if (isConsumedRemoteHazard(remoteHazard?.syncId)) return;
     const normalized = normalizeGauntletHazard(remoteHazard, serverTime);
     const previous = normalized.syncId ? previousById.get(normalized.syncId) : null;
     if (previous && hasFreshHostileSync()) {
@@ -13933,13 +15388,22 @@ function validHazardControlEnvelope(peer, event, origin) {
   const range = Number(event.range);
   const extent = Number.isFinite(radius) ? radius : Number.isFinite(range) ? range : 0;
   if (extent <= 0 || extent > 650) return false;
+  if (event.action === "destroy") return peerDistanceToPoint(peer, origin) <= extent + 520;
   return peerDistanceToPoint(peer, origin) <= extent + 360;
 }
 
-function hazardWithinControlGeometry(hazard, event, origin) {
+function hazardWithinControlGeometry(hazard, event, origin, peer = null) {
   const padding = (Number(hazard.r) || 10) + 42;
   const radius = Number(event.radius);
-  if (Number.isFinite(radius)) return peerDistanceToPoint(hazard, origin) <= radius + padding;
+  if (Number.isFinite(radius)) {
+    if (peerDistanceToPoint(hazard, origin) <= radius + padding) return true;
+    if (event.action === "destroy" && canRemoteDestroyHazard(hazard)) {
+      const speedSlack = clamp(Math.hypot(Number(hazard.vx) || 0, Number(hazard.vy) || 0) * 0.45, 80, 260);
+      return peerDistanceToPoint(hazard, origin) <= radius + padding + speedSlack
+        || (peer && peerDistanceToPoint(hazard, peer) <= radius + padding + speedSlack + 180);
+    }
+    return false;
+  }
   const range = Number(event.range);
   const angle = Number(event.angle);
   const halfAngle = Number(event.halfAngle);
@@ -13960,22 +15424,60 @@ function canRemoteSlowHazard(hazard) {
   return Number.isFinite(hazard.vx) && Number.isFinite(hazard.vy) && Number.isFinite(hazard.ttl);
 }
 
+function rejectRemoteHazardControl(peerId, event, reason, extra = {}) {
+  recordDebugEvent("hazard-control-rejected", {
+    peerId,
+    action: event?.action || "",
+    reason,
+    ids: Array.isArray(event?.hazardIds) ? event.hazardIds.length : 0,
+    room: event?.room || "",
+    ...extra,
+  });
+}
+
 function applyRemoteHazardControl(peerId, event) {
-  if (!isMultiplayerHost() || !event || event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) return;
-  if (event.room !== player.room || !Array.isArray(event.hazardIds)) return;
-  const peer = validPeerIntent(peerId, event.room);
-  if (!peer) return;
+  if (!isMultiplayerHost() || !event) return;
+  if (event.bossKind !== boss.kind || event.phaseSeq !== multiplayer.phaseSeq) {
+    rejectRemoteHazardControl(peerId, event, "phase-mismatch");
+    return;
+  }
+  if (event.room !== player.room || !Array.isArray(event.hazardIds)) {
+    rejectRemoteHazardControl(peerId, event, "room-or-ids");
+    return;
+  }
+  const peer = validPeerIntent(peerId, event.room, event.action === "destroy" ? 3500 : 2000);
+  if (!peer) {
+    rejectRemoteHazardControl(peerId, event, "stale-peer");
+    return;
+  }
   const origin = hazardControlOrigin(event);
-  if (!origin || !validHazardControlEnvelope(peer, event, origin)) return;
+  if (!origin || !validHazardControlEnvelope(peer, event, origin)) {
+    rejectRemoteHazardControl(peerId, event, "bad-envelope", { peerAgeMs: Date.now() - (peer.updatedAt || 0) });
+    return;
+  }
   const ids = new Set(event.hazardIds.filter(Boolean));
-  if (!ids.size) return;
+  if (!ids.size) {
+    rejectRemoteHazardControl(peerId, event, "empty-ids");
+    return;
+  }
   let changed = false;
+  let rejectedGeometry = 0;
+  let rejectedType = 0;
+  let matched = 0;
   hazards.forEach((hazard) => {
     if (!hazard.syncId || !ids.has(hazard.syncId)) return;
-    if (!hazardWithinControlGeometry(hazard, event, origin)) return;
+    matched += 1;
+    if (!hazardWithinControlGeometry(hazard, event, origin, peer)) {
+      rejectedGeometry += 1;
+      return;
+    }
     if (event.action === "destroy") {
-      if (!canRemoteDestroyHazard(hazard)) return;
+      if (!canRemoteDestroyHazard(hazard)) {
+        rejectedType += 1;
+        return;
+      }
       hazard.ttl = 0;
+      if (hazard.syncId) multiplayer.hostileNetState.delete(`hazard:${hazard.syncId}`);
       changed = true;
       return;
     }
@@ -13991,10 +15493,13 @@ function applyRemoteHazardControl(peerId, event) {
       changed = true;
     }
   });
-  if (!changed) return;
-  hazards = hazards.filter((hazard) => hazard.ttl > 0);
+  if (!changed) {
+    rejectRemoteHazardControl(peerId, event, matched ? rejectedType ? "unsupported-type" : rejectedGeometry ? "out-of-range" : "unchanged" : "missing-hazard", { matched, rejectedGeometry, rejectedType });
+    return;
+  }
+  hazards = hazards.filter((hazard) => !Number.isFinite(hazard.ttl) || hazard.ttl > 0);
   if (event.room === "maze") sendGauntletSync(true);
-  else sendMultiplayerState(true);
+  else sendHostileSync(true);
 }
 
 function targetSyncDescriptor(target) {
@@ -14324,11 +15829,6 @@ function multiplayerSnapshot() {
     snapshot.gauntletMaxHp = gauntletHp.maxHp;
     snapshot.gauntletPhase = mazeState.miniBossSpawned ? "warden" : `wave-${mazeState.waveIndex + 1}`;
   }
-  if (shouldBroadcastBossSync()) {
-    snapshot.bossState = bossStateSnapshot();
-    snapshot.bossHazards = bossHazardSnapshot();
-    snapshot.bossSyncSeq = multiplayer.bossSyncSeq;
-  }
   return snapshot;
 }
 
@@ -14343,9 +15843,6 @@ function bossTargetSnapshot() {
 function applyRemoteBossProgress(state, peerId) {
   if (!state || state.room !== "arena" || state.bossKind !== boss.kind || player.room !== "arena") return;
   if (isMultiplayerGame() && !isHostPeer(peerId)) return;
-  if (state.bossState) applyBossStateSnapshot(state.bossState);
-  if (Array.isArray(state.bossHazards)) syncBossHazardsSnapshot(state.bossHazards, state.serverTime);
-  if (state.bossState || Array.isArray(state.bossHazards)) return;
   if (boss.kind === "trio") {
     (state.bossTargets || []).forEach((remoteTarget) => {
       const localTarget = condimentBosses.find((target) => target.kind === remoteTarget.kind);
@@ -14563,30 +16060,142 @@ function renderTalentTree(force = false) {
   if (!ui.talentTree) return;
   const classKey = activeTalentClass();
   const learned = Array.from(runState.learnedTalents || []).sort().join(",");
-  const signature = `${classKey}:${runState.talentPoints}:${learned}`;
+  const signature = `${classKey}:${runState.talentPoints}:${learned}:${selectedTalentId}`;
   if (!force && signature === talentTreeSignature) return;
   talentTreeSignature = signature;
-  if (ui.talentMenuTitle) ui.talentMenuTitle.textContent = `${talentClassNames[classKey] || "Class"} Talents`;
+  const activeTalents = talentsForActiveClass();
+  if (!activeTalents.some((talent) => talent.id === selectedTalentId)) selectedTalentId = activeTalents[0]?.id || "";
+  const selectedTalent = talentById.get(selectedTalentId) || activeTalents[0] || null;
+  if (ui.talentMenuTitle) ui.talentMenuTitle.textContent = "Skills";
   if (ui.talentMenuPoints) ui.talentMenuPoints.textContent = `Talent Points: ${runState.talentPoints}`;
-  const branches = [...new Set(talentsForActiveClass().map((talent) => talent.branch))];
-  ui.talentTree.innerHTML = branches.map((branch) => {
-    const nodes = talentsForActiveClass()
-      .filter((talent) => talent.branch === branch)
-      .sort((a, b) => a.row - b.row);
+  const paths = [...new Set(activeTalents.map((talent) => talent.path || talent.branch))];
+  const pathMarkup = paths.map((path, pathIndex) => {
+    const nodes = activeTalents
+      .filter((talent) => (talent.path || talent.branch) === path)
+      .sort((a, b) => a.row - b.row || a.column - b.column);
+    const connectorMarkup = renderTalentConnectors(nodes);
     return `
-      <section class="talent-branch">
-        <h2>${branch}</h2>
+      <section class="talent-path path-${pathIndex}">
+        <header class="talent-path-header">
+          <span class="talent-path-emblem">${talentPathIcon(path)}</span>
+          <h2>${escapeHtml(path)}</h2>
+        </header>
+        <div class="talent-node-column">
+        ${connectorMarkup}
         ${nodes.map((talent) => {
           const learnedNode = hasTalent(talent.id);
           const available = canLearnTalent(talent.id);
-          const parentNames = talent.parents.map((parentId) => talentById.get(parentId)?.name || parentId).join(", ");
           const state = learnedNode ? "learned" : available ? "available" : "locked";
-          const req = learnedNode ? "Learned" : available ? "Click to learn" : talent.parents.length ? `Requires ${parentNames}` : runState.talentPoints > 0 ? "Available" : "Need Talent Points";
-          return `<button class="talent-node ${state} ${talent.type} ${talent.row === 0 ? "root" : ""}" type="button" data-talent="${talent.id}" ${available ? "" : "disabled aria-disabled=\"true\""}><strong>${talent.name}</strong><span>${talent.description}</span><small>${talent.type} - ${req}</small></button>`;
+          const req = talentRequirementText(talent, { learnedNode, available });
+          const selected = selectedTalent?.id === talent.id;
+          return `
+            <button class="talent-node ${state} ${talent.rarity || "common"} ${talent.type} ${talent.row === 1 ? "root" : ""} ${selected ? "selected" : ""}" type="button" data-talent="${talent.id}" data-rarity="${talent.rarity || "common"}" data-state="${state}" data-requirement="${escapeHtml(req)}" aria-label="${escapeHtml(`${talent.name}. ${req}`)}" style="--node-row: ${talent.row}; --node-col: ${talent.column};">
+              <span class="talent-node-core">
+                <span class="talent-node-icon">${talentNodeIcon(talent)}</span>
+              </span>
+              <span class="talent-node-label">${escapeHtml(talent.name)}</span>
+            </button>
+          `;
         }).join("")}
+        </div>
       </section>
     `;
   }).join("");
+  ui.talentTree.innerHTML = `
+    <div class="talent-board" style="--talent-bg: url('./assets/ui/talents/talent-ui-asset-sheet.png')">
+      <div class="talent-board-head">
+        <div>
+          <div class="talent-eyebrow">Class Tree</div>
+          <strong>${escapeHtml(talentClassNames[classKey] || "Class")} Talents</strong>
+        </div>
+        <span>${activeTalents.length} Nodes</span>
+      </div>
+      <div class="talent-paths">${pathMarkup}</div>
+    </div>
+    <aside class="talent-detail-panel">
+      ${renderTalentDetail(selectedTalent)}
+    </aside>
+  `;
+}
+
+function renderTalentDetail(talent) {
+  if (!talent) {
+    return `<div class="talent-detail-empty">Select a talent node.</div>`;
+  }
+  const learnedNode = hasTalent(talent.id);
+  const available = canLearnTalent(talent.id);
+  const req = talentRequirementText(talent, { learnedNode, available, detail: true });
+  return `
+    <div class="talent-detail-rarity ${talent.rarity || "common"}">${escapeHtml(talent.rarity || "common")}</div>
+    <h2>${escapeHtml(talent.name)}</h2>
+    <p>${escapeHtml(talent.description)}</p>
+    <h3>Synergy</h3>
+    <p>${escapeHtml(talent.synergy || "Build-defining class interaction.")}</p>
+    <div class="talent-detail-status">${escapeHtml(req)}</div>
+  `;
+}
+
+function talentRequirementText(talent, { learnedNode = hasTalent(talent.id), available = canLearnTalent(talent.id), detail = false } = {}) {
+  if (learnedNode) return "Learned";
+  if (available) return detail ? "Available to learn" : "Click to learn";
+  const requiredNames = (talent.parents || []).map((parentId) => talentById.get(parentId)?.name || parentId);
+  const optionalNames = (talent.parentsAny || []).map((parentId) => talentById.get(parentId)?.name || parentId);
+  if (requiredNames.length && optionalNames.length) return `Requires ${requiredNames.join(", ")} and one of ${optionalNames.join(" or ")}`;
+  if (requiredNames.length) return `Requires ${requiredNames.join(", ")}`;
+  if (optionalNames.length) return `Requires ${optionalNames.join(" or ")}`;
+  return runState.talentPoints > 0 ? "Available" : "Need Talent Points";
+}
+
+function renderTalentConnectors(nodes) {
+  const byId = new Map(nodes.map((talent) => [talent.id, talent]));
+  const maxRow = Math.max(5, ...nodes.map((talent) => talent.row || 1));
+  const lines = [];
+  nodes.forEach((talent) => {
+    [...(talent.parents || []), ...(talent.parentsAny || [])].forEach((parentId) => {
+      const parent = byId.get(parentId);
+      if (!parent) return;
+      lines.push(`<line x1="${talentConnectorX(parent.column)}%" y1="${talentConnectorY(parent.row, maxRow)}%" x2="${talentConnectorX(talent.column)}%" y2="${talentConnectorY(talent.row, maxRow)}%" />`);
+    });
+  });
+  if (!lines.length) return "";
+  return `<svg class="talent-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines.join("")}</svg>`;
+}
+
+function talentConnectorX(column) {
+  return 8 + ((Math.max(1, Math.min(5, column)) - 1) / 4) * 84;
+}
+
+function talentConnectorY(row, maxRow) {
+  return 8 + ((Math.max(1, row) - 1) / Math.max(1, maxRow - 1)) * 84;
+}
+
+function talentPathIcon(path) {
+  const icons = {
+    "Iron Vanguard": "◆",
+    "Blood Reaver": "✦",
+    Earthbreaker: "◇",
+    Deadeye: "◎",
+    Trapmaster: "△",
+    "Arrow Storm": "✧",
+    Pyromancer: "✹",
+    "Meteor Savant": "✶",
+    Chronomancer: "◌",
+    Venomancer: "✣",
+    "Shadow Duelist": "◈",
+    "Smoke Trickster": "☁",
+    "Consecrated Ground": "✚",
+    Guardian: "⬟",
+    Judgment: "☀",
+    "Power Chord": "♪",
+    "Battle Hymn": "♬",
+    "Healing Verse": "♫",
+  };
+  return icons[path] || "✦";
+}
+
+function talentNodeIcon(talent) {
+  const rarityIcons = { common: "•", rare: "✧", epic: "✦", legendary: "✹" };
+  return rarityIcons[talent.rarity] || "•";
 }
 
 function closestElementTarget(event, selector) {
@@ -14648,6 +16257,7 @@ function handleSelectorPointer(event) {
   const talentButton = closestElementTarget(event, "[data-talent]");
   if (talentButton && ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) {
     event.preventDefault();
+    selectedTalentId = talentButton.dataset.talent;
     learnTalent(talentButton.dataset.talent);
     renderTalentTree(true);
     return true;
@@ -14820,8 +16430,15 @@ ui.talentMenuOverlay?.addEventListener("click", (event) => {
 });
 ui.talentTree?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-talent]");
-  if (!button || button.disabled) return;
+  if (!button) return;
+  selectedTalentId = button.dataset.talent;
   learnTalent(button.dataset.talent);
+  renderTalentTree(true);
+});
+ui.talentTree?.addEventListener("mouseover", (event) => {
+  const button = event.target.closest("[data-talent]");
+  if (!button || selectedTalentId === button.dataset.talent) return;
+  selectedTalentId = button.dataset.talent;
   renderTalentTree(true);
 });
 

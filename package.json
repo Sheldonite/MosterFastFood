@@ -4,6 +4,8 @@
   "private": true,
   "description": "A baseline click-to-move boss fighting browser game prototype.",
   "scripts": {
+    "generate:art": "node scripts/generate-game-art.js",
+    "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js",
     "start": "node server.js"
   }
 }

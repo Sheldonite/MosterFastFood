@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="392" height="574" viewBox="0 0 392 574" role="img">
+    <defs>
+      <radialGradient id="cardGlow" cx="0.45" cy="0.25" r="0.7">
+        <stop stop-color="#205f1b" stop-opacity="0.8500000000000001"/>
+        <stop offset="0.46" stop-color="#071f13" stop-opacity="0.55"/>
+        <stop offset="1" stop-color="#050916" stop-opacity="0.96"/>
+      </radialGradient>
+      <linearGradient id="cardLine" x1="0" x2="1">
+        <stop stop-color="#75df4a"/>
+        <stop offset="0.5" stop-color="#75df4a" stop-opacity="0.42"/>
+        <stop offset="1" stop-color="#75df4a"/>
+      </linearGradient>
+    </defs>
+    <rect x="3" y="3" width="386" height="568" rx="27" fill="url(#cardGlow)" stroke="url(#cardLine)" stroke-width="3"/>
+    <rect x="7" y="7" width="378" height="560" rx="23" fill="none" stroke="#75df4a" stroke-opacity="0.24" stroke-width="1"/>
+    <path d="M3 110 L108 3 H148 L3 148 Z" fill="#75df4a" opacity="0.38"/>
+    <path d="M16 99 L101 14 H139" fill="none" stroke="#75df4a" stroke-opacity="0.36" stroke-width="1.5"/>
+    <path d="M111 3 L136 3 M272 3 L300 3" stroke="#75df4a" stroke-opacity="0.8" stroke-width="2"/>
+    <path d="M13 486 L13 549 Q13 561 25 561 H62" stroke="#75df4a" stroke-opacity="0.24" stroke-width="1.5" fill="none"/>
+    
+    
+    <circle cx="382" cy="38" r="20" fill="#75df4a" stroke="#07101b" stroke-width="4"/>
+    <path d="M372 37 L380 45 L394 29" fill="none" stroke="#07101b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  </svg>

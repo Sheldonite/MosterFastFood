@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+    <defs>
+      <radialGradient id="colaAbilityBg" cx="0.5" cy="0.42" r="0.75">
+        <stop stop-color="#122a36"/>
+        <stop offset="1" stop-color="#06101a"/>
+      </radialGradient>
+    </defs>
+    <rect x="8" y="8" width="112" height="112" rx="18" fill="url(#colaAbilityBg)" stroke="#67d5ff" stroke-width="4"/>
+    <circle cx="64" cy="64" r="48" fill="#67d5ff" opacity="0.08"/>
+    <circle cx="46" cy="55" r="18" fill="#67d5ff" fill-opacity="0.28" stroke="#fff8dc" stroke-width="5"/><circle cx="76" cy="42" r="14" fill="#67d5ff" fill-opacity="0.22" stroke="#fff8dc" stroke-width="4"/><circle cx="78" cy="80" r="21" fill="#67d5ff" fill-opacity="0.24" stroke="#fff8dc" stroke-width="5"/><circle cx="41" cy="49" r="5" fill="#ffffff" opacity="0.82"/>
+  </svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+    <defs><radialGradient id="burgerAbilityBg" cx="0.5" cy="0.42" r="0.75"><stop stop-color="#26110d"/><stop offset="1" stop-color="#06101a"/></radialGradient></defs>
+    <rect x="8" y="8" width="112" height="112" rx="18" fill="url(#burgerAbilityBg)" stroke="#aa58ff" stroke-width="4"/>
+    <circle cx="64" cy="64" r="48" fill="#aa58ff" opacity="0.08"/>
+    <circle cx="64" cy="64" r="39" fill="none" stroke="#aa58ff" stroke-width="13"/><circle cx="64" cy="64" r="27" fill="none" stroke="#ffd5ff" stroke-width="4"/><path d="M64 25 A39 39 0 0 1 99 76" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.42"/>
+  </svg>
