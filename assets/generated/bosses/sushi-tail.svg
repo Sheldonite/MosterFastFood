@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="128" viewBox="0 0 192 128" role="img">
+    <defs>
+      <radialGradient id="rice" cx="0.36" cy="0.26" r="0.75">
+        <stop stop-color="#fff8e5"/>
+        <stop offset="0.58" stop-color="#f1ead7"/>
+        <stop offset="1" stop-color="#cfc4ad"/>
+      </radialGradient>
+      <linearGradient id="nori" x1="0" x2="1">
+        <stop stop-color="#101913"/>
+        <stop offset="0.48" stop-color="#273b2e"/>
+        <stop offset="1" stop-color="#101913"/>
+      </linearGradient>
+      <linearGradient id="fish" x1="0" x2="1">
+        <stop stop-color="#ff8e78"/>
+        <stop offset="0.5" stop-color="#e54e5f"/>
+        <stop offset="1" stop-color="#b62b43"/>
+      </linearGradient>
+    </defs><ellipse cx="78" cy="66" rx="54" ry="35" fill="url(#nori)" stroke="#14100e" stroke-width="6"/><path d="M111 37 L174 18 L141 66 L174 110 L111 94 Z" fill="url(#fish)" stroke="#3b1716" stroke-width="5"/><path d="M126 44 L158 30 M126 86 L158 102" stroke="#ffd0ba" stroke-width="4" stroke-linecap="round"/><ellipse cx="72" cy="66" rx="32" ry="21" fill="url(#rice)" opacity="0.8"/></svg>

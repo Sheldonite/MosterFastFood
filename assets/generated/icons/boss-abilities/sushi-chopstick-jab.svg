@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+    <defs>
+      <radialGradient id="sushiAbilityBg" cx="0.45" cy="0.35" r="0.72">
+        <stop stop-color="#ff7a5f" stop-opacity="0.22"/>
+        <stop offset="0.58" stop-color="#111315"/>
+        <stop offset="1" stop-color="#050607"/>
+      </radialGradient>
+    </defs>
+    <circle cx="64" cy="64" r="56" fill="url(#sushiAbilityBg)" stroke="#ff7a5f" stroke-width="5"/>
+    <circle cx="64" cy="64" r="48" fill="none" stroke="#f7dfaa" stroke-opacity="0.28" stroke-width="2"/>
+    <path d="M18 82 L112 29 M24 101 L116 51" stroke="#f7dfaa" stroke-width="8" stroke-linecap="round"/><path d="M25 73 L104 28 M31 92 L108 50" stroke="#ff7a5f" stroke-width="3" stroke-linecap="round"/><path d="M19 56 L42 49 M28 118 L49 101" stroke="#ff7a5f" stroke-width="6" stroke-linecap="round"/>
+  </svg>
