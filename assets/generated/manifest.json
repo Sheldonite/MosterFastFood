@@ -23,7 +23,13 @@
     "mustard": "./assets/generated/bosses/mustard-spritesheet.svg",
     "mayo": "./assets/generated/bosses/mayo-spritesheet.svg",
     "colaDeluxe": "./assets/generated/bosses/cola-deluxe-spritesheet.svg",
-    "burgerDeluxe": "./assets/generated/bosses/burger-deluxe-spritesheet.svg"
+    "burgerDeluxe": "./assets/generated/bosses/burger-deluxe-spritesheet.svg",
+    "sushiDeluxe": "./assets/generated/bosses/sushi-deluxe-spritesheet.svg",
+    "sushiParts": {
+      "segment": "./assets/generated/bosses/sushi-segment.svg",
+      "weakSegment": "./assets/generated/bosses/sushi-weak-segment.svg",
+      "tail": "./assets/generated/bosses/sushi-tail.svg"
+    }
   },
   "bossAbilities": {
     "cola": {
@@ -39,6 +45,12 @@
       "sauce": "./assets/generated/icons/boss-abilities/burger-sauce.svg",
       "charge": "./assets/generated/icons/boss-abilities/burger-charge.svg",
       "burst": "./assets/generated/icons/boss-abilities/burger-burst.svg"
+    },
+    "sushi": {
+      "wasabi-dash": "./assets/generated/icons/boss-abilities/sushi-wasabi-dash.svg",
+      "chopstick-jab": "./assets/generated/icons/boss-abilities/sushi-chopstick-jab.svg",
+      "roll-barrage": "./assets/generated/icons/boss-abilities/sushi-roll-barrage.svg",
+      "soy-sake-wave": "./assets/generated/icons/boss-abilities/sushi-soy-sake-wave.svg"
     }
   },
   "abilities": {
@@ -80,6 +92,7 @@
     }
   },
   "projectiles": {
+    "sushi-roll": "./assets/generated/projectiles/sushi-roll.svg",
     "arrow": "./assets/generated/projectiles/arrow.svg",
     "magic-bolt": "./assets/generated/projectiles/magic-bolt.svg",
     "fireball": "./assets/generated/projectiles/fireball.svg",
@@ -103,6 +116,9 @@
     "burger-onion-ring": "./assets/generated/projectiles/burger-onion-ring.svg"
   },
   "hazards": {
+    "wasabi-splatter": "./assets/generated/hazards/wasabi-splatter.svg",
+    "soy-wave": "./assets/generated/hazards/soy-wave.svg",
+    "chopstick-slash": "./assets/generated/hazards/chopstick-slash.svg",
     "grease": "./assets/generated/hazards/grease.svg",
     "puddle": "./assets/generated/hazards/puddle.svg",
     "glaze-ring": "./assets/generated/hazards/glaze-ring.svg",
