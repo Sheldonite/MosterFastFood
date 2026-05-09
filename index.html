@@ -13,6 +13,7 @@
         <div class="menu-actions">
           <button id="singlePlayerButton" type="button">Single Player</button>
           <button id="multiplayerButton" type="button">Multiplayer</button>
+          <button id="desktopUpdateButton" type="button" hidden>Check for Updates</button>
           <button id="devTestButton" type="button">Dev Test</button>
         </div>
       </section>
@@ -45,6 +46,10 @@
           <label>
             <span>Room</span>
             <input id="roomNameInput" maxlength="26" value="Boss Room" />
+          </label>
+          <label>
+            <span>Server</span>
+            <input id="serverUrlInput" maxlength="120" placeholder="wss://your-server.example.com" />
           </label>
           <button id="createRoomButton" type="button">Create Room</button>
           <button id="refreshRoomsButton" type="button">Refresh</button>

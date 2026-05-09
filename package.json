@@ -2,10 +2,46 @@
   "name": "ashfall-grove",
   "version": "0.1.0",
   "private": true,
+  "author": "Sheldonite",
   "description": "A baseline click-to-move boss fighting browser game prototype.",
+  "main": "electron/main.js",
   "scripts": {
     "generate:art": "node scripts/generate-game-art.js",
     "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "desktop": "electron .",
+    "dist:win": "electron-builder --win",
+    "publish:win": "electron-builder --win --publish always"
+  },
+  "devDependencies": {
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.bossfight.game",
+    "productName": "Boss Fight",
+    "artifactName": "Boss-Fight-Setup-${version}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Sheldonite",
+        "repo": "MosterFastFood"
+      }
+    ],
+    "files": [
+      "index.html",
+      "src/**/*",
+      "assets/**/*",
+      "!assets/**/*.exe",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }

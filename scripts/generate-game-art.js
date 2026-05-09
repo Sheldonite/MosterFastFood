@@ -127,6 +127,13 @@ const burgerAbilityConfigs = {
   burst: { label: "Ingredient Burst", color: "#f0c35b", accent: "#ff5d48", glyph: "burst" },
 };
 
+const sushiAbilityConfigs = {
+  "wasabi-dash": { label: "Wasabi Dash", color: "#9ff05f", accent: "#eaff9f", glyph: "wasabi" },
+  "chopstick-jab": { label: "Chopstick Jab", color: "#ff7a5f", accent: "#f7dfaa", glyph: "chopstick" },
+  "roll-barrage": { label: "Roll Barrage", color: "#f05f6a", accent: "#fff4db", glyph: "roll" },
+  "soy-sake-wave": { label: "Soy Sake Wave", color: "#b85cff", accent: "#f2b7ff", glyph: "soy" },
+};
+
 const rewardToneColors = {
   blue: { color: "#42adff", dark: "#06172b", glow: "#0b416f" },
   green: { color: "#75df4a", dark: "#071f13", glow: "#205f1b" },
@@ -520,6 +527,121 @@ function bigBurgerAbilityIconSvg(config) {
   `);
 }
 
+function sushiAbilityIconSvg(config) {
+  const c = config.color;
+  const a = config.accent;
+  const glyphs = {
+    wasabi: `<path d="M36 83 C48 43 68 25 96 17 C91 50 76 79 43 101 Z" fill="${c}" stroke="#1f3d1f" stroke-width="5"/><circle cx="38" cy="91" r="13" fill="#5c9f38" stroke="${a}" stroke-width="4"/><path d="M50 71 C66 73 78 63 86 42" fill="none" stroke="${a}" stroke-width="5" stroke-linecap="round"/>`,
+    chopstick: `<path d="M18 82 L112 29 M24 101 L116 51" stroke="${a}" stroke-width="8" stroke-linecap="round"/><path d="M25 73 L104 28 M31 92 L108 50" stroke="${c}" stroke-width="3" stroke-linecap="round"/><path d="M19 56 L42 49 M28 118 L49 101" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`,
+    roll: `<circle cx="48" cy="51" r="25" fill="#18261d" stroke="${a}" stroke-width="5"/><circle cx="48" cy="51" r="15" fill="#fff4db"/><circle cx="48" cy="51" r="6" fill="${c}"/><circle cx="82" cy="80" r="27" fill="#18261d" stroke="${a}" stroke-width="5"/><circle cx="82" cy="80" r="16" fill="#fff4db"/><circle cx="82" cy="80" r="6" fill="#9ff05f"/><path d="M24 96 C46 116 78 119 107 95" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`,
+    soy: `<path d="M31 21 C64 38 96 48 104 82 C76 116 38 106 23 77 C14 58 20 38 31 21 Z" fill="${c}" fill-opacity="0.34" stroke="${a}" stroke-width="6"/><path d="M27 83 C47 69 62 93 81 72 C90 63 98 65 108 75" fill="none" stroke="${c}" stroke-width="12" stroke-linecap="round"/><circle cx="45" cy="49" r="6" fill="${a}" opacity="0.8"/>`,
+  };
+  return svg(128, 128, `
+    <defs>
+      <radialGradient id="sushiAbilityBg" cx="0.45" cy="0.35" r="0.72">
+        <stop stop-color="${c}" stop-opacity="0.22"/>
+        <stop offset="0.58" stop-color="#111315"/>
+        <stop offset="1" stop-color="#050607"/>
+      </radialGradient>
+    </defs>
+    <circle cx="64" cy="64" r="56" fill="url(#sushiAbilityBg)" stroke="${c}" stroke-width="5"/>
+    <circle cx="64" cy="64" r="48" fill="none" stroke="${a}" stroke-opacity="0.28" stroke-width="2"/>
+    ${glyphs[config.glyph] || glyphs.roll}
+  `);
+}
+
+function sushiPartSvg(part) {
+  const defs = `
+    <defs>
+      <radialGradient id="rice" cx="0.36" cy="0.26" r="0.75">
+        <stop stop-color="#fff8e5"/>
+        <stop offset="0.58" stop-color="#f1ead7"/>
+        <stop offset="1" stop-color="#cfc4ad"/>
+      </radialGradient>
+      <linearGradient id="nori" x1="0" x2="1">
+        <stop stop-color="#101913"/>
+        <stop offset="0.48" stop-color="#273b2e"/>
+        <stop offset="1" stop-color="#101913"/>
+      </linearGradient>
+      <linearGradient id="fish" x1="0" x2="1">
+        <stop stop-color="#ff8e78"/>
+        <stop offset="0.5" stop-color="#e54e5f"/>
+        <stop offset="1" stop-color="#b62b43"/>
+      </linearGradient>
+    </defs>`;
+  if (part === "tail") {
+    return svg(192, 128, `${defs}<ellipse cx="78" cy="66" rx="54" ry="35" fill="url(#nori)" stroke="#14100e" stroke-width="6"/><path d="M111 37 L174 18 L141 66 L174 110 L111 94 Z" fill="url(#fish)" stroke="#3b1716" stroke-width="5"/><path d="M126 44 L158 30 M126 86 L158 102" stroke="#ffd0ba" stroke-width="4" stroke-linecap="round"/><ellipse cx="72" cy="66" rx="32" ry="21" fill="url(#rice)" opacity="0.8"/>`);
+  }
+  if (part === "weak") {
+    return svg(192, 128, `${defs}<ellipse cx="96" cy="64" rx="72" ry="41" fill="url(#rice)" stroke="#eaff9f" stroke-width="8"/><ellipse cx="96" cy="64" rx="52" ry="30" fill="url(#nori)" stroke="#182218" stroke-width="5"/><circle cx="96" cy="64" r="23" fill="#fff8e5"/><circle cx="86" cy="64" r="8" fill="#ff7b5f"/><circle cx="105" cy="62" r="8" fill="#9ff05f"/><circle cx="99" cy="75" r="6" fill="#ffcf4d"/><path d="M25 64 C48 37 72 28 96 28 C128 29 151 43 172 64" fill="none" stroke="#eaff9f" stroke-width="4" stroke-linecap="round" opacity="0.75"/>`);
+  }
+  return svg(192, 128, `${defs}<ellipse cx="96" cy="64" rx="70" ry="40" fill="url(#rice)" stroke="#171311" stroke-width="6"/><rect x="45" y="31" width="102" height="66" rx="23" fill="url(#nori)" stroke="#171311" stroke-width="5"/><ellipse cx="96" cy="64" rx="37" ry="24" fill="#fff4db"/><path d="M71 56 C82 43 100 43 111 56 C102 62 83 62 71 56 Z" fill="#ff856b"/><path d="M79 77 C94 65 109 66 119 78" fill="none" stroke="#9ff05f" stroke-width="8" stroke-linecap="round"/><path d="M46 31 L146 97 M146 31 L46 97" stroke="#ffffff" stroke-opacity="0.18" stroke-width="4"/>`);
+}
+
+function sushiVfxSvg(kind) {
+  if (kind === "wasabi-splatter") {
+    return svg(160, 160, `<path d="M25 93 C34 48 70 38 91 61 C106 33 145 53 135 92 C130 121 98 132 76 112 C54 137 18 123 25 93 Z" fill="#78d34d" stroke="#eaff9f" stroke-width="6"/><circle cx="45" cy="46" r="7" fill="#eaff9f"/><circle cx="123" cy="45" r="5" fill="#9ff05f"/><circle cx="132" cy="116" r="8" fill="#5cae36"/><path d="M45 91 C65 78 88 83 108 65" fill="none" stroke="#d9ffd1" stroke-width="7" stroke-linecap="round" opacity="0.7"/>`);
+  }
+  if (kind === "soy-wave") {
+    return svg(220, 120, `
+      <path d="M8 77 C28 42 55 41 78 64 C98 84 112 102 139 84 C163 67 184 53 211 68 L211 112 L8 112 Z" fill="#231421" opacity="0.9"/>
+      <path d="M11 72 C36 54 54 57 76 76 C100 98 121 99 145 78 C166 60 189 55 214 72 L214 101 C188 91 169 91 145 105 C113 121 88 105 68 88 C48 71 30 72 11 88 Z" fill="#3a183d" opacity="0.92"/>
+      <path d="M18 73 C40 62 57 65 75 80 C98 99 119 100 144 82 C166 67 190 62 208 75" fill="none" stroke="#6d3a76" stroke-width="8" stroke-linecap="round" opacity="0.74"/>
+      <path d="M27 85 C48 77 64 83 82 96 M118 102 C135 102 146 91 163 84 M170 75 C181 71 192 72 203 78" fill="none" stroke="#cba0d8" stroke-width="3.5" stroke-linecap="round" opacity="0.58"/>
+      <ellipse cx="55" cy="70" rx="6" ry="4" fill="#b980c9" opacity="0.7"/>
+      <ellipse cx="106" cy="98" rx="7" ry="4" fill="#1a0e19" opacity="0.65"/>
+      <ellipse cx="179" cy="72" rx="5" ry="3" fill="#d8b0df" opacity="0.55"/>
+      <circle cx="34" cy="98" r="3" fill="#a875b8" opacity="0.6"/>
+      <circle cx="197" cy="94" r="4" fill="#140b13" opacity="0.55"/>
+    `);
+  }
+  if (kind === "chopstick-slash") {
+    return svg(192, 96, `<path d="M14 55 C65 22 118 17 178 28" fill="none" stroke="#fff0c4" stroke-width="13" stroke-linecap="round"/><path d="M16 56 C72 38 118 35 176 29" fill="none" stroke="#ff7a5f" stroke-width="5" stroke-linecap="round"/><path d="M49 21 L35 48 M91 15 L84 42 M135 18 L133 44" stroke="#ff7a5f" stroke-width="4" stroke-linecap="round"/>`);
+  }
+  return svg(128, 128, `<circle cx="64" cy="64" r="42" fill="#18261d" stroke="#fff4db" stroke-width="7"/><circle cx="64" cy="64" r="25" fill="#fff4db"/><circle cx="57" cy="62" r="9" fill="#ff7a5f"/><circle cx="73" cy="68" r="7" fill="#9ff05f"/><path d="M24 100 C47 116 82 116 105 98" fill="none" stroke="#f05f6a" stroke-width="6" stroke-linecap="round"/>`);
+}
+
+function sushiDeluxeFrame(row, col) {
+  const bob = Math.sin((col / 4) * Math.PI * 2) * 3;
+  const lunge = row === 3 ? 8 + col * 3 : row === 2 ? -4 + col : 0;
+  const jaw = row === 4 || row === 6 ? 5 + col * 1.5 : 0;
+  const glow = row === 7 ? "#eaff9f" : row === 8 ? "#9ff05f" : "#f7dfaa";
+  const finColor = row === 8 ? "#ff5f6b" : "#f07a6d";
+  const cast = row === 5 || row === 6;
+  const eyeTilt = row === 8 ? 7 : 4;
+  const whiskerLift = Math.sin(col * 1.2 + row * 0.4) * 3;
+  return `
+    <g transform="translate(${col * 192},${row * 192})">
+      <ellipse cx="94" cy="150" rx="72" ry="17" fill="rgba(0,0,0,0.28)"/>
+      ${cast ? `<circle cx="96" cy="86" r="${60 + col * 4}" fill="none" stroke="${row === 6 ? "#b85cff" : "#f05f6a"}" stroke-width="5" opacity="0.32"/>` : ""}
+      <path d="M64 ${51 + bob} L42 ${18 + bob} L91 ${35 + bob} Z M91 ${34 + bob} L123 ${6 + bob} L118 ${47 + bob} Z M116 ${45 + bob} L165 ${23 + bob} L143 ${65 + bob} Z" fill="${finColor}" stroke="#5a1616" stroke-width="4" stroke-linejoin="round"/>
+      <ellipse cx="${91 + lunge}" cy="${89 + bob}" rx="66" ry="${45 + jaw * 0.35}" fill="#f1ead7" stroke="#171311" stroke-width="7"/>
+      <path d="M34 ${68 + bob} C55 ${38 + bob - lunge * 0.35} 111 ${39 + bob - lunge * 0.2} 145 ${68 + bob} C132 ${79 + bob} 116 ${83 + bob} 94 ${82 + bob} C70 ${81 + bob} 50 ${78 + bob} 34 ${68 + bob} Z" fill="#14251c" stroke="#171311" stroke-width="4"/>
+      <path d="M62 ${61 + bob} C82 ${42 + bob - lunge * 0.2} 116 ${44 + bob - lunge * 0.15} 134 ${65 + bob} C119 ${75 + bob} 82 ${76 + bob} 62 ${61 + bob} Z" fill="#ff8e78" stroke="#74251f" stroke-width="4"/>
+      <path d="M65 ${58 + bob} C80 ${49 + bob} 105 ${50 + bob} 125 ${62 + bob}" fill="none" stroke="#ffd0ba" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <g stroke="#d7b77c" stroke-width="5" stroke-linecap="round">
+        <path d="M132 ${93 + bob} C153 ${96 + bob + whiskerLift} 171 ${104 + bob + whiskerLift} 188 ${122 + bob}"/>
+        <path d="M132 ${106 + bob} C154 ${116 + bob - whiskerLift} 170 ${130 + bob - whiskerLift} 181 ${151 + bob}"/>
+        <path d="M128 ${80 + bob} C153 ${75 + bob - whiskerLift} 174 ${72 + bob - whiskerLift} 190 ${76 + bob}"/>
+      </g>
+      <path d="M107 ${77 + bob} C118 ${67 + bob - eyeTilt} 134 ${69 + bob - eyeTilt} 144 ${80 + bob} C132 ${88 + bob} 118 ${87 + bob} 107 ${77 + bob} Z" fill="#fff6ee" stroke="#672522" stroke-width="4"/>
+      <path d="M105 ${107 + bob} C118 ${98 + bob + eyeTilt} 134 ${100 + bob + eyeTilt} 144 ${111 + bob} C131 ${118 + bob} 117 ${117 + bob} 105 ${107 + bob} Z" fill="#fff6ee" stroke="#672522" stroke-width="4"/>
+      <circle cx="130" cy="${80 + bob}" r="4.5" fill="${glow}"/><circle cx="130" cy="${110 + bob}" r="4.5" fill="${glow}"/>
+      <path d="M91 ${121 + bob + jaw} C103 ${128 + bob + jaw} 119 ${128 + bob + jaw} 132 ${120 + bob + jaw}" fill="none" stroke="#672522" stroke-width="4" stroke-linecap="round"/>
+      <g fill="#fff8e5" opacity="0.8">
+        <circle cx="48" cy="${94 + bob}" r="4"/><circle cx="57" cy="${111 + bob}" r="3.5"/><circle cx="74" cy="${124 + bob}" r="3.5"/><circle cx="40" cy="${82 + bob}" r="3"/>
+      </g>
+    </g>`;
+}
+
+function sushiDeluxeSpritesheet() {
+  const frames = [];
+  for (let row = 0; row < 9; row += 1) {
+    for (let col = 0; col < 4; col += 1) frames.push(sushiDeluxeFrame(row, col));
+  }
+  return svg(768, 1728, frames.join(""));
+}
+
 function iconBody(color, glyph) {
   const bg = `<circle cx="32" cy="32" r="28" fill="#191816" stroke="${color}" stroke-width="3"/><circle cx="32" cy="32" r="22" fill="${color}" opacity="0.18"/>`;
   const commonStroke = `stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
@@ -864,6 +986,12 @@ function main() {
   }
   manifest.bosses.colaDeluxe = writeGenerated(["bosses", "cola-deluxe-spritesheet.svg"], bigColaSpritesheet());
   manifest.bosses.burgerDeluxe = writeGenerated(["bosses", "burger-deluxe-spritesheet.svg"], bigBurgerSpritesheet());
+  manifest.bosses.sushiDeluxe = writeGenerated(["bosses", "sushi-deluxe-spritesheet.svg"], sushiDeluxeSpritesheet());
+  manifest.bosses.sushiParts = {
+    segment: writeGenerated(["bosses", "sushi-segment.svg"], sushiPartSvg("segment")),
+    weakSegment: writeGenerated(["bosses", "sushi-weak-segment.svg"], sushiPartSvg("weak")),
+    tail: writeGenerated(["bosses", "sushi-tail.svg"], sushiPartSvg("tail")),
+  };
   manifest.bossAbilities.cola = {};
   Object.entries(colaAbilityConfigs).forEach(([key, config]) => {
     manifest.bossAbilities.cola[key] = writeGenerated(["icons", "boss-abilities", `cola-${key}.svg`], bigColaAbilityIconSvg(config));
@@ -872,6 +1000,14 @@ function main() {
   Object.entries(burgerAbilityConfigs).forEach(([key, config]) => {
     manifest.bossAbilities.burger[key] = writeGenerated(["icons", "boss-abilities", `burger-${key}.svg`], bigBurgerAbilityIconSvg(config));
   });
+  manifest.bossAbilities.sushi = {};
+  Object.entries(sushiAbilityConfigs).forEach(([key, config]) => {
+    manifest.bossAbilities.sushi[key] = writeGenerated(["icons", "boss-abilities", `sushi-${key}.svg`], sushiAbilityIconSvg(config));
+  });
+  manifest.projectiles["sushi-roll"] = writeGenerated(["projectiles", "sushi-roll.svg"], sushiVfxSvg("sushi-roll"));
+  manifest.hazards["wasabi-splatter"] = writeGenerated(["hazards", "wasabi-splatter.svg"], sushiVfxSvg("wasabi-splatter"));
+  manifest.hazards["soy-wave"] = writeGenerated(["hazards", "soy-wave.svg"], sushiVfxSvg("soy-wave"));
+  manifest.hazards["chopstick-slash"] = writeGenerated(["hazards", "chopstick-slash.svg"], sushiVfxSvg("chopstick-slash"));
 
   for (const [classKey, icons] of Object.entries(abilityIcons)) {
     manifest.abilities[classKey] = {};

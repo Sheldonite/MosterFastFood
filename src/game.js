@@ -18,6 +18,7 @@ const ui = {
   devMenu: document.querySelector("#devMenu"),
   singlePlayerButton: document.querySelector("#singlePlayerButton"),
   multiplayerButton: document.querySelector("#multiplayerButton"),
+  desktopUpdateButton: document.querySelector("#desktopUpdateButton"),
   devTestButton: document.querySelector("#devTestButton"),
   backFromDevButton: document.querySelector("#backFromDevButton"),
   devPasswordInput: document.querySelector("#devPasswordInput"),
@@ -26,6 +27,7 @@ const ui = {
   backToMainButton: document.querySelector("#backToMainButton"),
   playerNameInput: document.querySelector("#playerNameInput"),
   roomNameInput: document.querySelector("#roomNameInput"),
+  serverUrlInput: document.querySelector("#serverUrlInput"),
   createRoomButton: document.querySelector("#createRoomButton"),
   refreshRoomsButton: document.querySelector("#refreshRoomsButton"),
   roomList: document.querySelector("#roomList"),
@@ -75,6 +77,8 @@ const ui = {
 
 const lockedBosses = new Set();
 const gauntletTestDebugEnabled = new URLSearchParams(location.search).has("gauntlet-test");
+const desktopConfig = window.BossFightConfig || {};
+const desktopUpdater = window.BossFightUpdater || null;
 
 const world = {
   width: 1680,
@@ -596,6 +600,7 @@ const generatedProjectileArtKeys = [
   "burger-tomato-slice",
   "burger-pickle-splash",
   "burger-onion-ring",
+  "sushi-roll",
 ];
 const generatedHazardArtKeys = [
   "grease",
@@ -614,10 +619,14 @@ const generatedHazardArtKeys = [
   "burger-sauce-burst",
   "burger-charge-lane",
   "burger-burst-ring",
+  "wasabi-splatter",
+  "soy-wave",
+  "chopstick-slash",
 ];
 const generatedBossAbilityIcons = {
   burger: ["tomato", "pickle", "onion", "sauce", "charge", "burst"],
   cola: ["bubbles", "straw", "spill", "fizz"],
+  sushi: ["wasabi-dash", "chopstick-jab", "roll-barrage", "soy-sake-wave"],
 };
 const generatedAbilityIconSlugs = {
   melee: ["shield-bash", "groundbreaker", "whirlwind-dash", "shield-wall"],
@@ -641,6 +650,12 @@ function preloadGeneratedArtAssets() {
   generatedBossArtKeys.forEach((key) => registerGeneratedArt(`bosses.${key}`, `./assets/generated/bosses/${key}-spritesheet.svg`));
   registerGeneratedArt("bosses.burgerDeluxe", "./assets/generated/bosses/burger-deluxe-spritesheet.svg");
   registerGeneratedArt("bosses.colaDeluxe", "./assets/generated/bosses/cola-deluxe-spritesheet.svg");
+  registerGeneratedArt("bosses.sushiDeluxe", "./assets/generated/bosses/sushi-deluxe-spritesheet.svg");
+  registerGeneratedArt("bosses.sushiSegment", "./assets/generated/bosses/sushi-segment.svg");
+  registerGeneratedArt("bosses.sushiWeakSegment", "./assets/generated/bosses/sushi-weak-segment.svg");
+  registerGeneratedArt("bosses.sushiTail", "./assets/generated/bosses/sushi-tail.svg");
+  registerGeneratedArt("hazards.soySakeWavePaint", "./assets/generated/vfx/soy-sake-wave.png");
+  registerGeneratedArt("hazards.soySakeWaveStrip", "./assets/generated/vfx/soy-sake-wave-strip.png");
   generatedProjectileArtKeys.forEach((key) => registerGeneratedArt(`projectiles.${key}`, `./assets/generated/projectiles/${key}.svg`));
   generatedHazardArtKeys.forEach((key) => registerGeneratedArt(`hazards.${key}`, `./assets/generated/hazards/${key}.svg`));
   Object.entries(generatedAbilityIconSlugs).forEach(([classKey, slugs]) => {
@@ -691,7 +706,7 @@ function drawGeneratedImage(id, x, y, w, h, options = {}) {
 function drawGeneratedSpriteFrame(id, row, col, x, y, w, h, options = {}) {
   const image = generatedArtImage(id);
   if (!isImageReady(image)) return false;
-  const { centered = true, alpha = 1, shadowColor = "", shadowBlur = 0, cols = 4, rows = 4 } = options;
+  const { centered = true, alpha = 1, shadowColor = "", shadowBlur = 0, cols = 4, rows = 4, rotation = 0 } = options;
   const safeCols = Math.max(1, cols);
   const safeRows = Math.max(1, rows);
   const safeCol = ((col % safeCols) + safeCols) % safeCols;
@@ -699,6 +714,10 @@ function drawGeneratedSpriteFrame(id, row, col, x, y, w, h, options = {}) {
   const frameW = image.naturalWidth / safeCols;
   const frameH = image.naturalHeight / safeRows;
   ctx.save();
+  if (rotation) {
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+  }
   ctx.globalAlpha *= alpha;
   if (shadowColor && shadowBlur > 0) {
     ctx.shadowColor = shadowColor;
@@ -710,8 +729,8 @@ function drawGeneratedSpriteFrame(id, row, col, x, y, w, h, options = {}) {
     safeRow * frameH,
     frameW,
     frameH,
-    centered ? x - w / 2 : x,
-    centered ? y - h / 2 : y,
+    rotation ? centered ? -w / 2 : 0 : centered ? x - w / 2 : x,
+    rotation ? centered ? -h / 2 : 0 : centered ? y - h / 2 : y,
     w,
     h,
   );
@@ -1100,6 +1119,11 @@ function createBoss(kind = "burger") {
     serpentBody: [],
     serpentWeakIndex: 2,
     serpentWeakTimer: 3.2,
+    sushiAnimationState: "idle",
+    sushiAnimationTimer: 0,
+    sushiLastAbility: "",
+    sushiDashTrailTimer: 0,
+    sushiWeakFlashTimer: 0,
     whirlpoolTimer: 0,
     sugarRushTimer: 0,
     napkinTimer: 0,
@@ -5381,6 +5405,12 @@ function updateSushiSerpent(dt) {
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.attackTimer -= dt;
+  boss.sushiAnimationTimer = Math.max(0, (boss.sushiAnimationTimer || 0) - dt);
+  boss.sushiDashTrailTimer = Math.max(0, (boss.sushiDashTrailTimer || 0) - dt);
+  boss.sushiWeakFlashTimer = Math.max(0, (boss.sushiWeakFlashTimer || 0) - dt);
+  if (boss.sushiAnimationTimer <= 0 && !["idle", "slither", "enrage"].includes(boss.sushiAnimationState)) {
+    setSushiAnimation(boss.enraged ? "enrage" : "slither", 0.35);
+  }
   boss.serpentAngle += dt * (boss.enraged ? 1.25 : 0.86);
   boss.serpentWeakTimer -= dt;
   updateSushiPhase();
@@ -5404,6 +5434,8 @@ function updateSushiPhase() {
   if (hpPercent <= 0.66 && boss.phase === 1) {
     boss.phase = 2;
     boss.attackTimer = 0.35;
+    setSushiAnimation("slither", 1.1);
+    initializeSushiTrail(boss);
     log("Phase 2: Split Roll.");
     ui.status.textContent = "Sushi Serpent splits into faster patterns.";
   }
@@ -5411,9 +5443,19 @@ function updateSushiPhase() {
     boss.phase = 3;
     boss.enraged = true;
     boss.attackTimer = 0.25;
+    setSushiAnimation("enrage", 1.5);
+    initializeSushiTrail(boss);
     log("Phase 3: Dragon Roll.");
     showFloat("Dragon Roll");
   }
+}
+
+function setSushiAnimation(state, duration = 0.8) {
+  if (!boss || boss.kind !== "sushi") return;
+  boss.sushiAnimationState = state;
+  boss.sushiAnimationTimer = Math.max(boss.sushiAnimationTimer || 0, duration);
+  boss.animation = `sushi-${state}`;
+  boss.animationTime = 0;
 }
 
 function updateSushiMovement(dt) {
@@ -5502,76 +5544,166 @@ function sushiSegments() {
 
 function spawnSushiPattern() {
   const roll = Math.random();
-  if (roll < 0.28) {
-    spawnWasabiWave();
-  } else if (roll < 0.5) {
-    spawnChopstickPins(boss.phase >= 3 ? 3 : boss.phase >= 2 ? 2 : 1);
-  } else if (roll < 0.72) {
-    spawnSoySplash(boss.phase >= 3 ? 3 : 2);
+  if (roll < 0.26) {
+    spawnWasabiDash();
+  } else if (roll < 0.49) {
+    spawnChopstickJab(boss.phase >= 3 ? 3 : boss.phase >= 2 ? 2 : 1);
+  } else if (roll < 0.74) {
+    spawnRollBarrage(boss.phase >= 3 ? 14 : boss.phase >= 2 ? 10 : 7);
   } else {
-    spawnSerpentSweep();
+    spawnSoySakeWave();
     if (boss.phase >= 3 && Math.random() < 0.45) startSoyWhirlpool();
   }
 }
 
-function spawnWasabiWave() {
-  const vertical = Math.random() > 0.5;
-  const fromHighSide = Math.random() > 0.5;
-  const width = boss.phase >= 3 ? 32 : 28;
+function spawnWasabiDash() {
+  const target = bossAimTarget(boss);
+  const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const distance = boss.phase >= 3 ? 720 : boss.phase >= 2 ? 650 : 580;
+  const end = clampArenaPoint(boss.x + Math.cos(angle) * distance, boss.y + Math.sin(angle) * distance, boss.radius);
   hazards.push({
-    type: "wasabiWave",
-    x: vertical ? (fromHighSide ? world.arena.x + world.arena.w + width : world.arena.x - width) : world.arena.x,
-    y: vertical ? world.arena.y : (fromHighSide ? world.arena.y + world.arena.h + width : world.arena.y - width),
-    axis: vertical ? "vertical" : "horizontal",
-    direction: fromHighSide ? -1 : 1,
-    warn: boss.enraged ? 0.9 : 1.08,
-    ttl: boss.enraged ? 3.65 : 4.25,
-    speed: boss.enraged ? 235 : 195,
-    width,
-    damage: boss.enraged ? 7 : 5,
+    type: "wasabiDash",
+    x: boss.x,
+    y: boss.y,
+    startX: boss.x,
+    startY: boss.y,
+    endX: end.x,
+    endY: end.y,
+    prevX: boss.x,
+    prevY: boss.y,
+    angle,
+    length: Math.hypot(end.x - boss.x, end.y - boss.y),
+    width: boss.phase >= 3 ? 78 : 66,
+    warn: boss.enraged ? 0.68 : 0.86,
+    ttl: boss.enraged ? 1.42 : 1.66,
+    dashAge: 0,
+    dashDuration: boss.enraged ? 0.48 : 0.62,
+    damage: boss.enraged ? 15 : 12,
     hit: false,
   });
+  setSushiAnimation("dashWindup", 0.7);
+  boss.sushiLastAbility = "wasabi-dash";
+  log("Wasabi Dash windup.");
 }
 
-function spawnChopstickPins(count) {
+function spawnChopstickJab(count) {
+  setSushiAnimation("jab", 0.75 + count * 0.08);
+  boss.sushiLastAbility = "chopstick-jab";
   for (let i = 0; i < count; i += 1) {
     const target = bossAimTarget(boss);
-    const vertical = i % 2 === 0;
+    const angle = Math.atan2(target.y - boss.y, target.x - boss.x) + (i - (count - 1) / 2) * 0.22;
     hazards.push({
-      type: "chopstickPin",
-      x: clamp(target.x + (Math.random() - 0.5) * 260, world.arena.x + 70, world.arena.x + world.arena.w - 70),
-      y: clamp(target.y + (Math.random() - 0.5) * 220, world.arena.y + 70, world.arena.y + world.arena.h - 70),
-      vertical,
-      warn: 0.9 + i * 0.12,
-      ttl: 1.68 + i * 0.12,
-      damage: 6,
+      type: "chopstickJab",
+      x: boss.x,
+      y: boss.y,
+      angle,
+      length: boss.phase >= 3 ? 760 : 660,
+      width: boss.phase >= 3 ? 34 : 28,
+      warn: 0.58 + i * 0.11,
+      ttl: 0.98 + i * 0.11,
+      damage: boss.enraged ? 10 : 8,
       hit: false,
     });
   }
 }
 
-function spawnSoySplash(count) {
+function spawnRollBarrage(count) {
+  setSushiAnimation("barrage", 0.95);
+  boss.sushiLastAbility = "roll-barrage";
+  const target = bossAimTarget(boss);
+  const baseAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
   for (let i = 0; i < count; i += 1) {
-    const point = randomArenaPointNearThreat(260, 90);
-    hazards.push({ type: "soyPuddle", x: point.x, y: point.y, r: 38, warn: 0.58 + i * 0.08, ttl: 3.4, damage: 3, damageTimer: 0 });
+    const angle = baseAngle + (Math.PI * 2 * i) / count + (boss.enraged ? 0.18 : 0);
+    hazards.push({
+      type: "sushiRoll",
+      x: boss.x + Math.cos(angle) * 58,
+      y: boss.y + Math.sin(angle) * 58,
+      vx: Math.cos(angle) * (boss.enraged ? 250 : 210),
+      vy: Math.sin(angle) * (boss.enraged ? 250 : 210),
+      turn: (i % 2 === 0 ? 1 : -1) * (boss.phase >= 3 ? 0.64 : 0.42),
+      spin: Math.random() * Math.PI * 2,
+      r: boss.phase >= 3 ? 15 : 13,
+      ttl: boss.enraged ? 3.15 : 2.85,
+      damage: boss.enraged ? 9 : 7,
+    });
   }
 }
 
-function spawnSerpentSweep() {
+function spawnSoySakeWave() {
   const target = bossAimTarget(boss);
   const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const warn = boss.enraged ? 0.72 : 0.9;
+  const activeDuration = boss.enraged ? 2.25 : 2.35;
+  const fadeDuration = 0.48;
+  setSushiAnimation("soy", 1.05);
+  boss.sushiLastAbility = "soy-sake-wave";
   hazards.push({
-    type: "serpentSweep",
+    type: "soySakeWave",
     x: boss.x,
     y: boss.y,
+    originX: boss.x,
+    originY: boss.y,
     angle,
-    length: 560,
-    width: boss.phase >= 3 ? 68 : 56,
-    warn: 0.95,
-    ttl: 1.55,
-    damage: 8,
+    length: boss.phase >= 3 ? 720 : 620,
+    width: boss.phase >= 3 ? 116 : 94,
+    speed: boss.enraged ? 245 : 205,
+    warn,
+    warnDuration: warn,
+    ttl: warn + activeDuration + fadeDuration,
+    age: 0,
+    activeAge: 0,
+    activeDuration,
+    surgeDuration: 0.42,
+    fadeDuration,
+    visualPadding: 12,
+    textureOffset: 0,
+    waveSeed: Math.random() * Math.PI * 2,
+    damage: boss.enraged ? 8 : 6,
+    damageTimer: 0,
     hit: false,
   });
+  spawnSoySplash(boss.phase >= 3 ? 4 : 2);
+}
+
+function spawnSoySplash(count) {
+  for (let i = 0; i < count; i += 1) {
+    const point = randomArenaPointNearThreat(260, 90);
+    hazards.push({ type: "soyPuddle", x: point.x, y: point.y, r: boss.phase >= 3 ? 48 : 40, warn: 0.64 + i * 0.08, ttl: boss.phase >= 3 ? 4.1 : 3.5, damage: 3, damageTimer: 0 });
+  }
+}
+
+function soySakeWaveShape(hazard) {
+  const warnDuration = Math.max(0.1, hazard.warnDuration || 0.8);
+  const activeAge = Math.max(0, hazard.activeAge || 0);
+  const activeDuration = Math.max(0.6, hazard.activeDuration || 2.2);
+  const surgeDuration = Math.max(0.1, hazard.surgeDuration || 0.4);
+  const fadeDuration = Math.max(0.1, hazard.fadeDuration || 0.45);
+  const fadeStart = Math.max(surgeDuration, activeDuration - fadeDuration);
+  const warnProgress = hazard.warn > 0 ? clamp(1 - hazard.warn / warnDuration, 0, 1) : 1;
+  const surgeProgress = hazard.warn > 0 ? 0 : clamp(activeAge / surgeDuration, 0, 1);
+  const fadeProgress = hazard.warn > 0 ? 0 : clamp((activeAge - fadeStart) / fadeDuration, 0, 1);
+  const visibleProgress = hazard.warn > 0 ? 0.22 + warnProgress * 0.78 : surgeProgress;
+  const alpha = hazard.warn > 0 ? 0.18 + warnProgress * 0.18 : Math.max(0, 1 - fadeProgress * 0.82);
+  const visibleLength = Math.max(90, hazard.length * visibleProgress * (1 - fadeProgress * 0.18));
+  const visibleWidth = Math.max(24, hazard.width * (hazard.warn > 0 ? 0.55 + warnProgress * 0.35 : 1 - fadeProgress * 0.38));
+  return {
+    angle: hazard.angle,
+    length: visibleLength,
+    width: visibleWidth,
+    collisionWidth: Math.max(18, visibleWidth * 0.42),
+    alpha,
+    warnProgress,
+    surgeProgress,
+    fadeProgress,
+    frame: hazard.warn > 0 ? 0 : clamp(Math.floor((activeAge / activeDuration) * 7), 1, 7),
+    damageActive: hazard.warn <= 0 && surgeProgress > 0.28 && fadeProgress < 0.82,
+  };
+}
+
+function soySakeWaveTouchesPlayer(hazard, shape = soySakeWaveShape(hazard)) {
+  const startX = hazard.x - Math.cos(hazard.angle) * shape.length * 0.5;
+  const startY = hazard.y - Math.sin(hazard.angle) * shape.length * 0.5;
+  return isPlayerInLine(startX, startY, hazard.angle, shape.length, shape.collisionWidth + player.radius);
 }
 
 function startSoyWhirlpool() {
@@ -8070,6 +8202,98 @@ function updateHazards(dt) {
         hazard.ttl = 0;
         showFloat("Sugar Rush");
       }
+    } else if (hazard.type === "wasabiDash") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      boss.attackTimer = Math.max(boss.attackTimer, 0.45);
+      if (hazard.warn <= 0) {
+        if (boss.kind === "sushi") setSushiAnimation("dash", 0.34);
+        hazard.dashAge += dt;
+        const progress = clamp(hazard.dashAge / hazard.dashDuration, 0, 1);
+        const eased = 1 - Math.pow(1 - progress, 2);
+        hazard.prevX = hazard.x;
+        hazard.prevY = hazard.y;
+        hazard.x = hazard.startX + (hazard.endX - hazard.startX) * eased;
+        hazard.y = hazard.startY + (hazard.endY - hazard.startY) * eased;
+        boss.x = hazard.x;
+        boss.y = hazard.y;
+        const traveled = Math.hypot(hazard.x - hazard.prevX, hazard.y - hazard.prevY);
+        const sweptHit = traveled > 1 && isPlayerInLine(hazard.prevX, hazard.prevY, Math.atan2(hazard.y - hazard.prevY, hazard.x - hazard.prevX), traveled, hazard.width / 2 + player.radius);
+        if (!hazard.hit && (distance(player, boss) < hazard.width / 2 + player.radius || sweptHit)) {
+          hazard.hit = true;
+          damagePlayer(hazard.damage, "Wasabi Dash");
+          knockPlayerFrom(hazard.prevX, hazard.prevY, 260);
+        }
+        if (!remoteBossHazard && (boss.sushiDashTrailTimer || 0) <= 0) {
+          hazards.push({
+            type: "wasabiTrail",
+            x: hazard.x,
+            y: hazard.y,
+            r: boss.enraged ? 42 : 34,
+            warn: 0,
+            ttl: boss.enraged ? 3.2 : 2.8,
+            damage: boss.enraged ? 5 : 4,
+            damageTimer: 0,
+          });
+          boss.sushiDashTrailTimer = 0.08;
+        }
+        if (progress >= 1) hazard.ttl = Math.min(hazard.ttl, 0.14);
+      }
+    } else if (hazard.type === "wasabiTrail") {
+      hazard.ttl -= dt;
+      if (distance(player, hazard) < player.radius + hazard.r) {
+        hazard.damageTimer -= dt;
+        if (hazard.damageTimer <= 0) {
+          damagePlayer(hazard.damage, "Wasabi trail");
+          hazard.damageTimer = 0.52;
+        }
+      }
+    } else if (hazard.type === "chopstickJab") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      if (hazard.warn <= 0 && !hazard.hit) {
+        hazard.hit = true;
+        if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
+          damagePlayer(hazard.damage, "Chopstick Jab");
+          particles.push({ x: player.x, y: player.y - 22, text: "jab", color: "#ffb0a4", ttl: 0.45 });
+        }
+      }
+    } else if (hazard.type === "sushiRoll") {
+      hazard.ttl -= dt;
+      if (hazard.turn) {
+        const speed = Math.hypot(hazard.vx, hazard.vy);
+        const angle = Math.atan2(hazard.vy, hazard.vx) + hazard.turn * dt;
+        hazard.vx = Math.cos(angle) * speed;
+        hazard.vy = Math.sin(angle) * speed;
+      }
+      hazard.spin += dt * 9;
+      hazard.x += hazard.vx * dt;
+      hazard.y += hazard.vy * dt;
+      if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
+        damagePlayer(hazard.damage, "Roll Barrage");
+        consumeRemoteHazard(hazard);
+        hazard.ttl = 0;
+      }
+    } else if (hazard.type === "soySakeWave") {
+      hazard.ttl -= dt;
+      hazard.warn -= dt;
+      hazard.age = (hazard.age || 0) + dt;
+      hazard.textureOffset = (hazard.textureOffset || 0) + dt * 90;
+      if (hazard.warn <= 0) {
+        hazard.activeAge = (hazard.activeAge || 0) + dt;
+        const shape = soySakeWaveShape(hazard);
+        const moveScale = shape.fadeProgress > 0 ? 1 - shape.fadeProgress * 0.65 : 1;
+        hazard.x += Math.cos(hazard.angle) * hazard.speed * dt * moveScale;
+        hazard.y += Math.sin(hazard.angle) * hazard.speed * dt * moveScale;
+        hazard.damageTimer -= dt;
+        if (shape.damageActive && soySakeWaveTouchesPlayer(hazard, shape)) {
+          player.freezeTimer = Math.max(player.freezeTimer, 0.08);
+          if (hazard.damageTimer <= 0) {
+            damagePlayer(hazard.damage, "Soy Sake Wave");
+            hazard.damageTimer = 0.62;
+          }
+        }
+      }
     } else if (hazard.type === "wasabiWave") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
@@ -8580,6 +8804,8 @@ function hitSushiSegment(projectile) {
   if (segment.weak) {
     boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
     boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
+    boss.sushiWeakFlashTimer = 0.42;
+    setSushiAnimation("weak", 0.38);
     particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
   }
   return true;
@@ -9669,6 +9895,7 @@ function drawRooms() {
   ctx.fillRect(0, 0, world.width, world.height);
   drawRoom(world.starter, "#27362f", "#a6b9a2");
   if (player.room === "maze" && mazeState) drawMaze();
+  else if (boss.kind === "sushi") drawSushiArenaRoom();
   else drawRoom(world.arena, "#30292b", "#c89b62");
   const gateLocked = runState.buildLocked;
   ctx.fillStyle = gateLocked ? "#4a3422" : "#80623a";
@@ -9684,7 +9911,7 @@ function drawRooms() {
   ctx.textAlign = "left";
   drawStarterRoomLabels();
 
-  if (player.room !== "maze") {
+  if (player.room !== "maze" && boss.kind !== "sushi") {
     ctx.fillStyle = "rgba(238, 228, 188, 0.1)";
     for (let x = world.arena.x + 70; x < world.arena.x + world.arena.w; x += 92) {
       ctx.fillRect(x, world.arena.y + 30, 2, world.arena.h - 60);
@@ -9693,6 +9920,42 @@ function drawRooms() {
       ctx.fillRect(world.arena.x + 30, y, world.arena.w - 60, 2);
     }
   }
+}
+
+function drawSushiArenaRoom() {
+  drawRoom(world.arena, "#121817", "#8de0c6");
+  ctx.save();
+  const rect = world.arena;
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  ctx.fillStyle = "rgba(11, 16, 17, 0.6)";
+  ctx.fillRect(rect.x + 22, rect.y + 22, rect.w - 44, rect.h - 44);
+  ctx.strokeStyle = "rgba(141, 224, 198, 0.12)";
+  ctx.lineWidth = 2;
+  for (let x = rect.x + 58; x < rect.x + rect.w - 40; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, rect.y + 36);
+    ctx.lineTo(x, rect.y + rect.h - 36);
+    ctx.stroke();
+  }
+  for (let y = rect.y + 58; y < rect.y + rect.h - 40; y += 64) {
+    ctx.beginPath();
+    ctx.moveTo(rect.x + 36, y);
+    ctx.lineTo(rect.x + rect.w - 36, y);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(184, 92, 255, 0.14)";
+  ctx.lineWidth = 5;
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 76 + i * 48 + Math.sin(boss.animationTime * 1.7 + i) * 3, boss.animationTime * 0.35 + i, boss.animationTime * 0.35 + i + Math.PI * 1.35);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(159, 240, 95, 0.08)";
+  ctx.fillRect(rect.x + 42, rect.y + 42, 92, rect.h - 84);
+  ctx.fillStyle = "rgba(255, 122, 95, 0.08)";
+  ctx.fillRect(rect.x + rect.w - 134, rect.y + 42, 92, rect.h - 84);
+  ctx.restore();
 }
 
 function drawMaze() {
@@ -10546,20 +10809,31 @@ function drawSushiSerpentBoss() {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  ctx.strokeStyle = "rgba(26, 49, 38, 0.94)";
-  ctx.lineWidth = 58;
-  strokeSmoothSushiPath(segments);
-
-  ctx.strokeStyle = boss.enraged ? "rgba(122, 196, 109, 0.96)" : "rgba(241, 234, 215, 0.96)";
-  ctx.lineWidth = 42;
-  strokeSmoothSushiPath(segments);
-
-  ctx.strokeStyle = "rgba(36, 55, 41, 0.9)";
-  ctx.lineWidth = 15;
+  ctx.strokeStyle = "rgba(7, 13, 10, 0.58)";
+  ctx.lineWidth = 62;
   strokeSmoothSushiPath(segments);
 
   for (let i = segments.length - 1; i >= 1; i -= 1) {
     const segment = segments[i];
+    const isTail = i === segments.length - 1;
+    const assetId = isTail ? "bosses.sushiTail" : segment.weak ? "bosses.sushiWeakSegment" : "bosses.sushiSegment";
+    const drawW = segment.r * (isTail ? 3.35 : 3.25);
+    const drawH = segment.r * (isTail ? 2.25 : 2.05);
+    const drawn = drawGeneratedImage(assetId, segment.x, segment.y, drawW, drawH, {
+      rotation: segment.heading,
+      shadowColor: segment.weak ? "#eaff9f" : boss.enraged ? "#9ff05f" : "",
+      shadowBlur: segment.weak ? 18 : boss.enraged ? 8 : 0,
+    });
+    if (drawn) {
+      if (segment.weak) {
+        ctx.strokeStyle = `rgba(234, 255, 159, ${0.55 + Math.sin(boss.animationTime * 10) * 0.18})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(segment.x, segment.y, segment.r + 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      continue;
+    }
     const side = i % 2 === 0 ? 1 : -1;
     const finAngle = segment.heading + side * Math.PI * 0.72;
     ctx.fillStyle = segment.weak ? "rgba(159, 240, 137, 0.9)" : "rgba(240, 154, 130, 0.76)";
@@ -10597,6 +10871,25 @@ function drawSushiSerpentBoss() {
   const head = segments[0];
   const neck = segments[1];
   const headAngle = neck ? Math.atan2(head.y - neck.y, head.x - neck.x) : head.heading ?? boss.serpentHeading;
+  const headFrame = Math.floor((boss.animationTime || 0) * 9) % 4;
+  const headRow = sushiAnimationRow();
+  const headDrawn = drawGeneratedSpriteFrame("bosses.sushiDeluxe", headRow, headFrame, head.x, head.y, boss.radius * 3.35, boss.radius * 3.35, {
+    cols: 4,
+    rows: 9,
+    rotation: headAngle,
+    shadowColor: boss.enraged ? "#9ff05f" : "#f7dfaa",
+    shadowBlur: boss.enraged ? 18 : 9,
+  });
+  if (headDrawn) {
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(headAngle);
+    if (boss.sushiLastAbility) {
+      const iconId = `bossAbilities.sushi.${boss.sushiLastAbility}`;
+      drawGeneratedImage(iconId, boss.radius * 1.3, -boss.radius * 1.25, 34, 34, { alpha: 0.88, shadowColor: "#fff4db", shadowBlur: 7 });
+    }
+    ctx.restore();
+  } else {
   ctx.translate(head.x, head.y);
   ctx.rotate(headAngle);
   ctx.fillStyle = "#1a3126";
@@ -10637,6 +10930,7 @@ function drawSushiSerpentBoss() {
     ctx.quadraticCurveTo(94, side * (18 + Math.sin(boss.animationTime * 5) * 8), 118, side * 5);
     ctx.stroke();
   }
+  }
   ctx.restore();
 
   if (boss.whirlpoolTimer > 0) {
@@ -10650,6 +10944,19 @@ function drawSushiSerpentBoss() {
       ctx.stroke();
     }
   }
+}
+
+function sushiAnimationRow() {
+  const state = boss.sushiAnimationState || "idle";
+  if (state === "dashWindup") return 2;
+  if (state === "dash") return 3;
+  if (state === "jab") return 4;
+  if (state === "barrage") return 5;
+  if (state === "soy") return 6;
+  if ((boss.sushiWeakFlashTimer || 0) > 0) return 7;
+  if (boss.enraged || state === "enrage") return 8;
+  if (state === "slither") return 1;
+  return 0;
 }
 
 function drawTrainingDummy() {
@@ -11778,6 +12085,137 @@ function drawHazards() {
       ctx.arc(hazard.x, hazard.y, hazard.r + Math.sin(boss.animationTime * 8) * 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      return;
+    }
+    if (hazard.type === "wasabiDash") {
+      const active = hazard.warn <= 0;
+      const pulse = Math.sin(boss.animationTime * 14) * 0.5 + 0.5;
+      ctx.save();
+      ctx.strokeStyle = active ? "rgba(159, 240, 95, 0.7)" : `rgba(234, 255, 159, ${0.34 + pulse * 0.22})`;
+      ctx.lineWidth = active ? hazard.width : 8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(hazard.startX, hazard.startY);
+      ctx.lineTo(hazard.endX, hazard.endY);
+      ctx.stroke();
+      ctx.strokeStyle = active ? "rgba(234, 255, 159, 0.72)" : "rgba(159, 240, 95, 0.85)";
+      ctx.lineWidth = active ? 5 : 3;
+      ctx.setLineDash(active ? [] : [20, 12]);
+      ctx.beginPath();
+      ctx.moveTo(hazard.startX, hazard.startY);
+      ctx.lineTo(hazard.endX, hazard.endY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      for (let i = 0.25; i < 1; i += 0.25) {
+        drawWasabiArrow(hazard.startX + (hazard.endX - hazard.startX) * i, hazard.startY + (hazard.endY - hazard.startY) * i, hazard.angle);
+      }
+      ctx.restore();
+      return;
+    }
+    if (hazard.type === "wasabiTrail") {
+      const pulse = Math.sin((hazard.ttl || 0) * 9) * 3;
+      if (!drawGeneratedImage("hazards.wasabi-splatter", hazard.x, hazard.y, hazard.r * 2.35 + pulse, hazard.r * 2.35 + pulse, { alpha: 0.82, rotation: hazard.x * 0.01 })) {
+        ctx.fillStyle = "rgba(122, 196, 109, 0.36)";
+        ctx.strokeStyle = "#9ff05f";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(hazard.x, hazard.y, hazard.r * 1.08, hazard.r * 0.72, Math.sin(hazard.x) * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      return;
+    }
+    if (hazard.type === "chopstickJab") {
+      const active = hazard.warn <= 0;
+      ctx.strokeStyle = active ? "rgba(255, 122, 95, 0.8)" : "rgba(247, 223, 170, 0.5)";
+      ctx.lineWidth = active ? hazard.width : 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(hazard.x, hazard.y);
+      ctx.lineTo(hazard.x + Math.cos(hazard.angle) * hazard.length, hazard.y + Math.sin(hazard.angle) * hazard.length);
+      ctx.stroke();
+      if (active) {
+        drawGeneratedImage("hazards.chopstick-slash", hazard.x + Math.cos(hazard.angle) * hazard.length * 0.48, hazard.y + Math.sin(hazard.angle) * hazard.length * 0.48, 180, 90, { rotation: hazard.angle, alpha: 0.86 });
+      }
+      return;
+    }
+    if (hazard.type === "sushiRoll") {
+      if (!drawGeneratedImage("projectiles.sushi-roll", hazard.x, hazard.y, hazard.r * 4.4, hazard.r * 4.4, { rotation: hazard.spin || 0, shadowColor: "#f05f6a", shadowBlur: 8 })) {
+        ctx.fillStyle = "#18261d";
+        ctx.strokeStyle = "#fff4db";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      return;
+    }
+    if (hazard.type === "soySakeWave") {
+      const active = hazard.warn <= 0;
+      const shape = soySakeWaveShape(hazard);
+      const seed = hazard.waveSeed || 0;
+      ctx.save();
+      ctx.translate(hazard.x, hazard.y);
+      ctx.rotate(hazard.angle);
+      ctx.globalAlpha *= shape.alpha;
+      ctx.beginPath();
+      ctx.moveTo(-shape.length * 0.5, -shape.width * 0.18);
+      for (let i = 0; i <= 14; i += 1) {
+        const t = i / 14;
+        const x = -shape.length * 0.5 + shape.length * t;
+        const y = -shape.width * (0.29 + 0.08 * Math.sin(t * Math.PI + shape.surgeProgress)) + Math.sin(t * Math.PI * 4 + seed + boss.animationTime * 3.4) * shape.width * 0.11;
+        ctx.lineTo(x, y);
+      }
+      for (let i = 14; i >= 0; i -= 1) {
+        const t = i / 14;
+        const x = -shape.length * 0.5 + shape.length * t;
+        const y = shape.width * (0.31 + 0.08 * Math.sin(t * Math.PI * 1.3 + 1.2)) + Math.sin(t * Math.PI * 3.2 + seed + boss.animationTime * 2.6 + 1.4) * shape.width * 0.13;
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = active ? "rgba(33, 18, 28, 0.82)" : "rgba(92, 54, 86, 0.32)";
+      ctx.fill();
+      ctx.strokeStyle = active ? "rgba(163, 118, 166, 0.36)" : "rgba(203, 160, 216, 0.38)";
+      ctx.lineWidth = active ? 2.5 : 2;
+      ctx.stroke();
+      ctx.save();
+      ctx.clip();
+      if (active) {
+        const painted = drawGeneratedSpriteFrame("hazards.soySakeWaveStrip", 0, shape.frame, (hazard.textureOffset || 0) % 140 - 70, 0, shape.length * 1.12, shape.width * 2.15, { cols: 8, rows: 1, alpha: 0.86 });
+        if (!painted) {
+          for (let x = -shape.length * 0.42; x < shape.length * 0.42; x += 150) {
+            drawGeneratedImage("hazards.soy-wave", x, 0, 170, 92, { alpha: 0.42, rotation: 0 });
+          }
+        }
+      } else {
+        ctx.strokeStyle = "rgba(218, 190, 220, 0.34)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([18, 18]);
+        ctx.beginPath();
+        ctx.moveTo(-shape.length * 0.48, 0);
+        ctx.lineTo(shape.length * 0.48, 0);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+      ctx.fillStyle = active ? "rgba(230, 211, 218, 0.42)" : "rgba(230, 211, 218, 0.2)";
+      for (let i = 0; i < 8; i += 1) {
+        const t = (i + 0.5) / 8;
+        const forwardBias = active ? shape.surgeProgress * 0.18 : 0;
+        ctx.beginPath();
+        ctx.ellipse(-shape.length * (0.46 - forwardBias) + shape.length * t, Math.sin(t * 9 + seed + boss.animationTime * 3) * shape.width * 0.25, 7 + (i % 3) * 4, 2.5 + (i % 2), 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (active && shape.damageActive) {
+        ctx.strokeStyle = "rgba(245, 222, 230, 0.22)";
+        ctx.lineWidth = Math.max(2, shape.collisionWidth * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(-shape.length * 0.5, 0);
+        ctx.lineTo(shape.length * 0.5, 0);
+        ctx.stroke();
+      }
+      ctx.restore();
       return;
     }
     if (hazard.type === "wasabiWave") {
@@ -13809,10 +14247,102 @@ function bossHealthSummary() {
   };
 }
 
+function storedMultiplayerServerUrl() {
+  try {
+    return localStorage.getItem("bossFightServerUrl") || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveMultiplayerServerUrl(value) {
+  try {
+    if (value) localStorage.setItem("bossFightServerUrl", value);
+    else localStorage.removeItem("bossFightServerUrl");
+  } catch {
+    // Storage can be unavailable in some desktop or privacy-restricted runtimes.
+  }
+}
+
+function queryMultiplayerServerUrl() {
+  const params = new URLSearchParams(location.search);
+  return params.get("server") || params.get("coop") || "";
+}
+
+function sameHostMultiplayerServerUrl() {
+  if (location.protocol === "file:" || !location.host) return "";
+  return `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+}
+
+function normalizeMultiplayerServerUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const withoutTrailingSlash = raw.replace(/\/+$/, "");
+  if (/^https:\/\//i.test(withoutTrailingSlash)) return withoutTrailingSlash.replace(/^https/i, "wss");
+  if (/^http:\/\//i.test(withoutTrailingSlash)) return withoutTrailingSlash.replace(/^http/i, "ws");
+  if (/^wss?:\/\//i.test(withoutTrailingSlash)) return withoutTrailingSlash;
+  if (/^(localhost|127\.0\.0\.1|\[?::1\]?)(:|$)/i.test(withoutTrailingSlash)) return `ws://${withoutTrailingSlash}`;
+  return `wss://${withoutTrailingSlash}`;
+}
+
+function multiplayerServerUrl() {
+  return normalizeMultiplayerServerUrl(
+    ui.serverUrlInput?.value ||
+      queryMultiplayerServerUrl() ||
+      desktopConfig.serverUrl ||
+      storedMultiplayerServerUrl() ||
+      sameHostMultiplayerServerUrl()
+  );
+}
+
+function multiplayerSocketUrl() {
+  const serverUrl = multiplayerServerUrl();
+  return serverUrl ? `${serverUrl}/coop` : "";
+}
+
+function persistMultiplayerServerUrl() {
+  const serverUrl = normalizeMultiplayerServerUrl(ui.serverUrlInput?.value || multiplayerServerUrl());
+  if (ui.serverUrlInput && ui.serverUrlInput.value !== serverUrl) ui.serverUrlInput.value = serverUrl;
+  saveMultiplayerServerUrl(serverUrl);
+}
+
+function initializeMultiplayerServerInput() {
+  if (!ui.serverUrlInput) return;
+  ui.serverUrlInput.value = multiplayerServerUrl();
+  ui.serverUrlInput.addEventListener("change", persistMultiplayerServerUrl);
+  ui.serverUrlInput.addEventListener("blur", persistMultiplayerServerUrl);
+}
+
+function initializeDesktopUpdates() {
+  if (!desktopConfig.isDesktop || !ui.desktopUpdateButton) return;
+  ui.desktopUpdateButton.hidden = false;
+  ui.desktopUpdateButton.addEventListener("click", async () => {
+    ui.desktopUpdateButton.disabled = true;
+    setMenuStatus("Checking for updates...");
+    try {
+      const status = await desktopUpdater?.checkForUpdates?.();
+      if (status?.message) setMenuStatus(status.message);
+    } catch {
+      setMenuStatus("Update check failed.");
+    } finally {
+      ui.desktopUpdateButton.disabled = false;
+    }
+  });
+  desktopUpdater?.onStatus?.((status) => {
+    if (status?.message) setMenuStatus(status.message);
+  });
+}
+
 function setupMultiplayer() {
-  if (!("WebSocket" in window) || location.protocol === "file:") {
-    setCoopStatus(location.protocol === "file:" ? "Start server for co-op" : "Solo", 1);
-    setMenuStatus("Start the Node server to use multiplayer.");
+  if (!("WebSocket" in window)) {
+    setCoopStatus("Solo", 1);
+    setMenuStatus("This runtime does not support multiplayer.");
+    return;
+  }
+  const socketUrl = multiplayerSocketUrl();
+  if (!socketUrl) {
+    setCoopStatus("Start server for co-op", 1);
+    setMenuStatus("Enter a multiplayer server URL.");
     return;
   }
   if (multiplayer.socket) return;
@@ -13822,8 +14352,14 @@ function setupMultiplayer() {
 
 function connectMultiplayer() {
   if (!multiplayer.enabled) return;
-  const protocol = location.protocol === "https:" ? "wss" : "ws";
-  const socket = new WebSocket(`${protocol}://${location.host}/coop`);
+  const socketUrl = multiplayerSocketUrl();
+  if (!socketUrl) {
+    setCoopStatus("Co-op offline", 1);
+    setMenuStatus("Enter a multiplayer server URL.");
+    return;
+  }
+  persistMultiplayerServerUrl();
+  const socket = new WebSocket(socketUrl);
   multiplayer.socket = socket;
   setCoopStatus("Connecting", multiplayer.count);
   setMenuStatus("Connecting to server...");
@@ -13873,7 +14409,7 @@ function connectMultiplayer() {
     if (!multiplayer.everConnected) {
       multiplayer.enabled = false;
       setCoopStatus("Co-op offline", 1);
-      setMenuStatus("Could not connect. Run npm start or use the hosted server.");
+      setMenuStatus("Could not connect. Check the multiplayer server URL.");
       return;
     }
     multiplayer.reconnectAttempts += 1;
@@ -14471,6 +15007,11 @@ const hostileHazardTypeFields = {
   frostingRibbon: ["damageTimer"],
   royalRoll: ["startX", "startY", "endX", "endY", "rollAge", "rollDuration", "prevX", "prevY", "hit"],
   sugarZone: [],
+  wasabiDash: ["startX", "startY", "endX", "endY", "dashAge", "dashDuration", "prevX", "prevY", "hit"],
+  wasabiTrail: ["damageTimer"],
+  chopstickJab: ["hit"],
+  sushiRoll: ["spin", "turn"],
+  soySakeWave: ["damageTimer", "speed", "originX", "originY", "warnDuration", "age", "activeAge", "activeDuration", "surgeDuration", "fadeDuration", "visualPadding", "textureOffset", "waveSeed"],
   wasabiWave: ["lane", "hit"],
   soyPuddle: ["damageTimer"],
   chopstickPin: ["hit"],
@@ -15265,6 +15806,8 @@ function applyRemoteBossSubtargetIntent(peerId, event) {
     if (segment.weak) {
       boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
       boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
+      boss.sushiWeakFlashTimer = 0.42;
+      setSushiAnimation("weak", 0.38);
       particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
     }
     sendMultiplayerState(true);
@@ -16571,6 +17114,8 @@ window.addEventListener("blur", () => {
 window.addEventListener("mouseup", () => stopHeldPrimaryAttack());
 window.addEventListener("resize", resizeCanvas);
 
+initializeMultiplayerServerInput();
+initializeDesktopUpdates();
 loadGame();
 applyGear();
 resizeCanvas();
