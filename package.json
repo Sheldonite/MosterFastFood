@@ -7,7 +7,7 @@
   "main": "electron/main.js",
   "scripts": {
     "generate:art": "node scripts/generate-game-art.js",
-    "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js",
+    "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js && node scripts/test-projectile-damage-once.js",
     "start": "node server.js",
     "desktop": "electron .",
     "dist:win": "electron-builder --win",

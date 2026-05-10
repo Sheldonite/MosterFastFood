@@ -195,6 +195,8 @@ function createRoom(peer, message) {
     maxPlayers: 4,
     startAt: 0,
     players: new Set([peer.id]),
+    projectileHits: new Set(),
+    consumedProjectiles: new Set(),
   };
   rooms.set(id, room);
   peer.roomId = id;
@@ -284,6 +286,8 @@ function startGame(peer) {
   }
   room.state = "inGame";
   room.startAt = Date.now() + 1200;
+  room.projectileHits = new Set();
+  room.consumedProjectiles = new Set();
   broadcastRoom(room, {
     type: "game-start",
     room: roomSnapshot(room),
@@ -310,6 +314,44 @@ function sanitizeText(value, maxLength) {
     .replace(/[^\w .'-]/g, "")
     .trim()
     .slice(0, maxLength);
+}
+
+function handleProjectileHit(peer, message) {
+  const room = rooms.get(peer.roomId);
+  if (!room || room.state !== "inGame" || !room.players.has(peer.id)) return;
+  const projectileId = sanitizeText(message.projectileId, 80);
+  if (!projectileId) return;
+  const playerId = peer.id;
+  const hitKey = `${projectileId}:${playerId}`;
+  if (!room.projectileHits) room.projectileHits = new Set();
+  if (!room.consumedProjectiles) room.consumedProjectiles = new Set();
+  if (room.projectileHits.has(hitKey)) {
+    send(peer, { type: "projectile-damage-ignored", projectileId, playerId, reason: "player-already-hit" });
+    return;
+  }
+  if (!message.piercing && room.consumedProjectiles.has(projectileId)) {
+    send(peer, { type: "projectile-damage-ignored", projectileId, playerId, reason: "projectile-consumed" });
+    return;
+  }
+
+  const amount = Math.max(0, Math.min(999, Number(message.amount) || 0));
+  if (!amount) return;
+  room.projectileHits.add(hitKey);
+  if (!message.piercing) room.consumedProjectiles.add(projectileId);
+  if (room.projectileHits.size > 8000) room.projectileHits.clear();
+  if (room.consumedProjectiles.size > 4000) room.consumedProjectiles.clear();
+
+  broadcastRoom(room, {
+    type: "projectile-damage",
+    projectileId,
+    playerId,
+    amount,
+    source: sanitizeText(message.source, 40) || "Projectile",
+    fixed: Boolean(message.fixed),
+    ignoreOverlapGrace: Boolean(message.ignoreOverlapGrace),
+    piercing: Boolean(message.piercing),
+    serverTime: Date.now(),
+  });
 }
 
 function handlePeerMessage(peer, message) {
@@ -345,6 +387,10 @@ function handlePeerMessage(peer, message) {
   }
   if (message.type === "start-game") {
     startGame(peer);
+    return;
+  }
+  if (message.type === "projectile-hit") {
+    handleProjectileHit(peer, message);
     return;
   }
   if (message.type === "state" && message.state) {

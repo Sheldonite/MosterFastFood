@@ -920,6 +920,7 @@ function createPlayer() {
     lastDamageAt: 0,
     chillStacks: 0,
     chillTimer: 0,
+    recentlyHitProjectileIds: new Set(),
     facing: "down",
     animationTime: 0,
     moving: false,
@@ -7682,6 +7683,93 @@ function consumeRemoteHazard(hazard, ttlMs = 2200) {
   if (hazard.syncId) sendHazardControlIntent("destroy", [hazard.syncId], { x: hazard.x, y: hazard.y, radius: Math.max(72, (hazard.r || 10) + player.radius + 34) });
 }
 
+function localPlayerDamageId() {
+  return multiplayer.id || "local-player";
+}
+
+function assignHazardSyncId(hazard, prefix = "h") {
+  if (!hazard) return "";
+  if (!hazard.syncId) {
+    multiplayer.hazardSyncSeq += 1;
+    hazard.syncId = `${multiplayer.id || "local"}-${prefix}${multiplayer.hazardSyncSeq}`;
+  }
+  if (!hazard.projectileId) hazard.projectileId = hazard.syncId;
+  return hazard.syncId;
+}
+
+function ensureProjectileId(projectile) {
+  if (!projectile) return "";
+  if (projectile.projectileId) return String(projectile.projectileId);
+  if (projectile.syncId) {
+    projectile.projectileId = String(projectile.syncId);
+    return projectile.projectileId;
+  }
+  return assignHazardSyncId(projectile, projectile.mazeHazard ? "g" : "h");
+}
+
+function projectileHitSet(projectile) {
+  if (!projectile.hitPlayerIds) projectile.hitPlayerIds = new Set();
+  if (projectile.hitPlayerIds instanceof Set) return projectile.hitPlayerIds;
+  if (Array.isArray(projectile.hitPlayerIds)) {
+    projectile.hitPlayerIds = new Set(projectile.hitPlayerIds.map(String));
+    return projectile.hitPlayerIds;
+  }
+  projectile.hitPlayerIds = new Set(Object.values(projectile.hitPlayerIds || {}).map(String));
+  return projectile.hitPlayerIds;
+}
+
+function markProjectileHitPlayer(projectile, playerId, source) {
+  const projectileId = ensureProjectileId(projectile);
+  if (!projectileId || !playerId) return false;
+  const hitPlayerIds = projectileHitSet(projectile);
+  if (hitPlayerIds.has(playerId)) {
+    recordDebugEvent("projectile-damage-ignored", { projectileId, playerId, source, reason: "projectile-hit-set" });
+    return false;
+  }
+  hitPlayerIds.add(playerId);
+  recordDebugEvent("projectile-damage-candidate", { projectileId, playerId, source, applied: true });
+  return true;
+}
+
+function isServerMediatedProjectileDamageActive() {
+  return isMultiplayerGame() && multiplayer.connected && multiplayer.room?.state === "inGame";
+}
+
+function damagePlayerFromProjectile(projectile, amount, source, options = {}) {
+  const playerId = localPlayerDamageId();
+  const projectileId = ensureProjectileId(projectile);
+  if (!projectileId || !markProjectileHitPlayer(projectile, playerId, source)) return false;
+  const piercing = Boolean(options.piercing || projectile.piercing);
+  if (isServerMediatedProjectileDamageActive()) {
+    sendServer({
+      type: "projectile-hit",
+      projectileId,
+      playerId,
+      amount,
+      source,
+      fixed: Boolean(options.fixed),
+      ignoreOverlapGrace: Boolean(options.ignoreOverlapGrace),
+      piercing,
+      room: player.room,
+      bossKind: boss.kind,
+      phaseSeq: multiplayer.phaseSeq,
+    });
+    recordDebugEvent("projectile-hit-requested", { projectileId, playerId, source, piercing });
+    return true;
+  }
+  return damagePlayer(amount, source, { ...options, projectileId, authoritativeProjectileDamage: true });
+}
+
+function applyAuthoritativeProjectileDamage(message) {
+  if (!message?.projectileId || message.playerId !== multiplayer.id) return;
+  damagePlayer(Number(message.amount) || 0, message.source || "Projectile", {
+    fixed: Boolean(message.fixed),
+    ignoreOverlapGrace: Boolean(message.ignoreOverlapGrace),
+    projectileId: String(message.projectileId),
+    authoritativeProjectileDamage: true,
+  });
+}
+
 function updateHazards(dt) {
   const spawnedHazards = [];
   pruneConsumedRemoteHazards();
@@ -7705,7 +7793,7 @@ function updateHazards(dt) {
       hazard.y += hazard.vy * dt;
       if (!mazeState || !isMazeSegmentWalkable(previousX, previousY, hazard.x, hazard.y, hazard.r || 0)) return false;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, hazard.source || "Maze shot");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Maze shot");
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
@@ -7721,7 +7809,7 @@ function updateHazards(dt) {
           }
         } else if (!hazard.hit) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, hazard.source || "Maze hazard");
+          damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Maze hazard", { piercing: true });
           if (hazard.chill) addChillStack();
         }
       }
@@ -7730,7 +7818,7 @@ function updateHazards(dt) {
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit && isPlayerInMazeWall(hazard)) {
         hazard.hit = true;
-        damagePlayer(hazard.damage, "Maze wall");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Maze wall", { piercing: true });
       }
     } else if (hazard.type === "grease") {
       hazard.ttl -= dt;
@@ -7768,7 +7856,7 @@ function updateHazards(dt) {
       hazard.y += hazard.vy * dt;
       if (hazard.storm) {
         if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-          damagePlayer(hazard.damage, "Pico de gallo storm");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Pico de gallo storm");
           consumeRemoteHazard(hazard);
           hazard.ttl = 0;
         }
@@ -7815,7 +7903,7 @@ function updateHazards(dt) {
       hazard.y += dy;
       hazard.traveled += Math.hypot(dx, dy);
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, "Tortilla chip");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Tortilla chip");
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       } else if (hazard.traveled >= hazard.shatterDistance) {
@@ -7828,7 +7916,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.dashed) {
         hazard.dashed = true;
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
-          damagePlayer(hazard.damage, "Delivery dash");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Delivery dash", { piercing: true });
         }
         if (!remoteBossHazard) spawnPizzaCheeseTrail(hazard, spawnedHazards);
         boss.x = hazard.targetX;
@@ -7849,7 +7937,7 @@ function updateHazards(dt) {
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, "Pizza slice");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Pizza slice");
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       } else if (
@@ -7874,7 +7962,7 @@ function updateHazards(dt) {
         hazard.x += hazard.vx * dt;
         hazard.y += hazard.vy * dt;
         if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-          damagePlayer(hazard.damage, "Returning pizza slice");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Returning pizza slice");
           consumeRemoteHazard(hazard);
           hazard.ttl = 0;
         }
@@ -7895,14 +7983,14 @@ function updateHazards(dt) {
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit && distance(player, hazard) < player.radius + hazard.r) {
         hazard.hit = true;
-        damagePlayer(hazard.damage, "Oven zone");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Oven zone", { piercing: true });
       }
     } else if (hazard.type === "pizzaBoxSlam") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
-        damagePlayer(hazard.damage, "Pizza box slam");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Pizza box slam", { piercing: true });
       }
     } else if (hazard.type === "colaBubble") {
       hazard.ttl -= dt;
@@ -7923,7 +8011,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, 780, player.radius + 11)) {
-          damagePlayer(hazard.damage, "Straw snipe");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Straw snipe", { piercing: true });
         }
       }
     } else if (hazard.type === "fizzBurst") {
@@ -7932,7 +8020,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (distance(player, hazard) < hazard.r) {
-          damagePlayer(hazard.damage, "Fizz burst");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Fizz burst", { piercing: true });
           knockPlayerFrom(hazard.x, hazard.y, boss.enraged ? 360 : 285);
         }
       }
@@ -7964,7 +8052,7 @@ function updateHazards(dt) {
         hazard.y += hazard.vy * dt;
         if (!hazard.hit && isPlayerInChocolateBar(hazard)) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, "Chocolate bar", { fixed: hazard.fixedDamage });
+          damagePlayerFromProjectile(hazard, hazard.damage, "Chocolate bar", { fixed: hazard.fixedDamage, piercing: true });
         }
       }
     } else if (hazard.type === "scoopDrop") {
@@ -7973,7 +8061,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (distance(player, hazard) < player.radius + hazard.r) {
-          damagePlayer(hazard.damage, "Ice cream scoop");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Ice cream scoop", { piercing: true });
           addChillStack();
         }
         hazard.type = "frozenPuddle";
@@ -8014,7 +8102,7 @@ function updateHazards(dt) {
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
           if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           addStuffedStack();
-          damagePlayer(hazard.damage, "Crunch Charge");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Crunch Charge", { piercing: true });
           knockPlayerFrom(hazard.x, hazard.y, 260);
         }
         boss.x = hazard.targetX;
@@ -8028,7 +8116,7 @@ function updateHazards(dt) {
         hazard.damageTimer -= dt;
         if (hazard.damageTimer <= 0) {
           if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
-          damagePlayer(hazard.damage, "Shell shard");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Shell shard");
           consumeRemoteHazard(hazard);
           hazard.ttl = 0;
         }
@@ -8043,7 +8131,7 @@ function updateHazards(dt) {
           if (hazard.ingredient === "cheese") player.freezeTimer = Math.max(player.freezeTimer, 0.35);
           if (hazard.ingredient === "lettuce") knockPlayerFrom(hazard.x, hazard.y, 220);
           addStuffedStack();
-          damagePlayer(hazard.ingredient === "beef" ? 18 : 12, `${hazard.ingredient} drop`);
+          damagePlayerFromProjectile(hazard, hazard.ingredient === "beef" ? 18 : 12, `${hazard.ingredient} drop`);
           consumeRemoteHazard(hazard);
         }
         if (hazard.ingredient === "beef") {
@@ -8088,7 +8176,7 @@ function updateHazards(dt) {
         if (dist < hazard.r && dist > hazard.inner && !inGap) {
           if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
           addStuffedStack();
-          damagePlayer(hazard.damage, "Shell Slam");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Shell Slam", { piercing: true });
         }
       }
     } else if (hazard.type === "lettuceLeaf") {
@@ -8101,7 +8189,7 @@ function updateHazards(dt) {
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         if (hazard.tacoPuzzleIngredient) markTacoPuzzleFailure(hazard.tacoPuzzleIngredient);
         addStuffedStack();
-        damagePlayer(hazard.damage, "Lettuce fan");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Lettuce fan");
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
@@ -8154,7 +8242,7 @@ function updateHazards(dt) {
         const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < hazard.gapWidth;
         if (inBand && !inGap && !hazard.hit) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, "Glaze ring");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Glaze ring", { piercing: true });
         }
       }
     } else if (hazard.type === "frostingRibbon") {
@@ -8187,7 +8275,7 @@ function updateHazards(dt) {
         const sweptHit = traveled > 1 && isPlayerInLine(hazard.prevX, hazard.prevY, Math.atan2(hazard.y - hazard.prevY, hazard.x - hazard.prevX), traveled, hazard.width / 2 + player.radius);
         if (!hazard.hit && (distance(player, boss) < hazard.width / 2 + player.radius || sweptHit)) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, "Royal Roll");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Royal Roll", { piercing: true });
           knockPlayerFrom(hazard.prevX, hazard.prevY, 320);
         }
         if (progress >= 1) {
@@ -8221,7 +8309,7 @@ function updateHazards(dt) {
         const sweptHit = traveled > 1 && isPlayerInLine(hazard.prevX, hazard.prevY, Math.atan2(hazard.y - hazard.prevY, hazard.x - hazard.prevX), traveled, hazard.width / 2 + player.radius);
         if (!hazard.hit && (distance(player, boss) < hazard.width / 2 + player.radius || sweptHit)) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, "Wasabi Dash");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Wasabi Dash", { piercing: true });
           knockPlayerFrom(hazard.prevX, hazard.prevY, 260);
         }
         if (!remoteBossHazard && (boss.sushiDashTrailTimer || 0) <= 0) {
@@ -8254,7 +8342,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
-          damagePlayer(hazard.damage, "Chopstick Jab");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Chopstick Jab", { piercing: true });
           particles.push({ x: player.x, y: player.y - 22, text: "jab", color: "#ffb0a4", ttl: 0.45 });
         }
       }
@@ -8270,7 +8358,7 @@ function updateHazards(dt) {
       hazard.x += hazard.vx * dt;
       hazard.y += hazard.vy * dt;
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, "Roll Barrage");
+        damagePlayerFromProjectile(hazard, hazard.damage, "Roll Barrage");
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
       }
@@ -8303,14 +8391,14 @@ function updateHazards(dt) {
           hazard.lane = hazard.x;
           if (!hazard.hit && Math.abs(player.x - hazard.x) < hazard.width + player.radius) {
             hazard.hit = true;
-            damagePlayer(hazard.damage, "Wasabi wave");
+            damagePlayerFromProjectile(hazard, hazard.damage, "Wasabi wave", { piercing: true });
           }
         } else {
           hazard.y += hazard.speed * hazard.direction * dt;
           hazard.lane = hazard.y;
           if (!hazard.hit && Math.abs(player.y - hazard.y) < hazard.width + player.radius) {
             hazard.hit = true;
-            damagePlayer(hazard.damage, "Wasabi wave");
+            damagePlayerFromProjectile(hazard, hazard.damage, "Wasabi wave", { piercing: true });
           }
         }
       }
@@ -8333,7 +8421,7 @@ function updateHazards(dt) {
         const hit = hazard.vertical
           ? Math.abs(player.x - hazard.x) < 18 + player.radius
           : Math.abs(player.y - hazard.y) < 18 + player.radius;
-        if (hit) damagePlayer(hazard.damage, "Chopstick pin");
+        if (hit) damagePlayerFromProjectile(hazard, hazard.damage, "Chopstick pin", { piercing: true });
       }
     } else if (hazard.type === "serpentSweep") {
       hazard.ttl -= dt;
@@ -8341,7 +8429,7 @@ function updateHazards(dt) {
       if (hazard.warn <= 0 && !hazard.hit) {
         hazard.hit = true;
         if (isPlayerInLine(hazard.x, hazard.y, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
-          damagePlayer(hazard.damage, "Segment sweep");
+          damagePlayerFromProjectile(hazard, hazard.damage, "Segment sweep", { piercing: true });
           knockPlayerFrom(hazard.x, hazard.y, 280);
         }
       }
@@ -8382,7 +8470,7 @@ function updateHazards(dt) {
       hazard.y += hazard.vy * dt;
       hazard.angle = Math.atan2(hazard.vy, hazard.vx);
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, hazard.source || "Tomato slice");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Tomato slice");
         knockPlayerFrom(hazard.x - hazard.vx * dt, hazard.y - hazard.vy * dt, hazard.knockback || 250);
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
@@ -8399,7 +8487,7 @@ function updateHazards(dt) {
       hazard.vy = (hazard.y - previousY) / Math.max(dt, 0.001);
       hazard.angle = Math.atan2(hazard.vy || 0, hazard.vx || 1);
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
-        damagePlayer(hazard.damage, hazard.source || "Pickle splash");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Pickle splash");
         consumeRemoteHazard(hazard);
         turnBurgerPickleIntoPuddle(hazard);
       } else if (progress >= 1) {
@@ -8422,7 +8510,7 @@ function updateHazards(dt) {
       hazard.angle = hazard.spin;
       const dist = distance(player, hazard);
       if (dist < (hazard.outer || hazard.r) + player.radius && dist > (hazard.inner || 10) - player.radius && !player.dead) {
-        damagePlayer(hazard.damage, hazard.source || "Onion ring");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Onion ring");
         knockPlayerFrom(hazard.x, hazard.y, hazard.knockback || 190);
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
@@ -8442,14 +8530,14 @@ function updateHazards(dt) {
       hazard.ttl -= dt;
       if (!hazard.hitPlayer && distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         hazard.hitPlayer = true;
-        damagePlayer(hazard.damage, hazard.source || "Sauce burst");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Sauce burst", { piercing: true });
       }
     } else if (hazard.type === "burgerChargeLane") {
       hazard.ttl -= dt;
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit && isPlayerInLine(hazard.startX, hazard.startY, hazard.angle, hazard.length, hazard.width / 2 + player.radius)) {
         hazard.hit = true;
-        damagePlayer(hazard.damage, hazard.source || "Burger charge");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Burger charge", { piercing: true });
         knockPlayerFrom(hazard.startX, hazard.startY, boss.enraged ? 360 : 300);
       }
     } else if (hazard.type === "burgerBurstRing") {
@@ -8461,7 +8549,7 @@ function updateHazards(dt) {
         const inGap = Math.abs(angleDifference(angleToPlayer, hazard.gapAngle)) < (hazard.gapWidth || 0.9) / 2;
         if (dist < hazard.r + player.radius && dist > (hazard.inner || 0) - player.radius && !inGap && !player.dead) {
           hazard.hit = true;
-          damagePlayer(hazard.damage, hazard.source || "Ingredient burst");
+          damagePlayerFromProjectile(hazard, hazard.damage, hazard.source || "Ingredient burst", { piercing: true });
           knockPlayerFrom(hazard.x, hazard.y, boss.enraged ? 360 : 285);
         }
       }
@@ -8480,7 +8568,7 @@ function updateHazards(dt) {
       }
       if (distance(player, hazard) < player.radius + hazard.r && !player.dead) {
         const source = hazard.type === "fry" ? "French fry" : hazard.type === "mustardSeed" ? "Mustard seed" : hazard.type === "sauceBlob" ? "Special sauce" : hazard.type === "peanut" ? "Peanut" : hazard.type === "cherryShot" ? "Cherry shot" : hazard.type === "nachoCrumb" ? "Nacho crumb" : hazard.type === "pepperoni" ? "Pepperoni" : hazard.type === "cheeseBolt" ? "Ghost cheese" : hazard.type === "sprinkle" ? "Sprinkle barrage" : "Arc bolt";
-        damagePlayer(hazard.damage, source, { fixed: hazard.fixedDamage });
+        damagePlayerFromProjectile(hazard, hazard.damage, source, { fixed: hazard.fixedDamage });
         if (hazard.type === "peanut" && boss.kind === "shake" && boss.phase >= 2) addChillStack();
         consumeRemoteHazard(hazard);
         hazard.ttl = 0;
@@ -8490,7 +8578,7 @@ function updateHazards(dt) {
       hazard.warn -= dt;
       if (hazard.warn <= 0 && !hazard.hit && distance(player, hazard) < player.radius + hazard.r) {
         hazard.hit = true;
-        damagePlayer(hazard.damage, hazard.type === "slam" ? "Ground slam" : "Furnace vent");
+        damagePlayerFromProjectile(hazard, hazard.damage, hazard.type === "slam" ? "Ground slam" : "Furnace vent", { piercing: true });
       }
     }
     if (hazard.type === "chocolateBar") return hazard.ttl > 0 && (hazard.warn > 0 || chocolateBarTouchesArena(hazard));
@@ -8508,7 +8596,7 @@ function updateHazards(dt) {
 function popColaBubble(hazard) {
   particles.push({ x: hazard.x, y: hazard.y - 16, text: "pop", color: "#b9f4ff", ttl: 0.55 });
   if (distance(player, hazard) < player.radius + hazard.r + 22 && !player.dead) {
-    damagePlayer(hazard.damage, "Bubble pop");
+    damagePlayerFromProjectile(hazard, hazard.damage, "Bubble pop", { piercing: true });
   }
 }
 
@@ -8812,9 +8900,20 @@ function hitSushiSegment(projectile) {
 }
 
 function damagePlayer(amount, source, options = {}) {
+  if (options.projectileId) {
+    const projectileId = String(options.projectileId);
+    if (!(player.recentlyHitProjectileIds instanceof Set)) {
+      player.recentlyHitProjectileIds = new Set(Array.isArray(player.recentlyHitProjectileIds) ? player.recentlyHitProjectileIds.map(String) : []);
+    }
+    if (player.recentlyHitProjectileIds.has(projectileId)) {
+      recordDebugEvent("player-projectile-damage-ignored", { projectileId, playerId: localPlayerDamageId(), source });
+      return false;
+    }
+    player.recentlyHitProjectileIds.add(projectileId);
+  }
   if (player.invulnerableTimer > 0) {
     particles.push({ x: player.x, y: player.y - 35, text: "evade", color: "#ffd782", ttl: 0.55 });
-    return;
+    return false;
   }
   let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - effectivePlayerArmor()));
   const now = performance.now();
@@ -8823,14 +8922,16 @@ function damagePlayer(amount, source, options = {}) {
   }
   if (player.shieldWallTimer > 0) hit = Math.max(1, Math.ceil(hit * (hasTalent("melee_iron_wall") || hasTalent("paladin_guard_mitigation") ? 0.4 : 0.5)));
   if (player.consecrationTimer > 0) hit = Math.max(1, Math.ceil(hit * 0.78));
-  if (hit >= player.hp && triggerTalentLethalSave(source)) return;
+  if (hit >= player.hp && triggerTalentLethalSave(source)) return false;
   player.hp = Math.max(0, player.hp - hit);
   player.lastDamageAt = now;
+  if (options.projectileId) recordDebugEvent("player-projectile-damage-applied", { projectileId: String(options.projectileId), playerId: localPlayerDamageId(), source, hit });
   runTalentHook("onDamageTaken", { amount, hit, source, options });
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
     enterDeathState(source);
   }
+  return true;
 }
 
 function triggerTalentLethalSave(source) {
@@ -14499,6 +14600,18 @@ function handleMultiplayerMessage(message) {
     handleMultiplayerEvent(message.id, message.event);
     return;
   }
+  if (message.type === "projectile-damage") {
+    applyAuthoritativeProjectileDamage(message);
+    return;
+  }
+  if (message.type === "projectile-damage-ignored") {
+    recordDebugEvent("projectile-damage-ignored", {
+      projectileId: message.projectileId,
+      playerId: message.playerId,
+      reason: message.reason || "server",
+    });
+    return;
+  }
 }
 
 function updateMultiplayer(dt) {
@@ -14668,10 +14781,7 @@ function isSyncableBossHazard(hazard) {
 }
 
 function serializeBossHazard(hazard) {
-  if (!hazard.syncId) {
-    multiplayer.hazardSyncSeq += 1;
-    hazard.syncId = `${multiplayer.id || "host"}-h${multiplayer.hazardSyncSeq}`;
-  }
+  assignHazardSyncId(hazard, "h");
   return cloneSyncObject(hazard);
 }
 
@@ -14697,6 +14807,7 @@ function cloneSyncValue(value, depth) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 999999;
   if (typeof value === "undefined" || typeof value === "function") return undefined;
   if (depth > 4) return undefined;
+  if (value instanceof Set) return [...value].map((item) => cloneSyncValue(item, depth + 1)).filter((item) => typeof item !== "undefined");
   if (Array.isArray(value)) {
     return value
       .map((item) => cloneSyncValue(item, depth + 1))
@@ -14938,7 +15049,7 @@ function collectHostileActors() {
 }
 
 const hostileHazardCommonFields = [
-  "syncId", "type", "mazeHazard", "remoteBossHazard", "r", "radius", "ttl", "warn", "delay",
+  "syncId", "projectileId", "ownerId", "hitPlayerIds", "piercing", "type", "mazeHazard", "remoteBossHazard", "r", "radius", "ttl", "warn", "delay",
   "fireTimer", "explodeTimer", "damageTimer", "damage", "fixedDamage", "source", "color",
   "angle", "length", "width", "height", "vertical", "horizontal", "orientation", "position",
   "axis", "direction", "speed", "turn", "sweepSpeed", "storm", "lingering", "chill", "hit",
@@ -15438,10 +15549,7 @@ function serializeGauntletPickup(pickup) {
 }
 
 function serializeGauntletHazard(hazard) {
-  if (!hazard.syncId) {
-    multiplayer.hazardSyncSeq += 1;
-    hazard.syncId = `${multiplayer.id || "host"}-g${multiplayer.hazardSyncSeq}`;
-  }
+  assignHazardSyncId(hazard, "g");
   return cloneSyncObject(hazard);
 }
 
