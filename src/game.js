@@ -216,40 +216,40 @@ const combatTuning = {
 
 const abilityLoadouts = {
   melee: [
-    { key: "Q", name: "Shield Bash", cooldown: 4.5 },
-    { key: "E", name: "Groundbreaker", cooldown: 10 },
-    { key: "Space", name: "Whirlwind Dash", cooldown: 8 },
-    { key: "R", name: "Shield Wall", cooldown: 15 },
+    { key: "Q", name: "Shield Bash", cooldown: 4.5, description: "Strike in a cone, interrupt and shove enemies, and block incoming projectiles." },
+    { key: "E", name: "Groundbreaker", cooldown: 10, description: "Slam the ground around you, damaging, interrupting, and knocking enemies back." },
+    { key: "Space", name: "Whirlwind Dash", cooldown: 8, description: "Dash forward while briefly invulnerable, damaging enemies you pass through." },
+    { key: "R", name: "Shield Wall", cooldown: 15, description: "Raise your guard for several seconds, greatly reducing incoming damage." },
   ],
   ranger: [
-    { key: "Q", name: "Marked Shot", cooldown: 7 },
-    { key: "E", name: "Arrow Storm", cooldown: 12 },
-    { key: "Space", name: "Tumble Shot", cooldown: 9 },
-    { key: "R", name: "Volley Trap", cooldown: 16 },
+    { key: "Q", name: "Marked Shot", cooldown: 7, description: "Fire a fast arrow that marks the target for bonus follow-up ranged hits." },
+    { key: "E", name: "Arrow Storm", cooldown: 12, description: "Call down repeated arrow strikes in a targeted area." },
+    { key: "Space", name: "Tumble Shot", cooldown: 9, description: "Dodge in your movement direction and fire a quick shot while evading." },
+    { key: "R", name: "Volley Trap", cooldown: 16, description: "Drop a trap that locks onto enemies, favoring marked targets, and fires a burst of arrows." },
   ],
   mage: [
-    { key: "Q", name: "Fire Blast", cooldown: 6 },
-    { key: "E", name: "Meteor Field", cooldown: 13 },
-    { key: "Space", name: "Blink Step", cooldown: 10 },
-    { key: "R", name: "Time Warp", cooldown: 18 },
+    { key: "Q", name: "Fire Blast", cooldown: 6, description: "Cast a heavy fire projectile that explodes for high area damage." },
+    { key: "E", name: "Meteor Field", cooldown: 13, description: "Create a targeted zone where meteors repeatedly fall and damage enemies." },
+    { key: "Space", name: "Blink Step", cooldown: 10, description: "Teleport forward and leave a rune that damages enemies and clears small hazards." },
+    { key: "R", name: "Time Warp", cooldown: 18, description: "Create a slowing field that drags down moving hazards and supports cooldown talents." },
   ],
   rogue: [
-    { key: "Q", name: "Backstab", cooldown: 6 },
-    { key: "E", name: "Poison Cloud", cooldown: 11 },
-    { key: "Space", name: "Shadow Step", cooldown: 8 },
-    { key: "R", name: "Smoke Bomb", cooldown: 16 },
+    { key: "Q", name: "Backstab", cooldown: 6, description: "Slash in front of you; after Shadow Step, it becomes a much stronger empowered strike." },
+    { key: "E", name: "Poison Cloud", cooldown: 11, description: "Create a poison zone that damages enemies, stacks poison, and slows hazards." },
+    { key: "Space", name: "Shadow Step", cooldown: 8, description: "Teleport toward your aim direction, briefly evade, and ready an empowered Backstab." },
+    { key: "R", name: "Smoke Bomb", cooldown: 16, description: "Drop a smoke zone that grants evasion, weakens hazards, and sets up an ambush when you leave." },
   ],
   paladin: [
-    { key: "Q", name: "Radiant Smite", cooldown: 5.5 },
-    { key: "E", name: "Consecration", cooldown: 12 },
-    { key: "Space", name: "Aegis Step", cooldown: 9 },
-    { key: "R", name: "Divine Bulwark", cooldown: 16 },
+    { key: "Q", name: "Radiant Smite", cooldown: 5.5, description: "Blast a holy area in front of you, damaging and interrupting enemies." },
+    { key: "E", name: "Consecration", cooldown: 12, description: "Create a holy aura around yourself that pulses damage, heals you, and reduces incoming damage." },
+    { key: "Space", name: "Aegis Step", cooldown: 9, description: "Teleport a short distance, briefly evade, and gain a burst of speed." },
+    { key: "R", name: "Divine Bulwark", cooldown: 16, description: "Heal yourself and gain a strong defensive barrier for several seconds." },
   ],
   bard: [
-    { key: "Q", name: "Power Chord", cooldown: 5.2 },
-    { key: "E", name: "Battle Hymn", cooldown: 12 },
-    { key: "Space", name: "Quickstep Verse", cooldown: 9 },
-    { key: "R", name: "Healing Ballad", cooldown: 15 },
+    { key: "Q", name: "Power Chord", cooldown: 5.2, description: "Fire a cone-shaped sonic attack that gets stronger for each active song." },
+    { key: "E", name: "Battle Hymn", cooldown: 12, description: "Play a song that boosts damage and attack speed for you and nearby allies." },
+    { key: "Space", name: "Quickstep Verse", cooldown: 9, description: "Dash with brief invulnerability and start a song that boosts movement speed." },
+    { key: "R", name: "Healing Ballad", cooldown: 15, description: "Play a healing song that restores health over time for you and nearby allies." },
   ],
 };
 
@@ -762,6 +762,8 @@ let remoteAbilityEffects = [];
 let particles = [];
 let camera = { x: 0, y: 0 };
 let mouseWorld = { x: 300, y: 685 };
+let mouseCanvas = { x: 0, y: 0, inside: false };
+let abilityHudSlots = [];
 const movementKeys = { up: false, down: false, left: false, right: false };
 const keyDirections = {
   w: "up",
@@ -14107,6 +14109,79 @@ function drawAbilityHudSlot({ x, y, w, h, key, title, status, statusColor, iconI
   drawFittedHudText(status, textX, y + 49, maxTitleWidth, 14, "800", statusColor);
 }
 
+function wrapCanvasText(text, maxWidth, font) {
+  ctx.save();
+  ctx.font = font;
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = "";
+  words.forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth || !line) {
+      line = next;
+      return;
+    }
+    lines.push(line);
+    line = word;
+  });
+  if (line) lines.push(line);
+  ctx.restore();
+  return lines;
+}
+
+function hoveredAbilityHudSlot() {
+  if (!mouseCanvas.inside || !ui.menuOverlay?.classList.contains("hidden")) return null;
+  return abilityHudSlots.find((slot) => (
+    mouseCanvas.x >= slot.x
+    && mouseCanvas.x <= slot.x + slot.w
+    && mouseCanvas.y >= slot.y
+    && mouseCanvas.y <= slot.y + slot.h
+  )) || null;
+}
+
+function drawAbilityTooltip() {
+  const slot = hoveredAbilityHudSlot();
+  if (!slot?.ability?.description) return;
+  const titleFont = "900 15px sans-serif";
+  const metaFont = "800 12px sans-serif";
+  const bodyFont = "700 13px sans-serif";
+  const w = Math.min(360, Math.max(280, canvas.clientWidth - 28));
+  const bodyLines = wrapCanvasText(slot.ability.description, w - 32, bodyFont);
+  const h = 74 + bodyLines.length * 18;
+  const x = clamp(slot.x + slot.w / 2 - w / 2, 14, canvas.clientWidth - w - 14);
+  const aboveY = slot.y - h - 12;
+  const y = aboveY >= 12 ? aboveY : Math.min(canvas.clientHeight - h - 12, slot.y + slot.h + 12);
+  const accent = slot.tone === "blue" ? "#8ec7ff" : "#f0c35b";
+  const cooldown = slot.cooldown > 0 ? `${slot.cooldown.toFixed(1)}s remaining` : `Cooldown ${slot.ability.cooldown}s`;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(7, 10, 14, 0.94)";
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#f4f1e6";
+  ctx.font = titleFont;
+  ctx.fillText(slot.ability.name.toUpperCase(), x + 16, y + 14);
+  ctx.fillStyle = accent;
+  ctx.font = metaFont;
+  ctx.fillText(`${slot.ability.key.toUpperCase()}  |  ${cooldown}`, x + 16, y + 35);
+  ctx.fillStyle = "#d0c6b4";
+  ctx.font = bodyFont;
+  bodyLines.forEach((line, index) => {
+    ctx.fillText(line, x + 16, y + 56 + index * 18);
+  });
+  ctx.restore();
+}
+
 function drawAbilityBar() {
   const abilities = currentAbilities();
   const slotH = 74;
@@ -14120,11 +14195,13 @@ function drawAbilityBar() {
   const scaledCanvasH = canvas.clientHeight / scale;
   let cursorX = scaledCanvasW / 2 - totalW / 2;
   const y = scaledCanvasH - slotH - 26;
+  abilityHudSlots = [];
   ctx.save();
   ctx.scale(scale, scale);
   abilities.forEach((ability, index) => {
     const x = cursorX;
     const slotW = slotWidths[index];
+    const tone = classKey === "mage" || classKey === "ranger" ? "blue" : "gold";
     const cooldown = player.abilityCooldowns[index] || 0;
     const ready = cooldown <= 0 && (player.room === "arena" || player.room === "starter" || player.room === "maze") && !player.dead && !player.won && ui.menuOverlay?.classList.contains("hidden");
     drawAbilityHudSlot({
@@ -14138,8 +14215,19 @@ function drawAbilityBar() {
       statusColor: cooldown > 0 ? "#d0c6b4" : "#29ef57",
       iconId: `abilities.${classKey}.${index}`,
       ringId: abilityHudIconRingKey(classKey, index),
+      tone,
       cooldown,
       cooldownDuration: ability.cooldown,
+    });
+    abilityHudSlots.push({
+      ability,
+      index,
+      x: x * scale,
+      y: y * scale,
+      w: slotW * scale,
+      h: slotH * scale,
+      cooldown,
+      tone,
     });
     cursorX += slotW + gap;
   });
@@ -14157,6 +14245,7 @@ function drawAbilityBar() {
     tone: "blue",
   });
   ctx.restore();
+  drawAbilityTooltip();
 }
 
 function drawScreenBanner() {
@@ -16987,9 +17076,18 @@ function copyDebugReport() {
 }
 
 function handleCanvasPointerAttack(event) {
-  const rect = canvas.getBoundingClientRect();
-  mouseWorld = { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
+  updateCanvasPointer(event);
   handleCanvasClick(mouseWorld.x, mouseWorld.y);
+}
+
+function updateCanvasPointer(event) {
+  const rect = canvas.getBoundingClientRect();
+  mouseCanvas = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+    inside: true,
+  };
+  mouseWorld = { x: mouseCanvas.x + camera.x, y: mouseCanvas.y + camera.y };
 }
 
 canvas.addEventListener("pointerdown", (event) => {
@@ -17027,8 +17125,11 @@ canvas.addEventListener("click", (event) => {
 });
 
 canvas.addEventListener("mousemove", (event) => {
-  const rect = canvas.getBoundingClientRect();
-  mouseWorld = { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
+  updateCanvasPointer(event);
+});
+
+canvas.addEventListener("mouseleave", () => {
+  mouseCanvas.inside = false;
 });
 
 if (ui.armory) {
