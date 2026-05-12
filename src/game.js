@@ -2500,6 +2500,21 @@ function handleCanvasClick(x, y) {
   shootAt(x, y);
 }
 
+function updatePlayerFacingTowardAttackTarget(x, y) {
+  const targetPoint = player.room === "starter" ? trainingDummy : { x, y };
+  const dx = targetPoint.x - player.x;
+  const dy = targetPoint.y - player.y;
+  if (Math.hypot(dx, dy) < 6) return null;
+  player.facing = getFacing(dx, dy);
+  return {
+    x: targetPoint.x,
+    y: targetPoint.y,
+    dx,
+    dy,
+    angle: Math.atan2(dy, dx),
+  };
+}
+
 function findClickedBoss(x, y) {
   return activeBosses().find((target) => target.hp > 0 && Math.hypot(target.x - x, target.y - y) < target.radius + 14);
 }
@@ -5940,14 +5955,11 @@ function randomArenaPointNearThreat(spread, minDistance = 0) {
 
 function shootAt(x, y) {
   if (mazeState?.rewardPending) return;
+  const attackTarget = updatePlayerFacingTowardAttackTarget(x, y);
   if (player.attackCooldown > 0) return;
-  const targetPoint = player.room === "starter" ? trainingDummy : { x, y };
-  const dx = targetPoint.x - player.x;
-  const dy = targetPoint.y - player.y;
-  if (Math.hypot(dx, dy) < 6) return;
+  if (!attackTarget) return;
   if (player.room === "arena") startFight();
-  player.facing = getFacing(dx, dy);
-  const projectile = firePlayerProjectile(Math.atan2(dy, dx));
+  const projectile = firePlayerProjectile(attackTarget.angle);
   if (player.room === "starter" && projectile) {
     projectile.hitTargets = [trainingDummy];
     damageTrainingDummy(trainingDummy, projectile.damage, "Training Hit");
@@ -6042,6 +6054,8 @@ function updateHeldPrimaryAttack() {
     stopHeldPrimaryAttack();
     return;
   }
+  if (mazeState?.rewardPending) return;
+  updatePlayerFacingTowardAttackTarget(mouseWorld.x, mouseWorld.y);
   if (player.attackCooldown > 0) return;
   shootAt(mouseWorld.x, mouseWorld.y);
 }
