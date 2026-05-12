@@ -171,6 +171,11 @@ const mazeRewardVisuals = {
 };
 
 const playerBaseHealthMultiplier = 3;
+const playerArmorHealthOffsets = {
+  channelerRobe: 0,
+  duelistCoat: 25,
+  bulwarkPlate: 50,
+};
 const mazeWallThickness = 8;
 const mazePlayerWallPadding = 8;
 const gauntletPlayerObstaclePadding = 3;
@@ -884,7 +889,7 @@ const runState = {
 };
 
 function createPlayer() {
-  const startingMaxHp = gear.armor.duelistCoat.maxHp * playerBaseHealthMultiplier;
+  const startingMaxHp = playerBaseMaxHpForArmor("duelistCoat");
   return {
     x: 300,
     y: 685,
@@ -907,6 +912,7 @@ function createPlayer() {
     rogueAttackAngle: 0,
     backstabTimer: 0,
     deadeyeTimer: 0,
+    bardChordCount: 0,
     bardHealTickTimer: 0,
     smokeSpeedGranted: false,
     tumbleTimer: 0,
@@ -1380,8 +1386,13 @@ function applyGear() {
     armor: armor.armor + rogueArmorBonus + warriorArmorBonus + (runState.mazeBuffs.armor || 0),
   };
   const hpPercent = player.hp / player.maxHp || 1;
-  player.maxHp = armor.maxHp * playerBaseHealthMultiplier + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
+  player.maxHp = playerBaseMaxHpForArmor(player.gear.armor) + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
   player.hp = Math.min(player.maxHp, Math.max(1, Math.round(player.maxHp * hpPercent)));
+}
+
+function playerBaseMaxHpForArmor(armorId) {
+  const mageBaseHp = gear.armor.channelerRobe.maxHp * playerBaseHealthMultiplier;
+  return mageBaseHp + (playerArmorHealthOffsets[armorId] || 0);
 }
 
 function loadGame() {
@@ -1488,6 +1499,7 @@ function clearPlayerTransientState() {
   player.pickleSlowTimer = 0;
   player.backstabTimer = 0;
   player.deadeyeTimer = 0;
+  player.bardChordCount = 0;
   player.bardHealTickTimer = 0;
   player.talentSaves = {};
   player.lastDamageAt = 0;
@@ -6487,6 +6499,26 @@ function powerChord() {
       damageEnemiesInRadius(target.x, target.y, 72, playerDamage(0.48), "Grand Finale", hitTargets);
     });
   }
+  if (hasTalent("bard_chord_echo")) {
+    player.bardChordCount = (player.bardChordCount || 0) + 1;
+    if (player.bardChordCount % 2 === 0) {
+      abilityEffects.push({
+        type: "bardEchoNote",
+        x: player.x,
+        y: player.y,
+        angle,
+        range,
+        halfAngle,
+        damage: playerDamage(multiplier * 0.55),
+        songs: songCount,
+        delay: 0.18,
+        triggered: false,
+        ttl: 0.62,
+        maxTtl: 0.62,
+      });
+      particles.push({ x: player.x, y: player.y - 52, text: "echo ready", color: "#92d4ff", ttl: 0.55 });
+    }
+  }
   abilityEffects.push({ type: "bardPowerChord", x: player.x, y: player.y, angle, range, songs: songCount, ttl: 0.3, maxTtl: 0.3 });
   particles.push({ x: player.x + Math.cos(angle) * 62, y: player.y + Math.sin(angle) * 62 - 20, text: hits.length ? "chord!" : "chord", color: "#ffd782", ttl: 0.55 });
 }
@@ -8999,8 +9031,46 @@ function enterDeathState(source) {
   });
   log(`${source} stuffed you.`);
   if (activateSpectateMode(source)) return;
-  ui.status.textContent = "You're Stuffed. Reset to try again.";
+  ui.status.textContent = "You're Stuffed. Continue to revive without restarting.";
   showFloat("You're Stuffed");
+}
+
+function continueRunFromDeath() {
+  if (!player.dead) return;
+  resetSpectateState();
+  player.dead = false;
+  player.hp = player.maxHp;
+  player.destination = null;
+  player.slide = null;
+  player.moving = false;
+  player.attackCooldown = 0;
+  player.abilityCooldowns = [0, 0, 0, 0];
+  player.castTimer = 0;
+  player.castMoveLockTimer = 0;
+  player.pendingAbilityCast = null;
+  player.rangerAttackTimer = 0;
+  player.meleeAttackTimer = 0;
+  player.rogueAttackTimer = 0;
+  player.tumbleTimer = 0;
+  player.invulnerableTimer = 2.4;
+  player.shieldWallTimer = 0;
+  player.consecrationTimer = 0;
+  player.guardSpeedTimer = 0;
+  player.tacoGreaseTimer = 0;
+  player.pickleSlowTimer = 0;
+  player.backstabTimer = 0;
+  player.deadeyeTimer = 0;
+  player.bardHealTickTimer = 0;
+  player.lastDamageAt = 0;
+  player.recentlyHitProjectileIds = new Set();
+  Object.keys(movementKeys).forEach((direction) => {
+    movementKeys[direction] = false;
+  });
+  mouseWorld = { x: player.x + player.lastMoveX * 120, y: player.y + player.lastMoveY * 120 };
+  ui.status.textContent = "Continued. Your run progress is intact.";
+  showFloat("Continue");
+  log("Continued from defeat.");
+  sendMultiplayerState(true);
 }
 
 function drinkPotion() {
@@ -9134,6 +9204,7 @@ function updateAbilities(dt) {
     if (effect.type === "poisonCloud") updatePoisonCloud(effect, dt);
     if (effect.type === "consecration") updateConsecration(effect, dt);
     if (effect.type === "aftershock") updateAftershock(effect, dt);
+    if (effect.type === "bardEchoNote") updateBardEchoNote(effect, dt);
     if (effect.type === "divineBulwark") {
       effect.x = player.x;
       effect.y = player.y;
@@ -9143,6 +9214,20 @@ function updateAbilities(dt) {
   });
   updateBardSongBuffs(dt);
   applyTimeWarpSlow(dt);
+}
+
+function updateBardEchoNote(effect, dt) {
+  effect.delay = Math.max(0, (effect.delay || 0) - dt);
+  if (effect.triggered || effect.delay > 0) return;
+  effect.triggered = true;
+  const hits = damageEnemiesInCone(effect.x, effect.y, effect.angle, effect.range, effect.halfAngle, effect.damage, "Echo Note");
+  particles.push({
+    x: effect.x + Math.cos(effect.angle) * 82,
+    y: effect.y + Math.sin(effect.angle) * 82 - 22,
+    text: hits.length ? "echo!" : "echo",
+    color: "#92d4ff",
+    ttl: 0.62,
+  });
 }
 
 function updateBardSongEffect(effect, dt) {
@@ -12509,6 +12594,41 @@ function drawAbilityEffects() {
       ctx.restore();
       return;
     }
+    if (effect.type === "bardEchoNote") {
+      const echoProgress = effect.triggered ? clamp((progress - 0.28) / 0.72, 0, 1) : 0;
+      const echoAlpha = effect.triggered ? alpha : alpha * 0.35;
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.angle);
+      ctx.globalAlpha = echoAlpha;
+      ctx.fillStyle = "rgba(146, 212, 255, 0.14)";
+      ctx.strokeStyle = "rgba(220, 255, 252, 0.9)";
+      ctx.shadowColor = "#92d4ff";
+      ctx.shadowBlur = 22;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([14, 9]);
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.arc(0, 0, effect.range * (0.48 + echoProgress * 0.52), -0.42, 0.42);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(255, 215, 130, 0.72)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i += 1) {
+        const y = (i - 1.5) * 10;
+        ctx.beginPath();
+        ctx.moveTo(26, y);
+        ctx.quadraticCurveTo(effect.range * 0.34, y * 1.6, effect.range * (0.62 + echoProgress * 0.28), y * 2.1);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(220, 255, 252, 0.86)";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillText("♪", effect.range * (0.34 + echoProgress * 0.25), -18);
+      ctx.fillText("♫", effect.range * (0.48 + echoProgress * 0.18), 22);
+      ctx.restore();
+      return;
+    }
     if (effect.type === "whirlwindDash") {
       const spin = (effect.age || 0) * 18;
       ctx.globalAlpha = alpha;
@@ -13480,7 +13600,7 @@ function outfitSpriteForGear(weaponId, armorId) {
       topCrop: 0.02,
     };
   }
-  if (weaponId === "pulseStaff" && armorId === "channelerRobe" && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
+  if (weaponId === "pulseStaff" && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
     return {
       sprite: cleanedGlassMageSprite || glassMageSprite,
       sideCrop: 0.13,
@@ -17276,7 +17396,7 @@ ui.mazeRewardCards?.addEventListener("click", (event) => {
   chooseMazeReward(button.dataset.reward);
 });
 ui.resetButton.addEventListener("click", () => resetFight(false));
-ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
+ui.deathResetButton?.addEventListener("click", continueRunFromDeath);
 ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
 ui.debugReportCopy?.addEventListener("click", copyDebugReport);
 ui.debugReportDismiss?.addEventListener("click", () => {
