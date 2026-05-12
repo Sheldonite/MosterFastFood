@@ -56,6 +56,9 @@ const ui = {
   talentTree: document.querySelector("#talentTree"),
   bossSelector: document.querySelector("#bossSelector"),
   bossTestPanel: document.querySelector("#bossTestPanel"),
+  bossDamagePanel: document.querySelector("#bossDamagePanel"),
+  bossDamageToggle: document.querySelector("#bossDamageToggle"),
+  bossDamageBody: document.querySelector("#bossDamageBody"),
   bossMenuButton: document.querySelector("#bossMenuButton"),
   bossMenuOverlay: document.querySelector("#bossMenuOverlay"),
   bossMenuClose: document.querySelector("#bossMenuClose"),
@@ -134,6 +137,93 @@ const bossTestOptions = [
   { id: "sushi", name: "Sushi Serpent" },
 ];
 
+const bossAbilityDamageDefinitions = {
+  cola: [
+    { key: "bubbles", label: "Bubbles", defaultDamage: 24, sources: ["Bubble pop"], hazardTypes: ["colaBubble"] },
+    { key: "straw", label: "Straw Snipe", defaultDamage: 46, sources: ["Straw snipe"], hazardTypes: ["strawSnipe"] },
+    { key: "fizz", label: "Fizz Burst", defaultDamage: 42, sources: ["Fizz burst"], hazardTypes: ["fizzBurst"] },
+    { key: "spill", label: "Soda Spill", defaultDamage: 12, sources: ["Soda spill"], hazardTypes: ["sodaDrop"] },
+  ],
+  burger: [
+    { key: "swing", label: "Crushing Swing", defaultDamage: 13, sources: ["Crushing swing"] },
+    { key: "bite", label: "Burger Bite", defaultDamage: 14, sources: ["Burger bite"] },
+    { key: "tomato", label: "Tomato Slice", defaultDamage: 15, sources: ["Tomato slice"], hazardTypes: ["tomatoSlice"] },
+    { key: "pickle", label: "Pickle Splash", defaultDamage: 13, sources: ["Pickle splash"], hazardTypes: ["pickleSplash"] },
+    { key: "onion", label: "Onion Ring", defaultDamage: 14, sources: ["Onion ring"], hazardTypes: ["onionRing"] },
+    { key: "sauce", label: "Sauce Drip", defaultDamage: 16, sources: ["Sauce drip", "Sauce burst"], hazardTypes: ["burgerSauceDrop"] },
+    { key: "charge", label: "Burger Charge", defaultDamage: 22, sources: ["Burger charge"], hazardTypes: ["burgerChargeLane"] },
+    { key: "burst", label: "Ingredient Burst", defaultDamage: 24, sources: ["Ingredient burst"], hazardTypes: ["burgerBurstRing"] },
+  ],
+  fries: [
+    { key: "machineGun", label: "French Fry Machine Gun", defaultDamage: 11, sources: ["French fry machine gun"], hazardTypes: ["fry"] },
+    { key: "greaseBurst", label: "Grease Burst", defaultDamage: 14, sources: ["Grease burst"], hazardTypes: ["fry"] },
+  ],
+  trio: [
+    { key: "ketchup", label: "Ketchup Puddle", defaultDamage: 6, sources: ["Ketchup puddle"], hazardTypes: ["ketchupMortar", "ketchupPuddle"] },
+    { key: "mustard", label: "Mustard Seed", defaultDamage: 11, sources: ["Mustard seed"], hazardTypes: ["mustardSeed"] },
+    { key: "mayo", label: "Mayo Glob", defaultDamage: 10, sources: ["Mayo glob"], hazardTypes: ["mayoGlob"] },
+  ],
+  sauce: [
+    { key: "mortar", label: "Splatter Mortar", defaultDamage: 6, sources: ["Ketchup puddle"], hazardTypes: ["ketchupMortar", "ketchupPuddle"] },
+    { key: "ricochet", label: "Mustard Ricochet", defaultDamage: 11, sources: ["Mustard seed"], hazardTypes: ["mustardSeed"] },
+    { key: "spiral", label: "Sauce Spiral", defaultDamage: 10, sources: ["Mayo glob"], hazardTypes: ["mayoGlob"] },
+  ],
+  shake: [
+    { key: "peanuts", label: "Peanut Fan", defaultDamage: 12, sources: ["Peanut spread", "Ricochet peanuts"], hazardTypes: ["peanut"] },
+    { key: "chocolate", label: "Chocolate Bars", defaultDamage: 30, sources: ["Chocolate bar"], hazardTypes: ["chocolateBar"], max: 150 },
+    { key: "scoop", label: "Ice Cream Scoop", defaultDamage: 16, sources: ["Ice cream scoop"], hazardTypes: ["scoopDrop"] },
+    { key: "cherry", label: "Cherry Bomb", defaultDamage: 20, sources: ["Cherry burst"], hazardTypes: ["cherryBomb", "cherryShot"] },
+  ],
+  nacho: [
+    { key: "pico", label: "Pico Storm", defaultDamage: 8, sources: ["Pico de gallo storm"], hazardTypes: ["pico"] },
+    { key: "cheeseWave", label: "Cheese Wave", defaultDamage: 28, sources: ["Nacho cheese wave"], hazardTypes: ["cheeseWave"] },
+    { key: "cheesePuddle", label: "Melted Cheese", defaultDamage: 6, sources: ["Melted cheese"], hazardTypes: ["nachoCheesePuddle"] },
+    { key: "cheeseMortar", label: "Cheese Mortar", defaultDamage: 8, sources: ["Cheese mortar"], hazardTypes: ["nachoCheeseMortar"] },
+    { key: "chip", label: "Tortilla Chip", defaultDamage: 15, sources: ["Tortilla chip"], hazardTypes: ["nachoChip"] },
+    { key: "crumb", label: "Chip Crumbs", defaultDamage: 8, sources: ["Nacho crumb"], hazardTypes: ["nachoCrumb"] },
+  ],
+  pizza: [
+    { key: "dash", label: "Delivery Dash", defaultDamage: 26, sources: ["Delivery dash"], hazardTypes: ["pizzaDash"] },
+    { key: "pepperoni", label: "Pepperoni Volley", defaultDamage: 9, sources: ["Pepperoni"], hazardTypes: ["pepperoni"] },
+    { key: "slice", label: "Pizza Slice", defaultDamage: 18, sources: ["Pizza slice", "Returning pizza slice"], hazardTypes: ["pizzaSlice"] },
+    { key: "crust", label: "Stuffed Crust Wall", defaultDamage: 12, sources: ["Stuffed crust wall"], hazardTypes: ["pizzaCrustWall"] },
+    { key: "cloneBolt", label: "Cheese Bolt", defaultDamage: 8, sources: ["Cheese bolt"], hazardTypes: ["cheeseBolt"] },
+    { key: "oven", label: "Oven Zone", defaultDamage: 24, sources: ["Oven zone"], hazardTypes: ["ovenZone"] },
+    { key: "boxSlam", label: "Pizza Box Slam", defaultDamage: 44, sources: ["Pizza box slam"], hazardTypes: ["pizzaBoxSlam"], max: 200 },
+    { key: "cheeseTrail", label: "Hot Cheese Trail", defaultDamage: 8, sources: ["Hot cheese trail"], hazardTypes: ["pizzaCheeseTrail"] },
+  ],
+  taco: [
+    { key: "crunch", label: "Crunch Charge", defaultDamage: 13, sources: ["Crunch Charge", "Taco Titan crunch"], hazardTypes: ["tacoCharge"] },
+    { key: "shard", label: "Shell Shard", defaultDamage: 8, sources: ["Shell shard"], hazardTypes: ["tacoShellShard"] },
+    { key: "ingredient", label: "Ingredient Drop", defaultDamage: 12, sources: ["cheese drop", "lettuce drop", "salsa drop"], hazardTypes: ["ingredientDrop"] },
+    { key: "beef", label: "Beef Drop", defaultDamage: 18, sources: ["beef drop"] },
+    { key: "slam", label: "Shell Slam", defaultDamage: 12, sources: ["Shell Slam"], hazardTypes: ["tacoSlam"] },
+    { key: "lettuce", label: "Lettuce Fan", defaultDamage: 8, sources: ["Lettuce fan"], hazardTypes: ["lettuceLeaf"] },
+    { key: "salsa", label: "Salsa Pool", defaultDamage: 10, sources: ["Salsa pool"], hazardTypes: ["tacoSalsa"] },
+    { key: "stuffed", label: "Too Stuffed", defaultDamage: 12, sources: ["Too stuffed"], max: 100 },
+  ],
+  donut: [
+    { key: "crawler", label: "Crawler Bite", defaultDamage: 13, sources: ["Donut crawler"] },
+    { key: "minionShot", label: "Minion Shot", defaultDamage: 7, sources: ["Donut minion shot"], hazardTypes: ["donutMinionShot"] },
+    { key: "glazeBurst", label: "Mini Glaze Burst", defaultDamage: 8, sources: ["Mini glaze burst"], hazardTypes: ["sprinkle"] },
+    { key: "glazeRing", label: "Glaze Ring", defaultDamage: 21, sources: ["Glaze ring"], hazardTypes: ["glazeRing"] },
+    { key: "sprinkle", label: "Sprinkle Spiral", defaultDamage: 8, sources: ["Sprinkle"], hazardTypes: ["sprinkle"] },
+    { key: "frosting", label: "Frosting Ribbon", defaultDamage: 12, sources: ["Frosting ribbon"], hazardTypes: ["frostingRibbon"] },
+    { key: "roll", label: "Royal Roll", defaultDamage: 24, sources: ["Royal Roll"], hazardTypes: ["royalRoll"] },
+  ],
+  sushi: [
+    { key: "dash", label: "Wasabi Dash", defaultDamage: 12, sources: ["Wasabi Dash"], hazardTypes: ["wasabiDash"] },
+    { key: "trail", label: "Wasabi Trail", defaultDamage: 4, sources: ["Wasabi trail"], hazardTypes: ["wasabiTrail"] },
+    { key: "jab", label: "Chopstick Jab", defaultDamage: 8, sources: ["Chopstick Jab"], hazardTypes: ["chopstickJab"] },
+    { key: "roll", label: "Roll Barrage", defaultDamage: 7, sources: ["Roll Barrage"], hazardTypes: ["sushiRoll"] },
+    { key: "soyWave", label: "Soy Sake Wave", defaultDamage: 6, sources: ["Soy Sake Wave"], hazardTypes: ["soySakeWave"] },
+    { key: "soySplash", label: "Soy Splash", defaultDamage: 3, sources: ["Soy splash"], hazardTypes: ["soyPuddle"] },
+    { key: "wasabiWave", label: "Wasabi Wave", defaultDamage: 8, sources: ["Wasabi wave"], hazardTypes: ["wasabiWave"] },
+    { key: "pin", label: "Chopstick Pin", defaultDamage: 10, sources: ["Chopstick pin"], hazardTypes: ["chopstickPin"] },
+    { key: "sweep", label: "Segment Sweep", defaultDamage: 10, sources: ["Segment sweep"], hazardTypes: ["serpentSweep"] },
+  ],
+};
+
 const progressionBosses = ["cola", "burger", "fries", "trio", "shake", "nacho", "pizza", "donut", "taco", "sushi"];
 
 const mazeThemes = {
@@ -185,7 +275,7 @@ const combatTuning = {
   overlapDamageWindowMs: 360,
   overlapDamageMultiplier: 0.62,
   bossAttackIntervalMultiplier: 0.92,
-  globalBossHealthMultiplier: 3,
+  globalBossHealthMultiplier: 2.25,
   bossHealthMultipliers: {
     cola: 1.5,
     burger: 1.55,
@@ -784,6 +874,9 @@ let fightStartedAt = 0;
 let lastTime = performance.now();
 let lastRuntimeErrorAt = 0;
 let spectateState = { targetId: null };
+let bossDamagePanelSignature = "";
+let bossDamagePanelOpen = false;
+const bossDamageOverrides = {};
 let logLines = ["Choose gear, use WASD to cross the gate, hold click to attack."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
@@ -2306,6 +2399,43 @@ function applyHostPartyPhaseSnapshot(state, peerId) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function bossDamageSliderMax(definition) {
+  return definition.max || Math.max(100, Math.ceil((definition.defaultDamage || 1) * 3 / 10) * 10);
+}
+
+function bossAbilityDamageValue(kind, key) {
+  const definition = bossAbilityDamageDefinitions[kind]?.find((entry) => entry.key === key);
+  if (!definition) return 0;
+  const override = bossDamageOverrides[kind]?.[key];
+  return Number.isFinite(override) ? override : definition.defaultDamage;
+}
+
+function setBossAbilityDamageValue(kind, key, value) {
+  const definition = bossAbilityDamageDefinitions[kind]?.find((entry) => entry.key === key);
+  if (!definition) return;
+  const nextValue = clamp(Math.round(Number(value) || 0), 0, bossDamageSliderMax(definition));
+  bossDamageOverrides[kind] = bossDamageOverrides[kind] || {};
+  bossDamageOverrides[kind][key] = nextValue;
+}
+
+function tunedBossAbilityDamage(amount, source, subject = null) {
+  const definitions = bossAbilityDamageDefinitions[boss.kind] || [];
+  const sourceText = String(source || "");
+  const subjectType = subject?.type || "";
+  const subjectIngredient = subject?.ingredient || "";
+  const match = definitions.find((definition) => (
+    definition.sources?.includes(sourceText)
+    || definition.hazardTypes?.includes(subjectType)
+    || (subjectType === "ingredientDrop" && definition.sources?.includes(`${subjectIngredient} drop`))
+  ));
+  return match ? bossAbilityDamageValue(boss.kind, match.key) : amount;
+}
+
+function resetBossDamageOverrides(kind = boss.kind) {
+  if (kind) delete bossDamageOverrides[kind];
+  bossDamagePanelSignature = "";
 }
 
 function hexToRgba(hex, alpha) {
@@ -7786,6 +7916,7 @@ function isServerMediatedProjectileDamageActive() {
 }
 
 function damagePlayerFromProjectile(projectile, amount, source, options = {}) {
+  const tunedAmount = tunedBossAbilityDamage(amount, source, projectile);
   const playerId = localPlayerDamageId();
   const projectileId = ensureProjectileId(projectile);
   if (!projectileId || !markProjectileHitPlayer(projectile, playerId, source)) return false;
@@ -7795,7 +7926,7 @@ function damagePlayerFromProjectile(projectile, amount, source, options = {}) {
       type: "projectile-hit",
       projectileId,
       playerId,
-      amount,
+      amount: tunedAmount,
       source,
       fixed: Boolean(options.fixed),
       ignoreOverlapGrace: Boolean(options.ignoreOverlapGrace),
@@ -7807,7 +7938,7 @@ function damagePlayerFromProjectile(projectile, amount, source, options = {}) {
     recordDebugEvent("projectile-hit-requested", { projectileId, playerId, source, piercing });
     return true;
   }
-  return damagePlayer(amount, source, { ...options, projectileId, authoritativeProjectileDamage: true });
+  return damagePlayer(tunedAmount, source, { ...options, projectileId, authoritativeProjectileDamage: true, skipBossDamageTune: true });
 }
 
 function applyAuthoritativeProjectileDamage(message) {
@@ -7817,6 +7948,7 @@ function applyAuthoritativeProjectileDamage(message) {
     ignoreOverlapGrace: Boolean(message.ignoreOverlapGrace),
     projectileId: String(message.projectileId),
     authoritativeProjectileDamage: true,
+    skipBossDamageTune: true,
   });
 }
 
@@ -8950,6 +9082,7 @@ function hitSushiSegment(projectile) {
 }
 
 function damagePlayer(amount, source, options = {}) {
+  const tunedAmount = options.skipBossDamageTune ? amount : tunedBossAbilityDamage(amount, source);
   if (options.projectileId) {
     const projectileId = String(options.projectileId);
     if (!(player.recentlyHitProjectileIds instanceof Set)) {
@@ -8965,7 +9098,7 @@ function damagePlayer(amount, source, options = {}) {
     particles.push({ x: player.x, y: player.y - 35, text: "evade", color: "#ffd782", ttl: 0.55 });
     return false;
   }
-  let hit = options.fixed ? amount : Math.max(1, Math.ceil(amount * combatTuning.incomingDamageMultiplier - effectivePlayerArmor()));
+  let hit = options.fixed ? tunedAmount : Math.max(1, Math.ceil(tunedAmount * combatTuning.incomingDamageMultiplier - effectivePlayerArmor()));
   const now = performance.now();
   if (player.lastDamageAt && now - player.lastDamageAt < combatTuning.overlapDamageWindowMs && !options.ignoreOverlapGrace) {
     hit = Math.max(1, Math.ceil(hit * combatTuning.overlapDamageMultiplier));
@@ -8976,7 +9109,7 @@ function damagePlayer(amount, source, options = {}) {
   player.hp = Math.max(0, player.hp - hit);
   player.lastDamageAt = now;
   if (options.projectileId) recordDebugEvent("player-projectile-damage-applied", { projectileId: String(options.projectileId), playerId: localPlayerDamageId(), source, hit });
-  runTalentHook("onDamageTaken", { amount, hit, source, options });
+  runTalentHook("onDamageTaken", { amount: tunedAmount, hit, source, options });
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
   if (player.hp <= 0) {
     enterDeathState(source);
@@ -14433,6 +14566,47 @@ function drawRunCompleteOverlay() {
   ctx.restore();
 }
 
+function renderBossDamagePanel() {
+  if (!ui.bossDamagePanel || !ui.bossDamageToggle || !ui.bossDamageBody) return;
+  const visible = runState.mode === "dev";
+  ui.bossDamagePanel.hidden = !visible;
+  document.querySelector(".hud")?.classList.toggle("boss-damage-open", visible && bossDamagePanelOpen);
+  if (!visible) {
+    bossDamagePanelOpen = false;
+    ui.bossDamageBody.hidden = true;
+    ui.bossDamageToggle.setAttribute("aria-expanded", "false");
+    return;
+  }
+  ui.bossDamageToggle.textContent = `Boss Damage: ${boss.name}`;
+  ui.bossDamageToggle.setAttribute("aria-expanded", bossDamagePanelOpen ? "true" : "false");
+  ui.bossDamageBody.hidden = !bossDamagePanelOpen;
+  if (!bossDamagePanelOpen) return;
+
+  const definitions = bossAbilityDamageDefinitions[boss.kind] || [];
+  const signature = `${boss.kind}:${definitions.map((definition) => `${definition.key}:${bossAbilityDamageValue(boss.kind, definition.key)}`).join("|")}`;
+  if (signature === bossDamagePanelSignature) return;
+  bossDamagePanelSignature = signature;
+  ui.bossDamageBody.innerHTML = `
+    <div class="boss-damage-head">
+      <span>${escapeHtml(boss.name)}</span>
+      <button id="bossDamageResetButton" type="button">Reset</button>
+    </div>
+    <div class="boss-damage-list">
+      ${definitions.map((definition) => {
+        const value = bossAbilityDamageValue(boss.kind, definition.key);
+        const max = bossDamageSliderMax(definition);
+        return `
+          <label class="boss-damage-row">
+            <span class="boss-damage-label">${escapeHtml(definition.label)}</span>
+            <input type="range" min="0" max="${max}" step="1" value="${value}" data-boss-damage="${definition.key}">
+            <input class="boss-damage-number" type="number" min="0" max="${max}" step="1" value="${value}" data-boss-damage-number="${definition.key}" aria-label="${escapeHtml(definition.label)} damage">
+          </label>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderUi() {
   const spectateTarget = currentSpectateTarget();
   ui.roomText.textContent = spectateTarget ? `Spectating ${spectatePeerLabel(spectateTarget.id)}` : player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
@@ -14492,6 +14666,7 @@ function renderUi() {
   if (ui.bossTestPanel) {
     ui.bossTestPanel.hidden = runState.mode !== "dev";
   }
+  renderBossDamagePanel();
   if (ui.classSelector) {
     const signature = `${player.gear.weapon}:${classOptions.map((option) => `${option.id}:${option.locked ? 1 : 0}`).join("|")}`;
     if (signature !== classSelectorSignature) {
@@ -17397,6 +17572,28 @@ ui.mazeRewardCards?.addEventListener("click", (event) => {
 });
 ui.resetButton.addEventListener("click", () => resetFight(false));
 ui.deathResetButton?.addEventListener("click", continueRunFromDeath);
+ui.bossDamageToggle?.addEventListener("click", () => {
+  bossDamagePanelOpen = !bossDamagePanelOpen;
+  bossDamagePanelSignature = "";
+  renderBossDamagePanel();
+});
+ui.bossDamageBody?.addEventListener("input", (event) => {
+  const slider = event.target.closest("[data-boss-damage]");
+  const numberInput = event.target.closest("[data-boss-damage-number]");
+  const key = slider?.dataset.bossDamage || numberInput?.dataset.bossDamageNumber;
+  if (!key) return;
+  const value = slider ? slider.value : numberInput.value;
+  setBossAbilityDamageValue(boss.kind, key, value);
+  ui.bossDamageBody.querySelectorAll(`[data-boss-damage="${key}"], [data-boss-damage-number="${key}"]`).forEach((input) => {
+    input.value = bossAbilityDamageValue(boss.kind, key);
+  });
+  bossDamagePanelSignature = "";
+});
+ui.bossDamageBody?.addEventListener("click", (event) => {
+  if (!event.target.closest("#bossDamageResetButton")) return;
+  resetBossDamageOverrides(boss.kind);
+  renderBossDamagePanel();
+});
 ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
 ui.debugReportCopy?.addEventListener("click", copyDebugReport);
 ui.debugReportDismiss?.addEventListener("click", () => {

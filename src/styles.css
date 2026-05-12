@@ -785,6 +785,97 @@ canvas {
   padding: 9px;
 }
 
+.hud.boss-damage-open > section:not(.boss-damage-panel) {
+  display: none;
+}
+
+.boss-damage-panel {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+.boss-damage-toggle::after {
+  float: right;
+  color: #f0d47c;
+  content: "v";
+}
+
+.boss-damage-toggle[aria-expanded="true"]::after {
+  content: "^";
+}
+
+.boss-damage-body {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+.boss-damage-body[hidden] {
+  display: none;
+}
+
+.boss-damage-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  color: #f7efd9;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.boss-damage-head button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.boss-damage-list {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+  max-height: calc(100vh - 118px);
+  padding-right: 2px;
+}
+
+.boss-damage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  gap: 5px 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(244, 232, 203, 0.12);
+  background: rgba(9, 12, 14, 0.58);
+}
+
+.boss-damage-label {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #f4f1e6;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boss-damage-row input[type="range"] {
+  width: 100%;
+  accent-color: #f0d47c;
+}
+
+.boss-damage-number {
+  width: 58px;
+  min-width: 0;
+  padding: 5px 4px;
+  border: 1px solid rgba(240, 212, 124, 0.26);
+  background: rgba(8, 9, 10, 0.84);
+  color: #f7efd9;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .portrait-row {
   display: flex;
   align-items: center;
