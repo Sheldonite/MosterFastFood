@@ -170,6 +170,7 @@ const mazeRewardVisuals = {
   cooldown: { tone: "purple", category: "Cooldown", icon: "cooldown" },
 };
 
+const playerBaseHealthMultiplier = 3;
 const mazeWallThickness = 8;
 const mazePlayerWallPadding = 8;
 const gauntletPlayerObstaclePadding = 3;
@@ -883,13 +884,14 @@ const runState = {
 };
 
 function createPlayer() {
+  const startingMaxHp = gear.armor.duelistCoat.maxHp * playerBaseHealthMultiplier;
   return {
     x: 300,
     y: 685,
     radius: 18,
     destination: null,
-    hp: 115,
-    maxHp: 115,
+    hp: startingMaxHp,
+    maxHp: startingMaxHp,
     potions: 3,
     attackCooldown: 0,
     abilityCooldowns: [0, 0, 0, 0],
@@ -1378,7 +1380,7 @@ function applyGear() {
     armor: armor.armor + rogueArmorBonus + warriorArmorBonus + (runState.mazeBuffs.armor || 0),
   };
   const hpPercent = player.hp / player.maxHp || 1;
-  player.maxHp = armor.maxHp + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
+  player.maxHp = armor.maxHp * playerBaseHealthMultiplier + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
   player.hp = Math.min(player.maxHp, Math.max(1, Math.round(player.maxHp * hpPercent)));
 }
 
