@@ -66,6 +66,7 @@ const ui = {
   potionButton: document.querySelector("#potionButton"),
   resetButton: document.querySelector("#resetButton"),
   deathScreen: document.querySelector("#deathScreen"),
+  deathResetFightButton: document.querySelector("#deathResetFightButton"),
   deathResetButton: document.querySelector("#deathResetButton"),
   mazeRewardOverlay: document.querySelector("#mazeRewardOverlay"),
   mazeRewardTitle: document.querySelector("#mazeRewardTitle"),
@@ -204,12 +205,12 @@ const bossAbilityDamageDefinitions = {
   ],
   donut: [
     { key: "crawler", label: "Crawler Bite", defaultDamage: 13, sources: ["Donut crawler"] },
-    { key: "minionShot", label: "Minion Shot", defaultDamage: 7, sources: ["Donut minion shot"], hazardTypes: ["donutMinionShot"] },
-    { key: "glazeBurst", label: "Mini Glaze Burst", defaultDamage: 8, sources: ["Mini glaze burst"], hazardTypes: ["sprinkle"] },
-    { key: "glazeRing", label: "Glaze Ring", defaultDamage: 21, sources: ["Glaze ring"], hazardTypes: ["glazeRing"] },
-    { key: "sprinkle", label: "Sprinkle Spiral", defaultDamage: 8, sources: ["Sprinkle"], hazardTypes: ["sprinkle"] },
-    { key: "frosting", label: "Frosting Ribbon", defaultDamage: 12, sources: ["Frosting ribbon"], hazardTypes: ["frostingRibbon"] },
-    { key: "roll", label: "Royal Roll", defaultDamage: 24, sources: ["Royal Roll"], hazardTypes: ["royalRoll"] },
+    { key: "minionShot", label: "Minion Shot", defaultDamage: 3, sources: ["Donut minion shot"], hazardTypes: ["donutMinionShot"] },
+    { key: "glazeBurst", label: "Mini Glaze Burst", defaultDamage: 1, sources: ["Mini glaze burst"], hazardTypes: ["sprinkle"] },
+    { key: "glazeRing", label: "Glaze Ring", defaultDamage: 50, sources: ["Glaze ring"], hazardTypes: ["glazeRing"] },
+    { key: "sprinkle", label: "Sprinkle Spiral", defaultDamage: 2, sources: ["Sprinkle"], hazardTypes: ["sprinkle"] },
+    { key: "frosting", label: "Frosting Ribbon", defaultDamage: 29, sources: ["Frosting ribbon"], hazardTypes: ["frostingRibbon"] },
+    { key: "roll", label: "Royal Roll", defaultDamage: 54, sources: ["Royal Roll"], hazardTypes: ["royalRoll"] },
   ],
   sushi: [
     { key: "dash", label: "Wasabi Dash", defaultDamage: 12, sources: ["Wasabi Dash"], hazardTypes: ["wasabiDash"] },
@@ -2474,6 +2475,7 @@ function createRng(seed) {
 }
 
 function isTypingTarget(element) {
+  if (element?.tagName === "INPUT" && element.type === "range") return false;
   return ["INPUT", "TEXTAREA", "SELECT"].includes(element?.tagName) || element?.isContentEditable;
 }
 
@@ -3428,7 +3430,8 @@ function getFacing(dx, dy) {
 function updateRoom(dt) {
   player.gateCooldown = Math.max(0, player.gateCooldown - dt);
   if (player.room === "starter" && player.gateCooldown <= 0 && circleIntersectsRect(player.x, player.y, player.radius, world.gate)) {
-    startMazeForBoss(boss.kind);
+    if (runState.mode === "dev") enterBossArena();
+    else startMazeForBoss(boss.kind);
   }
   if (player.room === "maze" && player.gateCooldown <= 0 && mazeState?.exitOpen && circleIntersectsRect(player.x, player.y, player.radius, mazeState.exit)) {
     enterBossArena();
@@ -9164,45 +9167,46 @@ function enterDeathState(source) {
   });
   log(`${source} stuffed you.`);
   if (activateSpectateMode(source)) return;
-  ui.status.textContent = "You're Stuffed. Continue to revive without restarting.";
+  ui.status.textContent = "You're Stuffed. Reset the fight or reset the run.";
   showFloat("You're Stuffed");
 }
 
-function continueRunFromDeath() {
+function resetFightFromDeath() {
   if (!player.dead) return;
+  const room = player.room;
+  const bossKind = boss.kind;
+  const mazeSequence = mazeState?.sequence || runState.mazeCount || 1;
   resetSpectateState();
   player.dead = false;
   player.hp = player.maxHp;
+  player.potions = 3;
   player.destination = null;
   player.slide = null;
   player.moving = false;
-  player.attackCooldown = 0;
-  player.abilityCooldowns = [0, 0, 0, 0];
-  player.castTimer = 0;
-  player.castMoveLockTimer = 0;
-  player.pendingAbilityCast = null;
-  player.rangerAttackTimer = 0;
-  player.meleeAttackTimer = 0;
-  player.rogueAttackTimer = 0;
-  player.tumbleTimer = 0;
-  player.invulnerableTimer = 2.4;
-  player.shieldWallTimer = 0;
-  player.consecrationTimer = 0;
-  player.guardSpeedTimer = 0;
-  player.tacoGreaseTimer = 0;
-  player.pickleSlowTimer = 0;
-  player.backstabTimer = 0;
-  player.deadeyeTimer = 0;
-  player.bardHealTickTimer = 0;
-  player.lastDamageAt = 0;
-  player.recentlyHitProjectileIds = new Set();
-  Object.keys(movementKeys).forEach((direction) => {
-    movementKeys[direction] = false;
-  });
-  mouseWorld = { x: player.x + player.lastMoveX * 120, y: player.y + player.lastMoveY * 120 };
-  ui.status.textContent = "Continued. Your run progress is intact.";
-  showFloat("Continue");
-  log("Continued from defeat.");
+  clearPlayerTransientState();
+  player.hp = player.maxHp;
+  player.potions = 3;
+  if (room === "maze") {
+    loadBoss(bossKind);
+    startMazeForBoss(bossKind, { fromParty: true, sequence: mazeSequence });
+    ui.status.textContent = `${mazeState?.theme.name || "Gauntlet"} reset. Try the room again.`;
+    showFloat("Room reset");
+    log("Gauntlet room reset.");
+  } else if (room === "arena") {
+    loadBoss(bossKind);
+    enterBossArena({ fromParty: true });
+    ui.status.textContent = `${boss.name} reset. Try the fight again.`;
+    showFloat("Fight reset");
+    log("Boss fight reset.");
+  } else {
+    loadBoss(bossKind);
+    sendPlayerToStarterRoom();
+    player.hp = player.maxHp;
+    player.potions = 3;
+    ui.status.textContent = "Starter room reset. Cross the gate when ready.";
+    showFloat("Fight reset");
+    log("Starter room reset.");
+  }
   sendMultiplayerState(true);
 }
 
@@ -10499,14 +10503,14 @@ function drawStarterRoomLabels() {
   ctx.fillText(runState.buildLocked ? "Build Locked" : "Starter Objective", panelX + panelW / 2, world.gate.y - 54);
   ctx.fillStyle = "#f7efd9";
   ctx.font = "13px sans-serif";
-  ctx.fillText(runState.buildLocked ? `Defeat ${boss.name}` : "Test dummy, then cross gate", panelX + panelW / 2, world.gate.y - 32);
+  ctx.fillText(runState.buildLocked ? `Defeat ${boss.name}` : runState.mode === "dev" ? "Cross gate to boss arena" : "Test dummy, then cross gate", panelX + panelW / 2, world.gate.y - 32);
   ctx.restore();
 }
 
 function starterObjectiveText() {
   if (player.won) return "Run cleared. Reset when you want to start over.";
   if (!runState.active) return "Pick a mode to begin a run.";
-  if (runState.mode === "dev") return `Boss Test: ${boss.name}. Cross the gate when ready.`;
+  if (runState.mode === "dev") return `Boss Test: ${boss.name}. Cross the gate for the boss arena.`;
   if (runState.buildLocked) return `${boss.name} is active. Fight until it falls.`;
   return `Next Boss: ${boss.name}. Test damage, then cross the gate.`;
 }
@@ -17571,7 +17575,8 @@ ui.mazeRewardCards?.addEventListener("click", (event) => {
   chooseMazeReward(button.dataset.reward);
 });
 ui.resetButton.addEventListener("click", () => resetFight(false));
-ui.deathResetButton?.addEventListener("click", continueRunFromDeath);
+ui.deathResetFightButton?.addEventListener("click", resetFightFromDeath);
+ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
 ui.bossDamageToggle?.addEventListener("click", () => {
   bossDamagePanelOpen = !bossDamagePanelOpen;
   bossDamagePanelSignature = "";
@@ -17588,6 +17593,10 @@ ui.bossDamageBody?.addEventListener("input", (event) => {
     input.value = bossAbilityDamageValue(boss.kind, key);
   });
   bossDamagePanelSignature = "";
+});
+ui.bossDamageBody?.addEventListener("pointerup", (event) => {
+  const slider = event.target.closest("[data-boss-damage]");
+  if (slider) slider.blur();
 });
 ui.bossDamageBody?.addEventListener("click", (event) => {
   if (!event.target.closest("#bossDamageResetButton")) return;
