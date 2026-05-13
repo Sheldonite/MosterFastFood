@@ -59,6 +59,14 @@ const ui = {
   bossDamagePanel: document.querySelector("#bossDamagePanel"),
   bossDamageToggle: document.querySelector("#bossDamageToggle"),
   bossDamageBody: document.querySelector("#bossDamageBody"),
+  spriteAdjustPanel: document.querySelector("#spriteAdjustPanel"),
+  spriteAdjustToggle: document.querySelector("#spriteAdjustToggle"),
+  spriteAdjustBody: document.querySelector("#spriteAdjustBody"),
+  spriteSheetOverlay: document.querySelector("#spriteSheetOverlay"),
+  spriteSheetTitle: document.querySelector("#spriteSheetTitle"),
+  spriteSheetClose: document.querySelector("#spriteSheetClose"),
+  spriteSheetControls: document.querySelector("#spriteSheetControls"),
+  spriteSheetPreview: document.querySelector("#spriteSheetPreview"),
   bossMenuButton: document.querySelector("#bossMenuButton"),
   bossMenuOverlay: document.querySelector("#bossMenuOverlay"),
   bossMenuClose: document.querySelector("#bossMenuClose"),
@@ -652,6 +660,12 @@ bardSprite.src = "./assets/bard-spritesheet.png";
 bardSprite.addEventListener("load", () => {
   cleanedBardSprite = createTransparentSprite(bardSprite);
 });
+const paladinSprite = new Image();
+let cleanedPaladinSprite = null;
+paladinSprite.src = "./assets/paladin-spritesheet.png";
+paladinSprite.addEventListener("load", () => {
+  cleanedPaladinSprite = createTransparentSprite(paladinSprite);
+});
 const curlyFriesSprite = new Image();
 let cleanedCurlyFriesSprite = null;
 curlyFriesSprite.src = "./assets/curly-fries-spritesheet.png";
@@ -878,6 +892,10 @@ let spectateState = { targetId: null };
 let bossDamagePanelSignature = "";
 let bossDamagePanelOpen = false;
 const bossDamageOverrides = {};
+let spriteAdjustPanelSignature = "";
+let spriteAdjustPanelOpen = false;
+const spriteSheetAdjustments = {};
+const spriteFrameSelections = {};
 let logLines = ["Choose gear, use WASD to cross the gate, hold click to attack."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
@@ -2437,6 +2455,86 @@ function tunedBossAbilityDamage(amount, source, subject = null) {
 function resetBossDamageOverrides(kind = boss.kind) {
   if (kind) delete bossDamageOverrides[kind];
   bossDamagePanelSignature = "";
+}
+
+function spriteAdjustmentKeyForWeapon(weaponId) {
+  return generatedClassArtKeyForWeapon(weaponId);
+}
+
+function currentSpriteAdjustmentKey() {
+  return spriteAdjustmentKeyForWeapon(player.gear.weapon);
+}
+
+function defaultSpriteRowsForKey(key) {
+  return key === "paladin"
+    ? { down: 0, left: 2, right: 1, up: 3 }
+    : { down: 0, left: 1, right: 2, up: 3 };
+}
+
+function defaultSpriteFrames() {
+  return { idle: 1, walk1: 0, walk2: 1, walk3: 2, walk4: 3, attack1: 2, attack2: 3 };
+}
+
+function spriteFrameSelectionForKey(key) {
+  if (!spriteFrameSelections[key]) {
+    spriteFrameSelections[key] = {
+      rows: { ...defaultSpriteRowsForKey(key) },
+      frames: defaultSpriteFrames(),
+    };
+  }
+  const selection = spriteFrameSelections[key];
+  const defaultRows = defaultSpriteRowsForKey(key);
+  const defaultFrames = defaultSpriteFrames();
+  selection.rows ??= {};
+  selection.frames ??= {};
+  Object.keys(defaultRows).forEach((direction) => {
+    selection.rows[direction] ??= defaultRows[direction];
+  });
+  Object.keys(defaultFrames).forEach((frameName) => {
+    selection.frames[frameName] ??= defaultFrames[frameName];
+  });
+  return selection;
+}
+
+function spriteFrameSelectionForCharacter(character) {
+  return spriteFrameSelectionForKey(spriteAdjustmentKeyForWeapon(character.weapon));
+}
+
+function setSpriteFrameValue(key, group, name, value) {
+  const selection = spriteFrameSelectionForKey(key);
+  const target = group === "row" ? selection.rows : selection.frames;
+  if (!target || !(name in target)) return;
+  target[name] = clamp(Math.round(Number(value) || 0), 0, 3);
+}
+
+function resetSpriteFrameSelection(key = currentSpriteAdjustmentKey()) {
+  delete spriteFrameSelections[key];
+}
+
+function spriteAdjustmentForKey(key) {
+  if (!spriteSheetAdjustments[key]) spriteSheetAdjustments[key] = { x: 0, y: 0, sheetX: 0, sheetY: 0 };
+  spriteSheetAdjustments[key].x ??= 0;
+  spriteSheetAdjustments[key].y ??= 0;
+  spriteSheetAdjustments[key].sheetX ??= 0;
+  spriteSheetAdjustments[key].sheetY ??= 0;
+  return spriteSheetAdjustments[key];
+}
+
+function spriteAdjustmentForCharacter(character) {
+  const key = spriteAdjustmentKeyForWeapon(character.weapon);
+  return spriteAdjustmentForKey(key);
+}
+
+function setSpriteAdjustmentValue(key, axis, value) {
+  const adjustment = spriteAdjustmentForKey(key);
+  const limit = axis === "sheetX" || axis === "sheetY" ? 96 : 48;
+  adjustment[axis] = clamp(Math.round(Number(value) || 0), -limit, limit);
+  spriteAdjustPanelSignature = "";
+}
+
+function resetSpriteAdjustment(key = currentSpriteAdjustmentKey()) {
+  delete spriteSheetAdjustments[key];
+  spriteAdjustPanelSignature = "";
 }
 
 function hexToRgba(hex, alpha) {
@@ -13737,6 +13835,18 @@ function outfitSpriteForGear(weaponId, armorId) {
       topCrop: 0.02,
     };
   }
+  if (weaponId === "dawnHammer" && paladinSprite.complete && paladinSprite.naturalWidth > 0) {
+    return {
+      sprite: cleanedPaladinSprite || paladinSprite,
+      sideCrop: 0.06,
+      cropWidth: 0.88,
+      cropBottom: 0.94,
+      drawWidth: 69,
+      drawHeight: 75,
+      topCrop: 0.01,
+      rows: { down: 0, left: 2, right: 1, up: 3 },
+    };
+  }
   if (weaponId === "pulseStaff" && glassMageSprite.complete && glassMageSprite.naturalWidth > 0) {
     return {
       sprite: cleanedGlassMageSprite || glassMageSprite,
@@ -13784,39 +13894,45 @@ function drawPlayerSprite() {
 }
 
 function drawCharacterSprite(character, outfit, sprite) {
-  const rows = { down: 0, left: 1, right: 2, up: 3 };
+  const frameSelection = spriteFrameSelectionForCharacter(character);
+  const rows = frameSelection.rows || outfit?.rows || { down: 0, left: 1, right: 2, up: 3 };
+  const frames = frameSelection.frames || defaultSpriteFrames();
   const sourceWidth = sprite.naturalWidth || sprite.width;
   const sourceHeight = sprite.naturalHeight || sprite.height;
   const frameWidth = sourceWidth / 4;
   const frameHeight = sourceHeight / 4;
   const rangerAttacking = character.rangerAttackTimer > 0 && character.weapon === "emberBow";
-  const meleeAttacking = character.meleeAttackTimer > 0 && character.weapon === "ironBlade";
+  const meleeAttacking = character.meleeAttackTimer > 0 && (character.weapon === "ironBlade" || character.weapon === "dawnHammer");
   const rogueAttacking = character.rogueAttackTimer > 0 && character.weapon === "shadowDaggers";
   const bardAttacking = character.meleeAttackTimer > 0 && character.weapon === "oakLute";
+  const walkFrames = [frames.walk1, frames.walk2, frames.walk3, frames.walk4];
   const frame = rangerAttacking
-    ? (character.rangerAttackTimer > 0.14 ? 2 : 3)
+    ? (character.rangerAttackTimer > 0.14 ? frames.attack1 : frames.attack2)
     : rogueAttacking
-      ? (character.rogueAttackTimer > 0.12 ? 2 : 3)
+      ? (character.rogueAttackTimer > 0.12 ? frames.attack1 : frames.attack2)
     : bardAttacking
-      ? (character.meleeAttackTimer > 0.11 ? 2 : 3)
+      ? (character.meleeAttackTimer > 0.11 ? frames.attack1 : frames.attack2)
     : meleeAttacking
-      ? (character.meleeAttackTimer > 0.17 ? 2 : 3)
+      ? (character.meleeAttackTimer > 0.17 ? frames.attack1 : frames.attack2)
       : character.moving
-        ? Math.floor(character.animationTime * 8) % 4
-        : 1;
+        ? walkFrames[Math.floor(character.animationTime * 8) % walkFrames.length]
+        : frames.idle;
   const row = rows[character.facing] ?? 0;
   const topCrop = outfit?.topCrop ?? (character.facing === "up" ? 0.04 : 0.1);
   const sideCrop = outfit?.sideCrop ?? 0.2;
   const cropWidth = outfit?.cropWidth ?? 0.56;
   const cropBottom = outfit?.cropBottom ?? 0.86;
   const crop = {
-    x: frameWidth * sideCrop,
-    y: frameHeight * topCrop,
+    x: clamp(frameWidth * sideCrop + spriteAdjustmentForCharacter(character).sheetX, 0, frameWidth - 1),
+    y: clamp(frameHeight * topCrop + spriteAdjustmentForCharacter(character).sheetY, 0, frameHeight - 1),
     w: frameWidth * cropWidth,
     h: frameHeight * (cropBottom - topCrop),
   };
   const drawWidth = outfit?.drawWidth ?? 58;
   const drawHeight = outfit?.drawHeight ?? 74;
+  const spriteAdjustment = spriteAdjustmentForCharacter(character);
+  crop.w = Math.max(1, Math.min(crop.w, frameWidth - crop.x));
+  crop.h = Math.max(1, Math.min(crop.h, frameHeight - crop.y));
   const rangedPulse = rangerAttacking ? Math.sin((1 - character.rangerAttackTimer / 0.28) * Math.PI) : 0;
   const meleePulse = meleeAttacking ? Math.sin((1 - character.meleeAttackTimer / 0.34) * Math.PI) : 0;
   const roguePulse = rogueAttacking ? Math.sin((1 - character.rogueAttackTimer / 0.24) * Math.PI) : 0;
@@ -13845,8 +13961,8 @@ function drawCharacterSprite(character, outfit, sprite) {
     row * frameHeight + crop.y,
     crop.w,
     crop.h,
-    character.x - drawWidth / 2 + recoilX,
-    character.y - drawHeight * 0.66 + recoilY,
+    character.x - drawWidth / 2 + recoilX + spriteAdjustment.x,
+    character.y - drawHeight * 0.66 + recoilY + spriteAdjustment.y,
     drawWidth,
     drawHeight,
   );
@@ -14611,6 +14727,150 @@ function renderBossDamagePanel() {
   `;
 }
 
+function renderSpriteAdjustPanel() {
+  if (!ui.spriteAdjustPanel || !ui.spriteAdjustToggle || !ui.spriteAdjustBody) return;
+  const visible = runState.mode === "dev";
+  ui.spriteAdjustPanel.hidden = !visible;
+  document.querySelector(".hud")?.classList.toggle("sprite-adjust-open", false);
+  if (!visible) {
+    spriteAdjustPanelOpen = false;
+    ui.spriteAdjustBody.hidden = true;
+    ui.spriteAdjustToggle.setAttribute("aria-expanded", "false");
+    closeSpriteSheetEditor();
+    return;
+  }
+  const className = currentClassOption().name;
+  ui.spriteAdjustToggle.textContent = `Sprite Sheet: ${className}`;
+  ui.spriteAdjustToggle.setAttribute("aria-expanded", spriteSheetEditorIsOpen() ? "true" : "false");
+  ui.spriteAdjustBody.hidden = true;
+  ui.spriteAdjustBody.innerHTML = "";
+}
+
+function spriteSheetEditorIsOpen() {
+  return Boolean(ui.spriteSheetOverlay && !ui.spriteSheetOverlay.hidden);
+}
+
+function openSpriteSheetEditor() {
+  if (!ui.spriteSheetOverlay) return;
+  bossDamagePanelOpen = false;
+  spriteAdjustPanelOpen = false;
+  Object.keys(movementKeys).forEach((direction) => {
+    movementKeys[direction] = false;
+  });
+  stopHeldPrimaryAttack();
+  ui.spriteSheetOverlay.hidden = false;
+  renderBossDamagePanel();
+  renderSpriteAdjustPanel();
+  renderSpriteSheetEditor();
+}
+
+function closeSpriteSheetEditor() {
+  if (ui.spriteSheetOverlay) ui.spriteSheetOverlay.hidden = true;
+  if (ui.spriteAdjustToggle) ui.spriteAdjustToggle.setAttribute("aria-expanded", "false");
+}
+
+function spriteEditorControl(label, value, min, max, dataset, ariaLabel = label) {
+  const attr = Object.entries(dataset).map(([name, dataValue]) => `data-${name}="${escapeHtml(dataValue)}"`).join(" ");
+  const numberAttr = Object.entries(dataset).map(([name, dataValue]) => `data-${name}-number="${escapeHtml(dataValue)}"`).join(" ");
+  return `
+    <label class="sprite-adjust-row sprite-sheet-control-row">
+      <span class="sprite-adjust-label">${escapeHtml(label)}</span>
+      <input type="range" min="${min}" max="${max}" step="1" value="${value}" ${attr}>
+      <input class="sprite-adjust-number" type="number" min="${min}" max="${max}" step="1" value="${value}" ${numberAttr} aria-label="${escapeHtml(ariaLabel)}">
+    </label>
+  `;
+}
+
+function renderSpriteSheetEditor() {
+  if (!ui.spriteSheetOverlay || ui.spriteSheetOverlay.hidden || !ui.spriteSheetControls) return;
+  const className = currentClassOption().name;
+  const key = currentSpriteAdjustmentKey();
+  const selection = spriteFrameSelectionForKey(key);
+  const adjustment = spriteAdjustmentForKey(key);
+  if (ui.spriteSheetTitle) ui.spriteSheetTitle.textContent = `${className} Sprite Sheet`;
+  ui.spriteSheetControls.innerHTML = `
+    <div class="sprite-sheet-section">
+      <div class="sprite-adjust-head">
+        <span>Animation Rows</span>
+        <button id="spriteSheetResetButton" type="button">Reset All</button>
+      </div>
+      ${spriteEditorControl("Down Row", selection.rows.down, 0, 3, { "sprite-row": "down" })}
+      ${spriteEditorControl("Left Row", selection.rows.left, 0, 3, { "sprite-row": "left" })}
+      ${spriteEditorControl("Right Row", selection.rows.right, 0, 3, { "sprite-row": "right" })}
+      ${spriteEditorControl("Up Row", selection.rows.up, 0, 3, { "sprite-row": "up" })}
+    </div>
+    <div class="sprite-sheet-section">
+      <div class="sprite-adjust-head"><span>Animation Frames</span></div>
+      ${spriteEditorControl("Idle Frame", selection.frames.idle, 0, 3, { "sprite-frame": "idle" })}
+      ${spriteEditorControl("Walk Frame 1", selection.frames.walk1, 0, 3, { "sprite-frame": "walk1" })}
+      ${spriteEditorControl("Walk Frame 2", selection.frames.walk2, 0, 3, { "sprite-frame": "walk2" })}
+      ${spriteEditorControl("Walk Frame 3", selection.frames.walk3, 0, 3, { "sprite-frame": "walk3" })}
+      ${spriteEditorControl("Walk Frame 4", selection.frames.walk4, 0, 3, { "sprite-frame": "walk4" })}
+      ${spriteEditorControl("Attack Start", selection.frames.attack1, 0, 3, { "sprite-frame": "attack1" })}
+      ${spriteEditorControl("Attack Finish", selection.frames.attack2, 0, 3, { "sprite-frame": "attack2" })}
+    </div>
+    <div class="sprite-sheet-section">
+      <div class="sprite-adjust-head"><span>Position Offsets</span></div>
+      ${spriteEditorControl("Canvas X", adjustment.x, -48, 48, { "sprite-adjust": "x" }, "Canvas X position")}
+      ${spriteEditorControl("Canvas Y", adjustment.y, -48, 48, { "sprite-adjust": "y" }, "Canvas Y position")}
+      ${spriteEditorControl("Sheet X", adjustment.sheetX, -96, 96, { "sprite-adjust": "sheetX" }, "Spritesheet X position")}
+      ${spriteEditorControl("Sheet Y", adjustment.sheetY, -96, 96, { "sprite-adjust": "sheetY" }, "Spritesheet Y position")}
+    </div>
+  `;
+  drawSpriteSheetPreview();
+}
+
+function syncSpriteEditorInputs(selector, value) {
+  ui.spriteSheetControls?.querySelectorAll(selector).forEach((input) => {
+    input.value = value;
+  });
+}
+
+function drawSpriteSheetPreview() {
+  if (!ui.spriteSheetPreview) return;
+  const previewCtx = ui.spriteSheetPreview.getContext("2d");
+  const width = ui.spriteSheetPreview.width;
+  const height = ui.spriteSheetPreview.height;
+  previewCtx.clearRect(0, 0, width, height);
+  previewCtx.fillStyle = "#080b0d";
+  previewCtx.fillRect(0, 0, width, height);
+  const outfit = playerOutfitSprite();
+  const sprite = outfit?.sprite || cleanedPlayerSprite || playerSprite;
+  if (!sprite || !isImageReady(sprite)) {
+    previewCtx.fillStyle = "#f7efd9";
+    previewCtx.font = "700 18px system-ui";
+    previewCtx.fillText("Sprite sheet loading", 24, 44);
+    return;
+  }
+  const sourceWidth = sprite.naturalWidth || sprite.width;
+  const sourceHeight = sprite.naturalHeight || sprite.height;
+  const scale = Math.min((width - 32) / sourceWidth, (height - 74) / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const startX = (width - drawWidth) / 2;
+  const startY = 46;
+  previewCtx.imageSmoothingEnabled = false;
+  previewCtx.drawImage(sprite, startX, startY, drawWidth, drawHeight);
+  const cellWidth = drawWidth / 4;
+  const cellHeight = drawHeight / 4;
+  const selection = spriteFrameSelectionForKey(currentSpriteAdjustmentKey());
+  previewCtx.lineWidth = 2;
+  previewCtx.font = "700 12px system-ui";
+  Object.entries(selection.rows).forEach(([direction, row]) => {
+    previewCtx.strokeStyle = "rgba(240, 212, 124, 0.84)";
+    previewCtx.strokeRect(startX, startY + row * cellHeight, drawWidth, cellHeight);
+    previewCtx.fillStyle = "#f7efd9";
+    previewCtx.fillText(direction.toUpperCase(), 12, startY + row * cellHeight + 18);
+  });
+  Object.entries(selection.frames).forEach(([frameName, frame]) => {
+    previewCtx.strokeStyle = frameName.startsWith("attack") ? "rgba(235, 92, 92, 0.88)" : "rgba(106, 201, 255, 0.74)";
+    previewCtx.strokeRect(startX + frame * cellWidth, startY, cellWidth, drawHeight);
+  });
+  previewCtx.fillStyle = "#f7efd9";
+  previewCtx.font = "800 15px system-ui";
+  previewCtx.fillText(`${currentClassOption().name} frame map`, startX, 24);
+}
+
 function renderUi() {
   const spectateTarget = currentSpectateTarget();
   ui.roomText.textContent = spectateTarget ? `Spectating ${spectatePeerLabel(spectateTarget.id)}` : player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
@@ -14671,6 +14931,7 @@ function renderUi() {
     ui.bossTestPanel.hidden = runState.mode !== "dev";
   }
   renderBossDamagePanel();
+  renderSpriteAdjustPanel();
   if (ui.classSelector) {
     const signature = `${player.gear.weapon}:${classOptions.map((option) => `${option.id}:${option.locked ? 1 : 0}`).join("|")}`;
     if (signature !== classSelectorSignature) {
@@ -17579,8 +17840,11 @@ ui.deathResetFightButton?.addEventListener("click", resetFightFromDeath);
 ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
 ui.bossDamageToggle?.addEventListener("click", () => {
   bossDamagePanelOpen = !bossDamagePanelOpen;
+  if (bossDamagePanelOpen) spriteAdjustPanelOpen = false;
   bossDamagePanelSignature = "";
+  spriteAdjustPanelSignature = "";
   renderBossDamagePanel();
+  renderSpriteAdjustPanel();
 });
 ui.bossDamageBody?.addEventListener("input", (event) => {
   const slider = event.target.closest("[data-boss-damage]");
@@ -17603,6 +17867,76 @@ ui.bossDamageBody?.addEventListener("click", (event) => {
   resetBossDamageOverrides(boss.kind);
   renderBossDamagePanel();
 });
+ui.spriteAdjustToggle?.addEventListener("click", () => {
+  openSpriteSheetEditor();
+});
+ui.spriteAdjustBody?.addEventListener("input", (event) => {
+  const slider = event.target.closest("[data-sprite-adjust]");
+  const numberInput = event.target.closest("[data-sprite-adjust-number]");
+  const axis = slider?.dataset.spriteAdjust || numberInput?.dataset.spriteAdjustNumber;
+  if (!["x", "y", "sheetX", "sheetY"].includes(axis)) return;
+  const key = currentSpriteAdjustmentKey();
+  const value = slider ? slider.value : numberInput.value;
+  setSpriteAdjustmentValue(key, axis, value);
+  const adjustment = spriteAdjustmentForKey(key);
+  ui.spriteAdjustBody.querySelectorAll(`[data-sprite-adjust="${axis}"], [data-sprite-adjust-number="${axis}"]`).forEach((input) => {
+    input.value = adjustment[axis];
+  });
+});
+ui.spriteAdjustBody?.addEventListener("pointerup", (event) => {
+  const slider = event.target.closest("[data-sprite-adjust]");
+  if (slider) slider.blur();
+});
+ui.spriteAdjustBody?.addEventListener("click", (event) => {
+  if (!event.target.closest("#spriteAdjustResetButton")) return;
+  resetSpriteAdjustment(currentSpriteAdjustmentKey());
+  renderSpriteAdjustPanel();
+});
+ui.spriteSheetClose?.addEventListener("click", closeSpriteSheetEditor);
+ui.spriteSheetOverlay?.addEventListener("click", (event) => {
+  if (event.target === ui.spriteSheetOverlay) closeSpriteSheetEditor();
+});
+ui.spriteSheetControls?.addEventListener("input", (event) => {
+  const rowInput = event.target.closest("[data-sprite-row], [data-sprite-row-number]");
+  const frameInput = event.target.closest("[data-sprite-frame], [data-sprite-frame-number]");
+  const adjustInput = event.target.closest("[data-sprite-adjust], [data-sprite-adjust-number]");
+  const key = currentSpriteAdjustmentKey();
+  if (rowInput) {
+    const direction = rowInput.dataset.spriteRow || rowInput.dataset.spriteRowNumber;
+    setSpriteFrameValue(key, "row", direction, rowInput.value);
+    const value = spriteFrameSelectionForKey(key).rows[direction];
+    syncSpriteEditorInputs(`[data-sprite-row="${direction}"], [data-sprite-row-number="${direction}"]`, value);
+    drawSpriteSheetPreview();
+    return;
+  }
+  if (frameInput) {
+    const frameName = frameInput.dataset.spriteFrame || frameInput.dataset.spriteFrameNumber;
+    setSpriteFrameValue(key, "frame", frameName, frameInput.value);
+    const value = spriteFrameSelectionForKey(key).frames[frameName];
+    syncSpriteEditorInputs(`[data-sprite-frame="${frameName}"], [data-sprite-frame-number="${frameName}"]`, value);
+    drawSpriteSheetPreview();
+    return;
+  }
+  if (adjustInput) {
+    const axis = adjustInput.dataset.spriteAdjust || adjustInput.dataset.spriteAdjustNumber;
+    if (!["x", "y", "sheetX", "sheetY"].includes(axis)) return;
+    setSpriteAdjustmentValue(key, axis, adjustInput.value);
+    const value = spriteAdjustmentForKey(key)[axis];
+    syncSpriteEditorInputs(`[data-sprite-adjust="${axis}"], [data-sprite-adjust-number="${axis}"]`, value);
+    drawSpriteSheetPreview();
+  }
+});
+ui.spriteSheetControls?.addEventListener("pointerup", (event) => {
+  const slider = event.target.closest("input[type='range']");
+  if (slider) slider.blur();
+});
+ui.spriteSheetControls?.addEventListener("click", (event) => {
+  if (!event.target.closest("#spriteSheetResetButton")) return;
+  const key = currentSpriteAdjustmentKey();
+  resetSpriteAdjustment(key);
+  resetSpriteFrameSelection(key);
+  renderSpriteSheetEditor();
+});
 ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
 ui.debugReportCopy?.addEventListener("click", copyDebugReport);
 ui.debugReportDismiss?.addEventListener("click", () => {
@@ -17622,6 +17956,10 @@ window.addEventListener("unhandledrejection", (event) => {
   reportRuntimeError(event.reason || "Unhandled promise rejection", { area: "unhandledrejection" });
 });
 window.addEventListener("keydown", (event) => {
+  if (spriteSheetEditorIsOpen()) {
+    if (event.key === "Escape") closeSpriteSheetEditor();
+    return;
+  }
   if (isTypingTarget(document.activeElement)) return;
   const key = event.key.toLowerCase();
   if (event.ctrlKey && event.shiftKey && key === "d") {

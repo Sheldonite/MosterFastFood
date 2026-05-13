@@ -808,37 +808,50 @@ canvas {
   display: none;
 }
 
-.boss-damage-panel {
+.hud.sprite-adjust-open > section:not(.sprite-adjust-panel) {
+  display: none;
+}
+
+.boss-damage-panel,
+.sprite-adjust-panel {
+  position: relative;
+  z-index: 8;
   display: grid;
   gap: 8px;
   min-height: 0;
 }
 
-.boss-damage-panel[hidden] {
+.boss-damage-panel[hidden],
+.sprite-adjust-panel[hidden] {
   display: none;
 }
 
-.boss-damage-toggle::after {
+.boss-damage-toggle::after,
+.sprite-adjust-toggle::after {
   float: right;
   color: #f0d47c;
   content: "v";
 }
 
-.boss-damage-toggle[aria-expanded="true"]::after {
+.boss-damage-toggle[aria-expanded="true"]::after,
+.sprite-adjust-toggle[aria-expanded="true"]::after {
   content: "^";
 }
 
-.boss-damage-body {
+.boss-damage-body,
+.sprite-adjust-body {
   display: grid;
   gap: 8px;
   min-height: 0;
 }
 
-.boss-damage-body[hidden] {
+.boss-damage-body[hidden],
+.sprite-adjust-body[hidden] {
   display: none;
 }
 
-.boss-damage-head {
+.boss-damage-head,
+.sprite-adjust-head {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -849,7 +862,8 @@ canvas {
   text-transform: uppercase;
 }
 
-.boss-damage-head button {
+.boss-damage-head button,
+.sprite-adjust-head button {
   min-height: 28px;
   padding: 4px 8px;
   font-size: 11px;
@@ -863,7 +877,8 @@ canvas {
   padding-right: 2px;
 }
 
-.boss-damage-row {
+.boss-damage-row,
+.sprite-adjust-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 58px;
   gap: 5px 8px;
@@ -873,7 +888,8 @@ canvas {
   background: rgba(9, 12, 14, 0.58);
 }
 
-.boss-damage-label {
+.boss-damage-label,
+.sprite-adjust-label {
   grid-column: 1 / -1;
   overflow: hidden;
   color: #f4f1e6;
@@ -883,12 +899,14 @@ canvas {
   white-space: nowrap;
 }
 
-.boss-damage-row input[type="range"] {
+.boss-damage-row input[type="range"],
+.sprite-adjust-row input[type="range"] {
   width: 100%;
   accent-color: #f0d47c;
 }
 
-.boss-damage-number {
+.boss-damage-number,
+.sprite-adjust-number {
   width: 58px;
   min-width: 0;
   padding: 5px 4px;
@@ -1064,6 +1082,75 @@ p {
 
 .class-menu-overlay[hidden] {
   display: none;
+}
+
+.sprite-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(5, 7, 8, 0.78);
+}
+
+.sprite-sheet-overlay[hidden] {
+  display: none;
+}
+
+.sprite-sheet-editor {
+  width: min(1100px, calc(100vw - 28px));
+  height: min(760px, calc(100vh - 28px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(244, 232, 203, 0.22);
+  border-radius: 8px;
+  background: rgba(12, 14, 14, 0.96);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.48);
+}
+
+.sprite-sheet-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 520px) minmax(320px, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.sprite-sheet-preview {
+  width: 100%;
+  max-height: 100%;
+  border: 1px solid rgba(244, 232, 203, 0.16);
+  border-radius: 6px;
+  background: #080b0d;
+  image-rendering: pixelated;
+}
+
+.sprite-sheet-controls {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.sprite-sheet-section {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(244, 232, 203, 0.12);
+  border-radius: 8px;
+  background: rgba(7, 10, 11, 0.7);
+}
+
+.sprite-sheet-control-row {
+  grid-template-columns: minmax(0, 1fr) 72px;
+}
+
+.sprite-sheet-control-row .sprite-adjust-number {
+  width: 72px;
 }
 
 .class-menu {
@@ -1589,6 +1676,15 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .sprite-sheet-editor-grid {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .sprite-sheet-preview {
+    max-height: 420px;
+  }
+
   .reward-panel {
     align-content: start;
     overflow: auto;
@@ -1614,6 +1710,15 @@ p {
 
   .hud {
     grid-template-columns: 1fr;
+  }
+
+  .sprite-sheet-overlay {
+    padding: 8px;
+  }
+
+  .sprite-sheet-editor {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
   }
 
   .topbar {
