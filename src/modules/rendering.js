@@ -1,6 +1,7 @@
 /**
  * Rendering System Module
  * Handles all canvas rendering operations for the game
+ * Optimized for performance with minimal state changes
  */
 
 import { GameState } from './GameState.js';
@@ -12,7 +13,7 @@ import { generatedArtImage, drawGeneratedArt, clamp } from './constants.js';
 export const RenderConfig = {
   showHitboxes: false,
   showDamageNumbers: true,
-  particleLimit: 500,
+  particleLimit: 200, // Reduced from 500
   fpsTarget: 60
 };
 
@@ -441,27 +442,28 @@ function renderAbilityEffect(ctx, effect) {
 /**
  * Render particles
  * @param {CanvasRenderingContext2D} ctx
- * @param {GameState} gameState
  */
 function renderParticles(ctx, gameState) {
-  // Limit particle count for performance
-  const particles = gameState.particles.slice(0, RenderConfig.particleLimit);
+  const particles = gameState.particles;
+  const len = Math.min(particles.length, RenderConfig.particleLimit);
   
-  for (const particle of particles) {
-    ctx.save();
-    ctx.globalAlpha = particle.alpha || 1;
-    ctx.fillStyle = particle.color || '#ffffff';
+  if (len === 0) return;
+  
+  // Batch render all particles with minimal state changes
+  ctx.beginPath();
+  for (let i = 0; i < len; i++) {
+    const particle = particles[i];
+    const size = particle.size || 3;
     
     if (particle.size) {
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(particle.x + size, particle.y);
+      ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
     } else {
-      ctx.fillRect(particle.x, particle.y, 3, 3);
+      ctx.rect(particle.x, particle.y, 3, 3);
     }
-    
-    ctx.restore();
   }
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
 }
 
 /**
