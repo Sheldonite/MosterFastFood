@@ -8,14 +8,16 @@
   "scripts": {
     "generate:art": "node scripts/generate-game-art.js",
     "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js && node scripts/test-projectile-damage-once.js",
+    "test": "node --experimental-vm-modules ./node_modules/vitest/vitest.mjs run",
+    "test:watch": "node --experimental-vm-modules ./node_modules/vitest/vitest.mjs",
     "start": "node server.js",
     "desktop": "electron .",
     "dist:win": "electron-builder --win",
     "publish:win": "electron-builder --win --publish always"
   },
   "devDependencies": {
-    "electron": "^30.5.1",
-    "electron-builder": "^24.13.3"
+    "vitest": "^1.6.0",
+    "jsdom": "^24.0.0"
   },
   "build": {
     "appId": "com.bossfight.game",

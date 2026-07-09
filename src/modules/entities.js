@@ -8,7 +8,7 @@ import { world } from './constants.js';
  * Base Entity class with common properties and methods
  */
 export class Entity {
-  constructor(x, y, width, height) {
+  constructor(x, y, width, height, health = 100) {
     this.x = x;
     this.y = y;
     this.width = width;
@@ -16,8 +16,8 @@ export class Entity {
     this.vx = 0;
     this.vy = 0;
     this.speed = 0;
-    this.hp = 100;
-    this.maxHp = 100;
+    this.health = health;
+    this.maxHealth = health;
     this.armor = 0;
     this.dead = false;
     this.id = Math.random().toString(36).substr(2, 9);
@@ -91,13 +91,31 @@ export class Entity {
     // Apply reduction and multiplier
     const actualDamage = Math.ceil(amount * (1 - reduction) * damageMultiplier);
     
-    this.hp = Math.max(0, this.hp - actualDamage);
+    this.health = Math.max(0, this.health - actualDamage);
     
-    if (this.hp <= 0) {
+    if (this.health <= 0) {
       this.dead = true;
     }
     
     return actualDamage;
+  }
+  
+  /**
+   * Check if entity is dead
+   * @returns {boolean} True if dead
+   */
+  isDead() {
+    return this.dead;
+  }
+  
+  /**
+   * Move entity by delta values
+   * @param {number} dx - Delta X
+   * @param {number} dy - Delta Y
+   */
+  move(dx, dy) {
+    this.x += dx;
+    this.y += dy;
   }
   
   /**
@@ -108,10 +126,10 @@ export class Entity {
   heal(amount) {
     if (this.dead) return 0;
     
-    const oldHp = this.hp;
-    this.hp = Math.min(this.maxHp, this.hp + amount);
+    const oldHp = this.health;
+    this.health = Math.min(this.maxHealth, this.health + amount);
     
-    return this.hp - oldHp;
+    return this.health - oldHp;
   }
   
   /**
@@ -136,10 +154,11 @@ export class Entity {
  * Player entity with class-specific properties
  */
 export class Player extends Entity {
-  constructor(x, y) {
-    super(x, y, 48, 48);
+  constructor(x, y, classType = 'warrior') {
+    super(x, y, 48, 48, 100);
     
-    this.classType = 'melee';
+    this.class = classType;
+    this.classType = classType;
     this.weaponId = 'ironBlade';
     this.armorId = 'duelistCoat';
     this.name = 'Player';
@@ -147,6 +166,12 @@ export class Player extends Entity {
     this.damageMultiplier = 1;
     this.attackSpeed = 1;
     this.cooldownRecovery = 1;
+    
+    // Equipment slots
+    this.equipment = {
+      weapon: null,
+      armor: null
+    };
     
     // Combat state
     this.lastAttackAt = 0;
@@ -158,6 +183,39 @@ export class Player extends Entity {
     // Multiplayer state
     this.peerId = null;
     this.isRemote = false;
+  }
+  
+  /**
+   * Equip an item
+   * @param {string} slot - Equipment slot
+   * @param {Object} item - Item to equip
+   */
+  equip(slot, item) {
+    if (!this.equipment[slot]) {
+      this.equipment[slot] = item;
+    } else {
+      this.equipment[slot] = item;
+    }
+  }
+  
+  /**
+   * Get total stats from equipment
+   * @returns {Object} Total stats
+   */
+  getTotalStats() {
+    let attackPower = 0;
+    let defense = 0;
+    
+    if (this.equipment.weapon) {
+      attackPower += this.equipment.weapon.attackPower || 0;
+      attackPower += this.equipment.weapon.damage || 0;
+    }
+    
+    if (this.equipment.armor) {
+      defense += this.equipment.armor.defense || 0;
+    }
+    
+    return { attackPower, defense };
   }
   
   /**
@@ -196,12 +254,12 @@ export class Player extends Entity {
    * @returns {boolean} True if potion was used
    */
   usePotion() {
-    if (this.potions <= 0 || this.hp >= this.maxHp || this.dead) {
+    if (this.potions <= 0 || this.health >= this.maxHealth || this.dead) {
       return false;
     }
     
     this.potions--;
-    this.heal(this.maxHp * 0.4); // Heal 40% of max HP
+    this.heal(this.maxHealth * 0.4); // Heal 40% of max HP
     
     return true;
   }
@@ -211,10 +269,12 @@ export class Player extends Entity {
  * Boss entity with phase management
  */
 export class Boss extends Entity {
-  constructor(kind, x, y, width, height) {
-    super(x, y, width, height);
+  constructor(kind, x, y, bossType, maxHealth = 1000) {
+    super(x, y, 100, 100, maxHealth);
     
+    this.bossType = bossType || kind;
     this.kind = kind;
+    this.currentPhase = 0;
     this.phase = 1;
     this.phaseTimer = 0;
     this.attackTimer = 0;
@@ -227,6 +287,33 @@ export class Boss extends Entity {
     this.subTarget = null;
     this.mechanicState = {};
     this.summons = [];
+  }
+  
+  /**
+   * Check and update phase based on health
+   */
+  checkPhaseTransition() {
+    const healthPercent = this.health / this.maxHealth;
+    const thresholds = [0.66, 0.33];
+    
+    for (let i = 0; i < thresholds.length; i++) {
+      if (healthPercent <= thresholds[i] && this.currentPhase <= i) {
+        this.currentPhase = i + 1;
+        break;
+      }
+    }
+  }
+  
+  /**
+   * Take damage and check for phase transitions
+   * @param {number} amount - Damage amount
+   * @param {Object} options - Damage options
+   * @returns {number} Actual damage dealt
+   */
+  takeDamage(amount, options = {}) {
+    const actualDamage = super.takeDamage(amount, options);
+    this.checkPhaseTransition();
+    return actualDamage;
   }
   
   /**
@@ -286,22 +373,22 @@ export class Boss extends Entity {
  * Projectile entity for player and boss attacks
  */
 export class Projectile extends Entity {
-  constructor(x, y, vx, vy, options = {}) {
-    super(x, y, options.width || 12, options.height || 12);
+  constructor(x, y, vx, vy, damage = 25, lifetime = 3) {
+    super(x, y, 12, 12, 1);
     
     this.vx = vx;
     this.vy = vy;
-    this.speed = options.speed || 400;
-    this.damage = options.damage || 10;
-    this.lifetime = options.lifetime || 3;
+    this.speed = Math.sqrt(vx * vx + vy * vy);
+    this.damage = damage;
+    this.lifetime = lifetime;
     this.age = 0;
-    this.source = options.source || 'player';
-    this.kind = options.kind || 'basic';
-    this.homing = options.homing || false;
-    this.target = options.target || null;
-    this.piercing = options.piercing || false;
+    this.source = 'player';
+    this.kind = 'basic';
+    this.homing = false;
+    this.target = null;
+    this.piercing = false;
     this.hitCount = 0;
-    this.maxHits = options.maxHits || 1;
+    this.maxHits = 1;
   }
   
   /**
@@ -311,6 +398,10 @@ export class Projectile extends Entity {
    */
   update(dt, targets = []) {
     this.age += dt;
+    
+    // Update position based on velocity
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
     
     // Homing behavior
     if (this.homing && this.target && !this.target.dead) {
@@ -334,13 +425,18 @@ export class Projectile extends Entity {
       this.vy = Math.sin(newAngle) * this.speed;
     }
     
-    // Update position
-    this.updatePosition(dt);
-    
     // Check lifetime
     if (this.age >= this.lifetime) {
       this.dead = true;
     }
+  }
+  
+  /**
+   * Check if projectile is still alive
+   * @returns {boolean} True if alive
+   */
+  isAlive() {
+    return !this.dead && this.age < this.lifetime;
   }
 }
 
@@ -388,10 +484,11 @@ export class Hazard extends Entity {
  * Create a new player instance
  * @param {number} x - Starting X position
  * @param {number} y - Starting Y position
+ * @param {string} classType - Player class type
  * @returns {Player} New player instance
  */
-export function createPlayer(x = 100, y = 450) {
-  return new Player(x, y);
+export function createPlayer(x = 100, y = 450, classType = 'warrior') {
+  return new Player(x, y, classType);
 }
 
 /**
@@ -399,9 +496,11 @@ export function createPlayer(x = 100, y = 450) {
  * @param {string} kind - Boss kind identifier
  * @param {number} x - X position
  * @param {number} y - Y position
+ * @param {string} bossType - Boss type name
+ * @param {number} maxHealth - Maximum health
  * @returns {Boss} New boss instance
  */
-export function createBoss(kind, x = 1000, y = 400) {
+export function createBoss(kind, x = 1000, y = 400, bossType, maxHealth) {
   const sizes = {
     cola: { width: 120, height: 180 },
     burger: { width: 160, height: 160 },
@@ -417,24 +516,20 @@ export function createBoss(kind, x = 1000, y = 400) {
   };
   
   const size = sizes[kind] || { width: 140, height: 160 };
-  const boss = new Boss(kind, x, y, size.width, size.height);
-  
-  // Set boss HP based on kind
-  const baseHp = 2000;
-  boss.maxHp = Math.floor(baseHp * boss.getHealthMultiplier());
-  boss.hp = boss.maxHp;
+  const hp = maxHealth || Math.floor(2000 * (bossType ? 1.5 : 1));
+  const boss = new Boss(kind, x, y, bossType || kind, hp);
   
   return boss;
 }
 
 /**
  * Create a training dummy for testing
+ * @param {number} x - X position
+ * @param {number} y - Y position
  * @returns {Entity} Training dummy entity
  */
 export function createTrainingDummy(x = 1000, y = 450) {
-  const dummy = new Entity(x, y, 60, 80);
-  dummy.maxHp = 10000;
-  dummy.hp = dummy.maxHp;
-  dummy.armor = 0;
+  const dummy = new Entity(x, y, 60, 80, 10000);
+  dummy.isStatic = true;
   return dummy;
 }
