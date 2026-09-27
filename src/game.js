@@ -319,6 +319,31 @@ const combatTuning = {
   },
 };
 
+const sushiTuning = {
+  maxMajorHazards: 2,
+  maxMinorHazards: 4,
+  weakDuration: { 1: 4.4, 2: 4.9, 3: 4.2 },
+  weakHitDuration: { 1: 3.6, 2: 3.4, 3: 3.0 },
+  attackDelay: { 1: 2.25, 2: 2.0, 3: 1.72 },
+  recovery: {
+    dash: 1.05,
+    jab: 0.82,
+    barrage: 1.18,
+    soy: 1.35,
+    whirlpool: 1.5,
+    weakHit: 1.05,
+  },
+  movement: {
+    orbitBase: { 1: 240, 2: 228, 3: 218 },
+    orbitWave: { 1: 42, 2: 50, 3: 56 },
+    turnRate: { 1: 2.25, 2: 2.55, 3: 2.85 },
+    speed: { 1: 118, 2: 142, 3: 166 },
+    punishSpeedMultiplier: 0.46,
+  },
+  segments: { 1: 6, 2: 7, 3: 9 },
+  spacing: 60,
+};
+
 const abilityLoadouts = {
   melee: [
     { key: "Q", name: "Shield Bash", cooldown: 4.5, description: "Strike in a cone, interrupt and shove enemies, and block incoming projectiles." },
@@ -794,7 +819,9 @@ function generatedArtImage(id) {
 }
 
 function isImageReady(image) {
-  return !!(image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
+  if (!image) return false;
+  if (image instanceof HTMLCanvasElement) return image.width > 0 && image.height > 0;
+  return !!(image.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
 }
 
 function drawGeneratedImage(id, x, y, w, h, options = {}) {
@@ -896,6 +923,9 @@ let spriteAdjustPanelSignature = "";
 let spriteAdjustPanelOpen = false;
 const spriteSheetAdjustments = {};
 const spriteFrameSelections = {};
+const spriteFrameAdjustments = {};
+const selectedSpriteEditorCellByKey = {};
+let spriteSheetPreviewGrid = null;
 let logLines = ["Choose gear, use WASD to cross the gate, hold click to attack."];
 let classSelectorSignature = "";
 let armorSelectorSignature = "";
@@ -1245,9 +1275,15 @@ function createBoss(kind = "burger") {
     sushiAnimationState: "idle",
     sushiAnimationTimer: 0,
     sushiLastAbility: "",
+    sushiPatternDeck: [],
+    sushiLastPattern: "",
+    sushiRecoveryTimer: 0,
+    sushiTelegraphTimer: 0,
+    sushiPunishTimer: 0,
     sushiDashTrailTimer: 0,
     sushiWeakFlashTimer: 0,
     whirlpoolTimer: 0,
+    whirlpoolWarnTimer: 0,
     sugarRushTimer: 0,
     napkinTimer: 0,
   };
@@ -1287,7 +1323,7 @@ function createTrainingDummy() {
 function initializeSushiTrail(targetBoss) {
   targetBoss.serpentHeading = Math.PI;
   targetBoss.serpentAngle = Math.PI;
-  const count = targetBoss.phase >= 3 ? 9 : targetBoss.phase >= 2 ? 7 : 6;
+  const count = sushiSegmentCount(targetBoss);
   const spacing = sushiSegmentSpacing();
   targetBoss.serpentBody = [];
   for (let i = 0; i < count; i += 1) {
@@ -2511,6 +2547,31 @@ function resetSpriteFrameSelection(key = currentSpriteAdjustmentKey()) {
   delete spriteFrameSelections[key];
 }
 
+function defaultSpriteEditorCell(key = currentSpriteAdjustmentKey()) {
+  const selection = spriteFrameSelectionForKey(key);
+  return {
+    row: clamp(selection.rows.down ?? 0, 0, 3),
+    col: clamp(selection.frames.idle ?? 1, 0, 3),
+  };
+}
+
+function selectedSpriteEditorCell(key = currentSpriteAdjustmentKey()) {
+  const current = selectedSpriteEditorCellByKey[key];
+  if (!current || !Number.isFinite(current.row) || !Number.isFinite(current.col)) {
+    selectedSpriteEditorCellByKey[key] = defaultSpriteEditorCell(key);
+  }
+  selectedSpriteEditorCellByKey[key].row = clamp(Math.round(selectedSpriteEditorCellByKey[key].row), 0, 3);
+  selectedSpriteEditorCellByKey[key].col = clamp(Math.round(selectedSpriteEditorCellByKey[key].col), 0, 3);
+  return selectedSpriteEditorCellByKey[key];
+}
+
+function setSelectedSpriteEditorCell(key, row, col) {
+  selectedSpriteEditorCellByKey[key] = {
+    row: clamp(Math.round(Number(row) || 0), 0, 3),
+    col: clamp(Math.round(Number(col) || 0), 0, 3),
+  };
+}
+
 function spriteAdjustmentForKey(key) {
   if (!spriteSheetAdjustments[key]) spriteSheetAdjustments[key] = { x: 0, y: 0, sheetX: 0, sheetY: 0 };
   spriteSheetAdjustments[key].x ??= 0;
@@ -2520,9 +2581,58 @@ function spriteAdjustmentForKey(key) {
   return spriteSheetAdjustments[key];
 }
 
-function spriteAdjustmentForCharacter(character) {
-  const key = spriteAdjustmentKeyForWeapon(character.weapon);
-  return spriteAdjustmentForKey(key);
+function spriteFrameAdjustmentForKey(key, row, col) {
+  const cellKey = `${clamp(Math.round(Number(row) || 0), 0, 3)}:${clamp(Math.round(Number(col) || 0), 0, 3)}`;
+  spriteFrameAdjustments[key] ??= {};
+  spriteFrameAdjustments[key][cellKey] ??= { x: 0, y: 0, sheetX: 0, sheetY: 0 };
+  const adjustment = spriteFrameAdjustments[key][cellKey];
+  adjustment.x ??= 0;
+  adjustment.y ??= 0;
+  adjustment.sheetX ??= 0;
+  adjustment.sheetY ??= 0;
+  return adjustment;
+}
+
+function combinedSpriteAdjustmentForFrame(key, row, col) {
+  const globalAdjustment = spriteAdjustmentForKey(key);
+  const frameAdjustment = spriteFrameAdjustmentForKey(key, row, col);
+  return {
+    x: globalAdjustment.x + frameAdjustment.x,
+    y: globalAdjustment.y + frameAdjustment.y,
+    sheetX: globalAdjustment.sheetX + frameAdjustment.sheetX,
+    sheetY: globalAdjustment.sheetY + frameAdjustment.sheetY,
+  };
+}
+
+function directionForSpriteRow(key, row) {
+  const rows = spriteFrameSelectionForKey(key).rows || defaultSpriteRowsForKey(key);
+  return Object.entries(rows).find(([, value]) => value === row)?.[0] || "down";
+}
+
+function spriteCropRectForFrame(sourceWidth, sourceHeight, outfit, key, row, col, facing = "down") {
+  const frameWidth = sourceWidth / 4;
+  const frameHeight = sourceHeight / 4;
+  const topCrop = outfit?.topCrop ?? (facing === "up" ? 0.04 : 0.1);
+  const sideCrop = outfit?.sideCrop ?? 0.2;
+  const cropWidth = outfit?.cropWidth ?? 0.56;
+  const cropBottom = outfit?.cropBottom ?? 0.86;
+  const adjustment = combinedSpriteAdjustmentForFrame(key, row, col);
+  const crop = {
+    x: clamp(frameWidth * sideCrop + adjustment.sheetX, 0, frameWidth - 1),
+    y: clamp(frameHeight * topCrop + adjustment.sheetY, 0, frameHeight - 1),
+    w: frameWidth * cropWidth,
+    h: frameHeight * (cropBottom - topCrop),
+  };
+  crop.w = Math.max(1, Math.min(crop.w, frameWidth - crop.x));
+  crop.h = Math.max(1, Math.min(crop.h, frameHeight - crop.y));
+  return {
+    ...crop,
+    sx: col * frameWidth + crop.x,
+    sy: row * frameHeight + crop.y,
+    frameWidth,
+    frameHeight,
+    adjustment,
+  };
 }
 
 function setSpriteAdjustmentValue(key, axis, value) {
@@ -2534,7 +2644,15 @@ function setSpriteAdjustmentValue(key, axis, value) {
 
 function resetSpriteAdjustment(key = currentSpriteAdjustmentKey()) {
   delete spriteSheetAdjustments[key];
+  delete spriteFrameAdjustments[key];
+  delete selectedSpriteEditorCellByKey[key];
   spriteAdjustPanelSignature = "";
+}
+
+function setSpriteFrameAdjustmentValue(key, row, col, axis, value) {
+  const adjustment = spriteFrameAdjustmentForKey(key, row, col);
+  const limit = axis === "sheetX" || axis === "sheetY" ? 96 : 48;
+  adjustment[axis] = clamp(Math.round(Number(value) || 0), -limit, limit);
 }
 
 function hexToRgba(hex, alpha) {
@@ -5668,27 +5786,31 @@ function updateSushiSerpent(dt) {
   boss.animationTime += dt;
   player.attackCooldown -= dt;
   boss.attackTimer -= dt;
+  boss.sushiRecoveryTimer = Math.max(0, (boss.sushiRecoveryTimer || 0) - dt);
+  boss.sushiTelegraphTimer = Math.max(0, (boss.sushiTelegraphTimer || 0) - dt);
+  boss.sushiPunishTimer = Math.max(0, (boss.sushiPunishTimer || 0) - dt);
   boss.sushiAnimationTimer = Math.max(0, (boss.sushiAnimationTimer || 0) - dt);
   boss.sushiDashTrailTimer = Math.max(0, (boss.sushiDashTrailTimer || 0) - dt);
   boss.sushiWeakFlashTimer = Math.max(0, (boss.sushiWeakFlashTimer || 0) - dt);
   if (boss.sushiAnimationTimer <= 0 && !["idle", "slither", "enrage"].includes(boss.sushiAnimationState)) {
     setSushiAnimation(boss.enraged ? "enrage" : "slither", 0.35);
   }
-  boss.serpentAngle += dt * (boss.enraged ? 1.25 : 0.86);
+  boss.serpentAngle += dt * (boss.enraged ? 0.98 : boss.phase >= 2 ? 0.82 : 0.68);
   boss.serpentWeakTimer -= dt;
   updateSushiPhase();
   updateSushiMovement(dt);
   if (boss.serpentWeakTimer <= 0) {
-    boss.serpentWeakIndex = 1 + Math.floor(Math.random() * (sushiSegmentCount() - 2));
-    boss.serpentWeakTimer = boss.enraged ? 1.9 : 2.7;
+    rotateSushiWeakSegment();
   }
   if (boss.whirlpoolTimer > 0) {
+    boss.whirlpoolWarnTimer = Math.max(0, (boss.whirlpoolWarnTimer || 0) - dt);
     boss.whirlpoolTimer -= dt;
-    pullPlayerToward(world.arena.x + world.arena.w / 2, world.arena.y + world.arena.h / 2, 34 * dt);
+    if ((boss.whirlpoolWarnTimer || 0) <= 0) {
+      pullPlayerToward(world.arena.x + world.arena.w / 2, world.arena.y + world.arena.h / 2, 22 * dt);
+    }
   }
-  if (boss.attackTimer <= 0) {
+  if (boss.attackTimer <= 0 && boss.sushiRecoveryTimer <= 0 && sushiMajorHazardCount() < sushiTuning.maxMajorHazards) {
     spawnSushiPattern();
-    boss.attackTimer = boss.enraged ? 1.18 : boss.phase === 3 ? 1.34 : boss.phase === 2 ? 1.56 : 1.85;
   }
 }
 
@@ -5696,7 +5818,9 @@ function updateSushiPhase() {
   const hpPercent = boss.hp / boss.maxHp;
   if (hpPercent <= 0.66 && boss.phase === 1) {
     boss.phase = 2;
-    boss.attackTimer = 0.35;
+    boss.attackTimer = 1.05;
+    boss.sushiPatternDeck = [];
+    boss.sushiRecoveryTimer = 1.2;
     setSushiAnimation("slither", 1.1);
     initializeSushiTrail(boss);
     log("Phase 2: Split Roll.");
@@ -5705,7 +5829,9 @@ function updateSushiPhase() {
   if (hpPercent <= 0.33 && boss.phase < 3) {
     boss.phase = 3;
     boss.enraged = true;
-    boss.attackTimer = 0.25;
+    boss.attackTimer = 1.25;
+    boss.sushiPatternDeck = [];
+    boss.sushiRecoveryTimer = 1.4;
     setSushiAnimation("enrage", 1.5);
     initializeSushiTrail(boss);
     log("Phase 3: Dragon Roll.");
@@ -5723,14 +5849,16 @@ function setSushiAnimation(state, duration = 0.8) {
 
 function updateSushiMovement(dt) {
   const target = bossAimTarget(boss);
-  const orbit = 210 + Math.sin(boss.animationTime * 1.25) * 70;
+  const phase = clamp(boss.phase || 1, 1, 3);
+  const orbit = sushiTuning.movement.orbitBase[phase] + Math.sin(boss.animationTime * 1.05) * sushiTuning.movement.orbitWave[phase];
   const preferred = pointFromAngle(target.x, target.y, boss.serpentAngle, orbit);
   const point = clampArenaPoint(preferred.x, preferred.y, boss.radius);
   const dx = point.x - boss.x;
   const dy = point.y - boss.y;
   const desiredHeading = Math.atan2(dy, dx);
-  boss.serpentHeading += angleDifference(desiredHeading, boss.serpentHeading) * Math.min(1, dt * 3.2);
-  const speed = boss.enraged ? 185 : boss.phase >= 2 ? 160 : 140;
+  boss.serpentHeading += angleDifference(desiredHeading, boss.serpentHeading) * Math.min(1, dt * sushiTuning.movement.turnRate[phase]);
+  const punishScale = (boss.sushiPunishTimer || 0) > 0 ? sushiTuning.movement.punishSpeedMultiplier : 1;
+  const speed = sushiTuning.movement.speed[phase] * punishScale;
   const distanceToTarget = Math.hypot(dx, dy);
   const step = Math.min(distanceToTarget, speed * dt);
   boss.x += Math.cos(boss.serpentHeading) * step;
@@ -5741,12 +5869,13 @@ function updateSushiMovement(dt) {
   updateSushiBodyChain();
 }
 
-function sushiSegmentCount() {
-  return boss.phase >= 3 ? 9 : boss.phase >= 2 ? 7 : 6;
+function sushiSegmentCount(targetBoss = boss) {
+  const phase = clamp(targetBoss?.phase || 1, 1, 3);
+  return sushiTuning.segments[phase] || sushiTuning.segments[1];
 }
 
 function sushiSegmentSpacing() {
-  return 58;
+  return sushiTuning.spacing;
 }
 
 function updateSushiBodyChain() {
@@ -5789,7 +5918,9 @@ function sushiSegments() {
   for (let i = 0; i < count; i += 1) {
     const bodySegment = boss.serpentBody[i];
     const angle = bodySegment.heading ?? boss.serpentHeading;
-    const wave = Math.sin(boss.animationTime * 4.2 - i * 0.68) * (i === 0 ? 0 : 8);
+    const weakHold = i === boss.serpentWeakIndex || (boss.phase >= 3 && i === boss.serpentWeakIndex + 2);
+    const waveAmount = weakHold ? 3.5 : 7;
+    const wave = Math.sin(boss.animationTime * 3.4 - i * 0.68) * (i === 0 ? 0 : waveAmount);
     const sway = Math.min(1, i / 3);
     const baseX = bodySegment.x;
     const baseY = bodySegment.y;
@@ -5799,30 +5930,80 @@ function sushiSegments() {
       heading: angle,
       r: Math.max(24, 52 - i * 2.15),
       index: i,
-      weak: i === boss.serpentWeakIndex || (boss.phase >= 3 && i === boss.serpentWeakIndex + 2),
+      weak: weakHold,
     });
   }
   return segments;
 }
 
-function spawnSushiPattern() {
-  const roll = Math.random();
-  if (roll < 0.26) {
-    spawnWasabiDash();
-  } else if (roll < 0.49) {
-    spawnChopstickJab(boss.phase >= 3 ? 3 : boss.phase >= 2 ? 2 : 1);
-  } else if (roll < 0.74) {
-    spawnRollBarrage(boss.phase >= 3 ? 14 : boss.phase >= 2 ? 10 : 7);
-  } else {
-    spawnSoySakeWave();
-    if (boss.phase >= 3 && Math.random() < 0.45) startSoyWhirlpool();
+function rotateSushiWeakSegment(preferredIndex = null, duration = null) {
+  const count = sushiSegmentCount();
+  const minIndex = 1;
+  const maxIndex = Math.max(minIndex, count - 2);
+  const nextIndex = Number.isFinite(preferredIndex)
+    ? clamp(Math.round(preferredIndex), minIndex, maxIndex)
+    : minIndex + Math.floor(Math.random() * (maxIndex - minIndex + 1));
+  boss.serpentWeakIndex = nextIndex;
+  boss.serpentWeakTimer = duration || sushiTuning.weakDuration[clamp(boss.phase || 1, 1, 3)] || 4.4;
+}
+
+function sushiMajorHazardCount() {
+  const majorTypes = new Set(["wasabiDash", "chopstickJab", "soySakeWave", "wasabiWave", "chopstickPin", "serpentSweep"]);
+  return hazards.filter((hazard) => majorTypes.has(hazard.type) && hazard.ttl > 0).length;
+}
+
+function sushiMinorHazardCount() {
+  const minorTypes = new Set(["sushiRoll", "soyPuddle", "wasabiTrail"]);
+  return hazards.filter((hazard) => minorTypes.has(hazard.type) && hazard.ttl > 0).length;
+}
+
+function sushiCanUseLargeAreaPattern() {
+  return !hazards.some((hazard) => ["soySakeWave", "wasabiDash", "chopstickPin", "serpentSweep"].includes(hazard.type) && hazard.ttl > 0);
+}
+
+function resetSushiPatternDeck() {
+  const phase = boss.phase || 1;
+  const deck = phase === 1
+    ? ["dash", "jab", "barrage", "soy"]
+    : phase === 2
+      ? ["dash", "jab", "barrage", "soy", "jab", "dash"]
+      : ["dash", "jab", "barrage", "soy", "barrage", "whirlpool"];
+  boss.sushiPatternDeck = deck.filter((pattern) => pattern !== boss.sushiLastPattern);
+}
+
+function nextSushiPattern() {
+  if (!Array.isArray(boss.sushiPatternDeck) || boss.sushiPatternDeck.length === 0) resetSushiPatternDeck();
+  let pattern = boss.sushiPatternDeck.shift();
+  if (pattern === boss.sushiLastPattern && boss.sushiPatternDeck.length) {
+    boss.sushiPatternDeck.push(pattern);
+    pattern = boss.sushiPatternDeck.shift();
   }
+  if ((pattern === "soy" || pattern === "whirlpool") && !sushiCanUseLargeAreaPattern()) pattern = boss.phase >= 2 ? "jab" : "dash";
+  if (pattern === "barrage" && sushiMinorHazardCount() >= sushiTuning.maxMinorHazards) pattern = "jab";
+  return pattern || "dash";
+}
+
+function spawnSushiPattern() {
+  const pattern = nextSushiPattern();
+  boss.sushiLastPattern = pattern;
+  if (pattern === "dash") spawnWasabiDash();
+  else if (pattern === "jab") spawnChopstickJab(boss.phase >= 3 ? 2 : boss.phase >= 2 ? 2 : 1);
+  else if (pattern === "barrage") spawnRollBarrage(boss.phase >= 3 ? 9 : boss.phase >= 2 ? 7 : 5);
+  else if (pattern === "soy") spawnSoySakeWave();
+  else if (pattern === "whirlpool") {
+    startSoyWhirlpool();
+    boss.attackTimer = sushiTuning.attackDelay[3] + sushiTuning.recovery.whirlpool;
+    return;
+  }
+  const phaseDelay = sushiTuning.attackDelay[clamp(boss.phase || 1, 1, 3)] || 2;
+  boss.attackTimer = phaseDelay + (boss.sushiRecoveryTimer || 0);
 }
 
 function spawnWasabiDash() {
   const target = bossAimTarget(boss);
   const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
-  const distance = boss.phase >= 3 ? 720 : boss.phase >= 2 ? 650 : 580;
+  const distance = boss.phase >= 3 ? 690 : boss.phase >= 2 ? 630 : 560;
+  const warn = boss.enraged ? 0.92 : boss.phase >= 2 ? 1.02 : 1.12;
   const end = clampArenaPoint(boss.x + Math.cos(angle) * distance, boss.y + Math.sin(angle) * distance, boss.radius);
   hazards.push({
     type: "wasabiDash",
@@ -5836,34 +6017,45 @@ function spawnWasabiDash() {
     prevY: boss.y,
     angle,
     length: Math.hypot(end.x - boss.x, end.y - boss.y),
-    width: boss.phase >= 3 ? 78 : 66,
-    warn: boss.enraged ? 0.68 : 0.86,
-    ttl: boss.enraged ? 1.42 : 1.66,
+    width: boss.phase >= 3 ? 68 : 60,
+    warningWidth: boss.phase >= 3 ? 104 : 92,
+    warn,
+    warnDuration: warn,
+    ttl: warn + (boss.enraged ? 0.68 : 0.78) + 0.2,
     dashAge: 0,
-    dashDuration: boss.enraged ? 0.48 : 0.62,
+    dashDuration: boss.enraged ? 0.56 : 0.68,
     damage: boss.enraged ? 15 : 12,
     hit: false,
   });
-  setSushiAnimation("dashWindup", 0.7);
+  boss.sushiRecoveryTimer = sushiTuning.recovery.dash;
+  boss.sushiTelegraphTimer = warn;
+  boss.sushiPunishTimer = Math.max(boss.sushiPunishTimer || 0, 0.35);
+  setSushiAnimation("dashWindup", warn);
   boss.sushiLastAbility = "wasabi-dash";
   log("Wasabi Dash windup.");
 }
 
 function spawnChopstickJab(count) {
-  setSushiAnimation("jab", 0.75 + count * 0.08);
+  const warnBase = boss.phase >= 3 ? 0.82 : boss.phase >= 2 ? 0.88 : 0.98;
+  setSushiAnimation("jab", warnBase + count * 0.12);
   boss.sushiLastAbility = "chopstick-jab";
+  boss.sushiRecoveryTimer = sushiTuning.recovery.jab;
+  boss.sushiTelegraphTimer = warnBase;
   for (let i = 0; i < count; i += 1) {
     const target = bossAimTarget(boss);
-    const angle = Math.atan2(target.y - boss.y, target.x - boss.x) + (i - (count - 1) / 2) * 0.22;
+    const angle = Math.atan2(target.y - boss.y, target.x - boss.x) + (i - (count - 1) / 2) * 0.32;
+    const warn = warnBase + i * 0.18;
     hazards.push({
       type: "chopstickJab",
       x: boss.x,
       y: boss.y,
       angle,
       length: boss.phase >= 3 ? 760 : 660,
-      width: boss.phase >= 3 ? 34 : 28,
-      warn: 0.58 + i * 0.11,
-      ttl: 0.98 + i * 0.11,
+      width: boss.phase >= 3 ? 30 : 26,
+      warningWidth: boss.phase >= 3 ? 74 : 66,
+      warn,
+      warnDuration: warn,
+      ttl: warn + 0.24,
       damage: boss.enraged ? 10 : 8,
       hit: false,
     });
@@ -5871,22 +6063,28 @@ function spawnChopstickJab(count) {
 }
 
 function spawnRollBarrage(count) {
-  setSushiAnimation("barrage", 0.95);
+  setSushiAnimation("barrage", 1.05);
   boss.sushiLastAbility = "roll-barrage";
+  boss.sushiRecoveryTimer = sushiTuning.recovery.barrage;
+  boss.sushiTelegraphTimer = 0.72;
   const target = bossAimTarget(boss);
   const baseAngle = Math.atan2(target.y - boss.y, target.x - boss.x);
+  const arc = boss.phase >= 3 ? Math.PI * 1.65 : boss.phase >= 2 ? Math.PI * 1.35 : Math.PI * 1.05;
+  const startAngle = baseAngle - arc / 2;
   for (let i = 0; i < count; i += 1) {
-    const angle = baseAngle + (Math.PI * 2 * i) / count + (boss.enraged ? 0.18 : 0);
+    const t = count <= 1 ? 0.5 : i / (count - 1);
+    const angle = startAngle + arc * t;
+    const speed = boss.enraged ? 220 : boss.phase >= 2 ? 200 : 184;
     hazards.push({
       type: "sushiRoll",
       x: boss.x + Math.cos(angle) * 58,
       y: boss.y + Math.sin(angle) * 58,
-      vx: Math.cos(angle) * (boss.enraged ? 250 : 210),
-      vy: Math.sin(angle) * (boss.enraged ? 250 : 210),
-      turn: (i % 2 === 0 ? 1 : -1) * (boss.phase >= 3 ? 0.64 : 0.42),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      turn: (i % 2 === 0 ? 1 : -1) * (boss.phase >= 3 ? 0.28 : 0.18),
       spin: Math.random() * Math.PI * 2,
       r: boss.phase >= 3 ? 15 : 13,
-      ttl: boss.enraged ? 3.15 : 2.85,
+      ttl: boss.enraged ? 2.85 : 2.55,
       damage: boss.enraged ? 9 : 7,
     });
   }
@@ -5895,11 +6093,13 @@ function spawnRollBarrage(count) {
 function spawnSoySakeWave() {
   const target = bossAimTarget(boss);
   const angle = Math.atan2(target.y - boss.y, target.x - boss.x);
-  const warn = boss.enraged ? 0.72 : 0.9;
-  const activeDuration = boss.enraged ? 2.25 : 2.35;
+  const warn = boss.enraged ? 1.02 : 1.16;
+  const activeDuration = boss.enraged ? 2.1 : 2.2;
   const fadeDuration = 0.48;
-  setSushiAnimation("soy", 1.05);
+  setSushiAnimation("soy", warn);
   boss.sushiLastAbility = "soy-sake-wave";
+  boss.sushiRecoveryTimer = sushiTuning.recovery.soy;
+  boss.sushiTelegraphTimer = warn;
   hazards.push({
     type: "soySakeWave",
     x: boss.x,
@@ -5907,9 +6107,9 @@ function spawnSoySakeWave() {
     originX: boss.x,
     originY: boss.y,
     angle,
-    length: boss.phase >= 3 ? 720 : 620,
-    width: boss.phase >= 3 ? 116 : 94,
-    speed: boss.enraged ? 245 : 205,
+    length: boss.phase >= 3 ? 690 : 600,
+    width: boss.phase >= 3 ? 132 : 112,
+    speed: boss.enraged ? 196 : 172,
     warn,
     warnDuration: warn,
     ttl: warn + activeDuration + fadeDuration,
@@ -5925,13 +6125,15 @@ function spawnSoySakeWave() {
     damageTimer: 0,
     hit: false,
   });
-  spawnSoySplash(boss.phase >= 3 ? 4 : 2);
+  spawnSoySplash(boss.phase >= 3 ? 2 : 1);
 }
 
 function spawnSoySplash(count) {
   for (let i = 0; i < count; i += 1) {
+    if (sushiMinorHazardCount() >= sushiTuning.maxMinorHazards) return;
     const point = randomArenaPointNearThreat(260, 90);
-    hazards.push({ type: "soyPuddle", x: point.x, y: point.y, r: boss.phase >= 3 ? 48 : 40, warn: 0.64 + i * 0.08, ttl: boss.phase >= 3 ? 4.1 : 3.5, damage: 3, damageTimer: 0 });
+    const warn = 0.92 + i * 0.1;
+    hazards.push({ type: "soyPuddle", x: point.x, y: point.y, r: boss.phase >= 3 ? 42 : 36, warn, warnDuration: warn, ttl: warn + (boss.phase >= 3 ? 3.2 : 2.8), damage: 3, damageTimer: 0 });
   }
 }
 
@@ -5946,14 +6148,14 @@ function soySakeWaveShape(hazard) {
   const surgeProgress = hazard.warn > 0 ? 0 : clamp(activeAge / surgeDuration, 0, 1);
   const fadeProgress = hazard.warn > 0 ? 0 : clamp((activeAge - fadeStart) / fadeDuration, 0, 1);
   const visibleProgress = hazard.warn > 0 ? 0.22 + warnProgress * 0.78 : surgeProgress;
-  const alpha = hazard.warn > 0 ? 0.18 + warnProgress * 0.18 : Math.max(0, 1 - fadeProgress * 0.82);
+  const alpha = hazard.warn > 0 ? 0.24 + warnProgress * 0.24 : Math.max(0, 1 - fadeProgress * 0.82);
   const visibleLength = Math.max(90, hazard.length * visibleProgress * (1 - fadeProgress * 0.18));
   const visibleWidth = Math.max(24, hazard.width * (hazard.warn > 0 ? 0.55 + warnProgress * 0.35 : 1 - fadeProgress * 0.38));
   return {
     angle: hazard.angle,
     length: visibleLength,
     width: visibleWidth,
-    collisionWidth: Math.max(18, visibleWidth * 0.42),
+    collisionWidth: Math.max(18, visibleWidth * 0.34),
     alpha,
     warnProgress,
     surgeProgress,
@@ -5970,8 +6172,13 @@ function soySakeWaveTouchesPlayer(hazard, shape = soySakeWaveShape(hazard)) {
 }
 
 function startSoyWhirlpool() {
-  boss.whirlpoolTimer = boss.phase >= 3 ? 1.9 : 1.4;
-  particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + world.arena.h / 2 - 40, text: "whirlpool", color: "#5a3a2f", ttl: 0.9 });
+  boss.whirlpoolWarnTimer = 1.05;
+  boss.whirlpoolTimer = 2.75;
+  boss.sushiRecoveryTimer = sushiTuning.recovery.whirlpool;
+  boss.sushiTelegraphTimer = 1.05;
+  boss.sushiLastAbility = "soy-sake-wave";
+  setSushiAnimation("soy", 1.05);
+  particles.push({ x: world.arena.x + world.arena.w / 2, y: world.arena.y + world.arena.h / 2 - 40, text: "whirlpool", color: "#e8d7ff", ttl: 1.05 });
 }
 
 function pullPlayerToward(x, y, amount) {
@@ -8600,13 +8807,13 @@ function updateHazards(dt) {
             type: "wasabiTrail",
             x: hazard.x,
             y: hazard.y,
-            r: boss.enraged ? 42 : 34,
+            r: boss.enraged ? 34 : 28,
             warn: 0,
-            ttl: boss.enraged ? 3.2 : 2.8,
+            ttl: boss.enraged ? 2.35 : 2.05,
             damage: boss.enraged ? 5 : 4,
             damageTimer: 0,
           });
-          boss.sushiDashTrailTimer = 0.08;
+          boss.sushiDashTrailTimer = 0.14;
         }
         if (progress >= 1) hazard.ttl = Math.min(hazard.ttl, 0.14);
       }
@@ -9170,14 +9377,16 @@ function hitSushiSegment(projectile) {
     particles.push({ x: segment.x, y: segment.y - 24, text: "hit", color: "#9ff089", ttl: 0.45 });
     return true;
   }
-  const damage = segment.weak ? Math.ceil(projectile.damage * 1.8) : Math.ceil(projectile.damage * 0.82);
+  const damage = segment.weak ? Math.ceil(projectile.damage * 2.05) : Math.ceil(projectile.damage * 0.82);
   damageBossTarget(boss, damage, segment.weak ? "Weak segment" : "Sushi segment");
   if (segment.weak) {
-    boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
-    boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
-    boss.sushiWeakFlashTimer = 0.42;
-    setSushiAnimation("weak", 0.38);
-    particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
+    rotateSushiWeakSegment(segment.index + 2, sushiTuning.weakHitDuration[clamp(boss.phase || 1, 1, 3)]);
+    boss.sushiWeakFlashTimer = 0.72;
+    boss.sushiPunishTimer = Math.max(boss.sushiPunishTimer || 0, 1.25);
+    boss.sushiRecoveryTimer = Math.max(boss.sushiRecoveryTimer || 0, sushiTuning.recovery.weakHit);
+    boss.attackTimer = Math.max(boss.attackTimer || 0, 1.15);
+    setSushiAnimation("weak", 0.62);
+    particles.push({ x: segment.x, y: segment.y - 34, text: "EXPOSED", color: "#eaff9f", ttl: 0.95 });
   }
   return true;
 }
@@ -10362,37 +10571,37 @@ function drawRooms() {
 }
 
 function drawSushiArenaRoom() {
-  drawRoom(world.arena, "#121817", "#8de0c6");
+  drawRoom(world.arena, "#111817", "#9fe8d0");
   ctx.save();
   const rect = world.arena;
   const cx = rect.x + rect.w / 2;
   const cy = rect.y + rect.h / 2;
-  ctx.fillStyle = "rgba(11, 16, 17, 0.6)";
+  ctx.fillStyle = "rgba(9, 14, 14, 0.76)";
   ctx.fillRect(rect.x + 22, rect.y + 22, rect.w - 44, rect.h - 44);
-  ctx.strokeStyle = "rgba(141, 224, 198, 0.12)";
-  ctx.lineWidth = 2;
-  for (let x = rect.x + 58; x < rect.x + rect.w - 40; x += 64) {
+  ctx.strokeStyle = "rgba(159, 232, 208, 0.08)";
+  ctx.lineWidth = 1;
+  for (let x = rect.x + 58; x < rect.x + rect.w - 40; x += 96) {
     ctx.beginPath();
     ctx.moveTo(x, rect.y + 36);
     ctx.lineTo(x, rect.y + rect.h - 36);
     ctx.stroke();
   }
-  for (let y = rect.y + 58; y < rect.y + rect.h - 40; y += 64) {
+  for (let y = rect.y + 58; y < rect.y + rect.h - 40; y += 96) {
     ctx.beginPath();
     ctx.moveTo(rect.x + 36, y);
     ctx.lineTo(rect.x + rect.w - 36, y);
     ctx.stroke();
   }
-  ctx.strokeStyle = "rgba(184, 92, 255, 0.14)";
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(155, 222, 200, 0.1)";
+  ctx.lineWidth = 4;
   for (let i = 0; i < 4; i += 1) {
     ctx.beginPath();
     ctx.arc(cx, cy, 76 + i * 48 + Math.sin(boss.animationTime * 1.7 + i) * 3, boss.animationTime * 0.35 + i, boss.animationTime * 0.35 + i + Math.PI * 1.35);
     ctx.stroke();
   }
-  ctx.fillStyle = "rgba(159, 240, 95, 0.08)";
+  ctx.fillStyle = "rgba(159, 240, 95, 0.045)";
   ctx.fillRect(rect.x + 42, rect.y + 42, 92, rect.h - 84);
-  ctx.fillStyle = "rgba(255, 122, 95, 0.08)";
+  ctx.fillStyle = "rgba(255, 198, 96, 0.045)";
   ctx.fillRect(rect.x + rect.w - 134, rect.y + 42, 92, rect.h - 84);
   ctx.restore();
 }
@@ -11249,7 +11458,7 @@ function drawSushiSerpentBoss() {
   ctx.lineJoin = "round";
 
   ctx.strokeStyle = "rgba(7, 13, 10, 0.58)";
-  ctx.lineWidth = 62;
+  ctx.lineWidth = 54;
   strokeSmoothSushiPath(segments);
 
   for (let i = segments.length - 1; i >= 1; i -= 1) {
@@ -11265,10 +11474,19 @@ function drawSushiSerpentBoss() {
     });
     if (drawn) {
       if (segment.weak) {
-        ctx.strokeStyle = `rgba(234, 255, 159, ${0.55 + Math.sin(boss.animationTime * 10) * 0.18})`;
-        ctx.lineWidth = 4;
+        ctx.fillStyle = `rgba(234, 255, 159, ${0.08 + Math.sin(boss.animationTime * 8) * 0.025})`;
         ctx.beginPath();
-        ctx.arc(segment.x, segment.y, segment.r + 8, 0, Math.PI * 2);
+        ctx.arc(segment.x, segment.y, segment.r + 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(234, 255, 159, ${0.74 + Math.sin(boss.animationTime * 10) * 0.16})`;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(segment.x, segment.y, segment.r + 11, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(255, 255, 230, 0.88)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(segment.x, segment.y, segment.r + 19, -Math.PI * 0.15, Math.PI * 1.25);
         ctx.stroke();
       }
       continue;
@@ -11372,16 +11590,38 @@ function drawSushiSerpentBoss() {
   }
   ctx.restore();
 
+  if ((boss.sushiPunishTimer || 0) > 0) {
+    ctx.save();
+    ctx.fillStyle = "rgba(234, 255, 159, 0.9)";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("EXPOSED", head.x, head.y - boss.radius - 58);
+    ctx.restore();
+  }
+
   if (boss.whirlpoolTimer > 0) {
     const cx = world.arena.x + world.arena.w / 2;
     const cy = world.arena.y + world.arena.h / 2;
-    ctx.strokeStyle = "rgba(80, 48, 38, 0.72)";
-    ctx.lineWidth = 5;
+    const warning = (boss.whirlpoolWarnTimer || 0) > 0;
+    ctx.save();
+    ctx.fillStyle = warning ? "rgba(232, 215, 255, 0.08)" : "rgba(52, 35, 28, 0.16)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 170, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = warning ? "rgba(232, 215, 255, 0.82)" : "rgba(122, 196, 109, 0.56)";
+    ctx.lineWidth = warning ? 4 : 5;
     for (let i = 0; i < 4; i += 1) {
       ctx.beginPath();
       ctx.arc(cx, cy, 38 + i * 34 + Math.sin(boss.animationTime * 6) * 4, boss.animationTime + i, boss.animationTime + i + Math.PI * 1.3);
       ctx.stroke();
     }
+    if (warning) {
+      ctx.fillStyle = "rgba(232, 215, 255, 0.92)";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("PULL", cx, cy - 176);
+    }
+    ctx.restore();
   }
 }
 
@@ -12529,22 +12769,29 @@ function drawHazards() {
     if (hazard.type === "wasabiDash") {
       const active = hazard.warn <= 0;
       const pulse = Math.sin(boss.animationTime * 14) * 0.5 + 0.5;
+      const warnProgress = active ? 1 : clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 1), 0, 1);
       ctx.save();
-      ctx.strokeStyle = active ? "rgba(159, 240, 95, 0.7)" : `rgba(234, 255, 159, ${0.34 + pulse * 0.22})`;
-      ctx.lineWidth = active ? hazard.width : 8;
+      ctx.strokeStyle = active ? "rgba(159, 240, 95, 0.7)" : `rgba(255, 239, 146, ${0.22 + warnProgress * 0.28})`;
+      ctx.lineWidth = active ? hazard.width : hazard.warningWidth || 92;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(hazard.startX, hazard.startY);
       ctx.lineTo(hazard.endX, hazard.endY);
       ctx.stroke();
-      ctx.strokeStyle = active ? "rgba(234, 255, 159, 0.72)" : "rgba(159, 240, 95, 0.85)";
-      ctx.lineWidth = active ? 5 : 3;
-      ctx.setLineDash(active ? [] : [20, 12]);
+      ctx.strokeStyle = active ? "rgba(234, 255, 159, 0.84)" : `rgba(255, 255, 235, ${0.62 + pulse * 0.22})`;
+      ctx.lineWidth = active ? 6 : 5;
+      ctx.setLineDash(active ? [] : [24, 12]);
       ctx.beginPath();
       ctx.moveTo(hazard.startX, hazard.startY);
       ctx.lineTo(hazard.endX, hazard.endY);
       ctx.stroke();
       ctx.setLineDash([]);
+      if (!active) {
+        ctx.fillStyle = "rgba(255, 255, 235, 0.9)";
+        ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("DASH", (hazard.startX + hazard.endX) / 2, (hazard.startY + hazard.endY) / 2 - 18);
+      }
       for (let i = 0.25; i < 1; i += 0.25) {
         drawWasabiArrow(hazard.startX + (hazard.endX - hazard.startX) * i, hazard.startY + (hazard.endY - hazard.startY) * i, hazard.angle);
       }
@@ -12566,20 +12813,31 @@ function drawHazards() {
     }
     if (hazard.type === "chopstickJab") {
       const active = hazard.warn <= 0;
-      ctx.strokeStyle = active ? "rgba(255, 122, 95, 0.8)" : "rgba(247, 223, 170, 0.5)";
-      ctx.lineWidth = active ? hazard.width : 5;
+      const warnProgress = active ? 1 : clamp(1 - hazard.warn / Math.max(0.1, hazard.warnDuration || 1), 0, 1);
+      ctx.strokeStyle = active ? "rgba(255, 122, 95, 0.86)" : `rgba(255, 232, 164, ${0.34 + warnProgress * 0.28})`;
+      ctx.lineWidth = active ? hazard.width : hazard.warningWidth || 64;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(hazard.x, hazard.y);
       ctx.lineTo(hazard.x + Math.cos(hazard.angle) * hazard.length, hazard.y + Math.sin(hazard.angle) * hazard.length);
       ctx.stroke();
+      if (!active) {
+        ctx.strokeStyle = "rgba(255, 255, 235, 0.82)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 12]);
+        ctx.beginPath();
+        ctx.moveTo(hazard.x, hazard.y);
+        ctx.lineTo(hazard.x + Math.cos(hazard.angle) * hazard.length, hazard.y + Math.sin(hazard.angle) * hazard.length);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       if (active) {
         drawGeneratedImage("hazards.chopstick-slash", hazard.x + Math.cos(hazard.angle) * hazard.length * 0.48, hazard.y + Math.sin(hazard.angle) * hazard.length * 0.48, 180, 90, { rotation: hazard.angle, alpha: 0.86 });
       }
       return;
     }
     if (hazard.type === "sushiRoll") {
-      if (!drawGeneratedImage("projectiles.sushi-roll", hazard.x, hazard.y, hazard.r * 4.4, hazard.r * 4.4, { rotation: hazard.spin || 0, shadowColor: "#f05f6a", shadowBlur: 8 })) {
+      if (!drawGeneratedImage("projectiles.sushi-roll", hazard.x, hazard.y, hazard.r * 4.1, hazard.r * 4.1, { rotation: hazard.spin || 0, shadowColor: "#ffef92", shadowBlur: 7 })) {
         ctx.fillStyle = "#18261d";
         ctx.strokeStyle = "#fff4db";
         ctx.lineWidth = 3;
@@ -12613,10 +12871,10 @@ function drawHazards() {
         ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.fillStyle = active ? "rgba(33, 18, 28, 0.82)" : "rgba(92, 54, 86, 0.32)";
+      ctx.fillStyle = active ? "rgba(33, 18, 28, 0.78)" : "rgba(191, 166, 224, 0.28)";
       ctx.fill();
-      ctx.strokeStyle = active ? "rgba(163, 118, 166, 0.36)" : "rgba(203, 160, 216, 0.38)";
-      ctx.lineWidth = active ? 2.5 : 2;
+      ctx.strokeStyle = active ? "rgba(232, 215, 255, 0.48)" : "rgba(232, 215, 255, 0.72)";
+      ctx.lineWidth = active ? 3 : 4;
       ctx.stroke();
       ctx.save();
       ctx.clip();
@@ -12628,9 +12886,9 @@ function drawHazards() {
           }
         }
       } else {
-        ctx.strokeStyle = "rgba(218, 190, 220, 0.34)";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([18, 18]);
+        ctx.strokeStyle = "rgba(255, 255, 235, 0.76)";
+        ctx.lineWidth = 5;
+        ctx.setLineDash([24, 16]);
         ctx.beginPath();
         ctx.moveTo(-shape.length * 0.48, 0);
         ctx.lineTo(shape.length * 0.48, 0);
@@ -12647,8 +12905,8 @@ function drawHazards() {
         ctx.fill();
       }
       if (active && shape.damageActive) {
-        ctx.strokeStyle = "rgba(245, 222, 230, 0.22)";
-        ctx.lineWidth = Math.max(2, shape.collisionWidth * 0.16);
+        ctx.strokeStyle = "rgba(255, 240, 246, 0.5)";
+        ctx.lineWidth = Math.max(3, shape.collisionWidth * 0.18);
         ctx.beginPath();
         ctx.moveTo(-shape.length * 0.5, 0);
         ctx.lineTo(shape.length * 0.5, 0);
@@ -13894,7 +14152,8 @@ function drawPlayerSprite() {
 }
 
 function drawCharacterSprite(character, outfit, sprite) {
-  const frameSelection = spriteFrameSelectionForCharacter(character);
+  const spriteKey = spriteAdjustmentKeyForWeapon(character.weapon);
+  const frameSelection = spriteFrameSelectionForKey(spriteKey);
   const rows = frameSelection.rows || outfit?.rows || { down: 0, left: 1, right: 2, up: 3 };
   const frames = frameSelection.frames || defaultSpriteFrames();
   const sourceWidth = sprite.naturalWidth || sprite.width;
@@ -13918,21 +14177,12 @@ function drawCharacterSprite(character, outfit, sprite) {
         ? walkFrames[Math.floor(character.animationTime * 8) % walkFrames.length]
         : frames.idle;
   const row = rows[character.facing] ?? 0;
-  const topCrop = outfit?.topCrop ?? (character.facing === "up" ? 0.04 : 0.1);
-  const sideCrop = outfit?.sideCrop ?? 0.2;
-  const cropWidth = outfit?.cropWidth ?? 0.56;
-  const cropBottom = outfit?.cropBottom ?? 0.86;
-  const crop = {
-    x: clamp(frameWidth * sideCrop + spriteAdjustmentForCharacter(character).sheetX, 0, frameWidth - 1),
-    y: clamp(frameHeight * topCrop + spriteAdjustmentForCharacter(character).sheetY, 0, frameHeight - 1),
-    w: frameWidth * cropWidth,
-    h: frameHeight * (cropBottom - topCrop),
-  };
+  const safeFrame = clamp(Math.round(Number(frame) || 0), 0, 3);
+  const safeRow = clamp(Math.round(Number(row) || 0), 0, 3);
+  const crop = spriteCropRectForFrame(sourceWidth, sourceHeight, outfit, spriteKey, safeRow, safeFrame, character.facing);
+  const spriteAdjustment = crop.adjustment;
   const drawWidth = outfit?.drawWidth ?? 58;
   const drawHeight = outfit?.drawHeight ?? 74;
-  const spriteAdjustment = spriteAdjustmentForCharacter(character);
-  crop.w = Math.max(1, Math.min(crop.w, frameWidth - crop.x));
-  crop.h = Math.max(1, Math.min(crop.h, frameHeight - crop.y));
   const rangedPulse = rangerAttacking ? Math.sin((1 - character.rangerAttackTimer / 0.28) * Math.PI) : 0;
   const meleePulse = meleeAttacking ? Math.sin((1 - character.meleeAttackTimer / 0.34) * Math.PI) : 0;
   const roguePulse = rogueAttacking ? Math.sin((1 - character.rogueAttackTimer / 0.24) * Math.PI) : 0;
@@ -13957,8 +14207,8 @@ function drawCharacterSprite(character, outfit, sprite) {
       : 0;
   ctx.drawImage(
     sprite,
-    frame * frameWidth + crop.x,
-    row * frameHeight + crop.y,
+    crop.sx,
+    crop.sy,
     crop.w,
     crop.h,
     character.x - drawWidth / 2 + recoilX + spriteAdjustment.x,
@@ -14786,7 +15036,8 @@ function renderSpriteSheetEditor() {
   const className = currentClassOption().name;
   const key = currentSpriteAdjustmentKey();
   const selection = spriteFrameSelectionForKey(key);
-  const adjustment = spriteAdjustmentForKey(key);
+  const selectedCell = selectedSpriteEditorCell(key);
+  const adjustment = spriteFrameAdjustmentForKey(key, selectedCell.row, selectedCell.col);
   if (ui.spriteSheetTitle) ui.spriteSheetTitle.textContent = `${className} Sprite Sheet`;
   ui.spriteSheetControls.innerHTML = `
     <div class="sprite-sheet-section">
@@ -14810,11 +15061,18 @@ function renderSpriteSheetEditor() {
       ${spriteEditorControl("Attack Finish", selection.frames.attack2, 0, 3, { "sprite-frame": "attack2" })}
     </div>
     <div class="sprite-sheet-section">
-      <div class="sprite-adjust-head"><span>Position Offsets</span></div>
-      ${spriteEditorControl("Canvas X", adjustment.x, -48, 48, { "sprite-adjust": "x" }, "Canvas X position")}
-      ${spriteEditorControl("Canvas Y", adjustment.y, -48, 48, { "sprite-adjust": "y" }, "Canvas Y position")}
-      ${spriteEditorControl("Sheet X", adjustment.sheetX, -96, 96, { "sprite-adjust": "sheetX" }, "Spritesheet X position")}
-      ${spriteEditorControl("Sheet Y", adjustment.sheetY, -96, 96, { "sprite-adjust": "sheetY" }, "Spritesheet Y position")}
+      <div class="sprite-adjust-head"><span>Selected Frame Offsets</span><small>Row ${selectedCell.row}, Frame ${selectedCell.col}</small></div>
+      ${spriteEditorControl("Canvas X", adjustment.x, -48, 48, { "sprite-frame-adjust": "x" }, "Selected frame canvas X position")}
+      ${spriteEditorControl("Canvas Y", adjustment.y, -48, 48, { "sprite-frame-adjust": "y" }, "Selected frame canvas Y position")}
+      ${spriteEditorControl("Cutout X", adjustment.sheetX, -96, 96, { "sprite-frame-adjust": "sheetX" }, "Selected frame cutout X position on spritesheet")}
+      ${spriteEditorControl("Cutout Y", adjustment.sheetY, -96, 96, { "sprite-frame-adjust": "sheetY" }, "Selected frame cutout Y position on spritesheet")}
+    </div>
+    <div class="sprite-sheet-section">
+      <div class="sprite-adjust-head"><span>Global Class Offsets</span></div>
+      ${spriteEditorControl("Global Canvas X", spriteAdjustmentForKey(key).x, -48, 48, { "sprite-adjust": "x" }, "Global canvas X position")}
+      ${spriteEditorControl("Global Canvas Y", spriteAdjustmentForKey(key).y, -48, 48, { "sprite-adjust": "y" }, "Global canvas Y position")}
+      ${spriteEditorControl("Global Cutout X", spriteAdjustmentForKey(key).sheetX, -96, 96, { "sprite-adjust": "sheetX" }, "Global cutout X position on spritesheet")}
+      ${spriteEditorControl("Global Cutout Y", spriteAdjustmentForKey(key).sheetY, -96, 96, { "sprite-adjust": "sheetY" }, "Global cutout Y position on spritesheet")}
     </div>
   `;
   drawSpriteSheetPreview();
@@ -14853,7 +15111,27 @@ function drawSpriteSheetPreview() {
   previewCtx.drawImage(sprite, startX, startY, drawWidth, drawHeight);
   const cellWidth = drawWidth / 4;
   const cellHeight = drawHeight / 4;
-  const selection = spriteFrameSelectionForKey(currentSpriteAdjustmentKey());
+  const key = currentSpriteAdjustmentKey();
+  spriteSheetPreviewGrid = { x: startX, y: startY, w: drawWidth, h: drawHeight, cellWidth, cellHeight };
+  const selection = spriteFrameSelectionForKey(key);
+  const selectedCell = selectedSpriteEditorCell(key);
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      const adjustment = combinedSpriteAdjustmentForFrame(key, row, col);
+      if (!adjustment.x && !adjustment.y && !adjustment.sheetX && !adjustment.sheetY) continue;
+      const crop = spriteCropRectForFrame(sourceWidth, sourceHeight, outfit, key, row, col, directionForSpriteRow(key, row));
+      const dx = startX + col * cellWidth + crop.x * scale + adjustment.x * scale;
+      const dy = startY + row * cellHeight + crop.y * scale + adjustment.y * scale;
+      previewCtx.save();
+      previewCtx.beginPath();
+      previewCtx.rect(startX + col * cellWidth, startY + row * cellHeight, cellWidth, cellHeight);
+      previewCtx.clip();
+      previewCtx.fillStyle = "rgba(8, 11, 13, 0.94)";
+      previewCtx.fillRect(startX + col * cellWidth, startY + row * cellHeight, cellWidth, cellHeight);
+      previewCtx.drawImage(sprite, crop.sx, crop.sy, crop.w, crop.h, dx, dy, crop.w * scale, crop.h * scale);
+      previewCtx.restore();
+    }
+  }
   previewCtx.lineWidth = 2;
   previewCtx.font = "700 12px system-ui";
   Object.entries(selection.rows).forEach(([direction, row]) => {
@@ -14866,9 +15144,29 @@ function drawSpriteSheetPreview() {
     previewCtx.strokeStyle = frameName.startsWith("attack") ? "rgba(235, 92, 92, 0.88)" : "rgba(106, 201, 255, 0.74)";
     previewCtx.strokeRect(startX + frame * cellWidth, startY, cellWidth, drawHeight);
   });
+  previewCtx.lineWidth = 4;
+  previewCtx.strokeStyle = "rgba(255, 244, 196, 0.96)";
+  previewCtx.strokeRect(startX + selectedCell.col * cellWidth + 2, startY + selectedCell.row * cellHeight + 2, cellWidth - 4, cellHeight - 4);
+  const selectedCrop = spriteCropRectForFrame(sourceWidth, sourceHeight, outfit, key, selectedCell.row, selectedCell.col, directionForSpriteRow(key, selectedCell.row));
+  const cropX = startX + selectedCell.col * cellWidth + selectedCrop.x * scale;
+  const cropY = startY + selectedCell.row * cellHeight + selectedCrop.y * scale;
+  previewCtx.save();
+  previewCtx.setLineDash([8, 5]);
+  previewCtx.lineWidth = 3;
+  previewCtx.strokeStyle = "rgba(255, 115, 115, 0.96)";
+  previewCtx.strokeRect(cropX, cropY, selectedCrop.w * scale, selectedCrop.h * scale);
+  previewCtx.setLineDash([]);
+  previewCtx.fillStyle = "rgba(255, 115, 115, 0.12)";
+  previewCtx.fillRect(cropX, cropY, selectedCrop.w * scale, selectedCrop.h * scale);
+  previewCtx.restore();
+  previewCtx.fillStyle = "rgba(8, 8, 8, 0.78)";
+  previewCtx.fillRect(startX + selectedCell.col * cellWidth + 6, startY + selectedCell.row * cellHeight + 8, 136, 22);
+  previewCtx.fillStyle = "#fff4c4";
+  previewCtx.font = "800 12px system-ui";
+  previewCtx.fillText(`CUTOUT ${selectedCell.row},${selectedCell.col}`, startX + selectedCell.col * cellWidth + 12, startY + selectedCell.row * cellHeight + 24);
   previewCtx.fillStyle = "#f7efd9";
   previewCtx.font = "800 15px system-ui";
-  previewCtx.fillText(`${currentClassOption().name} frame map`, startX, 24);
+  previewCtx.fillText(`${currentClassOption().name} frame map - click a cell`, startX, 24);
 }
 
 function renderUi() {
@@ -15675,7 +15973,8 @@ function collectHostileActors() {
         "kind", "name", "radius", "maxHp", "hp", "phase", "totalPhases", "state", "stateTimer", "attackTimer",
         "swingTimer", "animationTime", "enraged", "shieldTimer", "invulnerableTimer", "enrageTextTimer",
         "deliveryActive", "deliveryTimer", "donutGauntletActive", "donutGauntletTimer", "serpentHeading",
-        "serpentAngle", "serpentWeakIndex", "serpentWeakTimer", "markedTimer", "markedShots", "poisonStacks",
+        "serpentAngle", "serpentWeakIndex", "serpentWeakTimer", "sushiRecoveryTimer", "sushiTelegraphTimer",
+        "sushiPunishTimer", "sushiLastPattern", "whirlpoolTimer", "whirlpoolWarnTimer", "markedTimer", "markedShots", "poisonStacks",
         "poisonTimer", "poisonTickTimer", "poisonDamagePerStack", "bleedTimer", "bleedTickTimer", "bleedDamage",
         "burnTimer", "burnTickTimer", "burnDamage", "exposedStacks", "exposedTimer", "judgmentTimer",
       ],
@@ -15783,13 +16082,13 @@ const hostileHazardTypeFields = {
   frostingRibbon: ["damageTimer"],
   royalRoll: ["startX", "startY", "endX", "endY", "rollAge", "rollDuration", "prevX", "prevY", "hit"],
   sugarZone: [],
-  wasabiDash: ["startX", "startY", "endX", "endY", "dashAge", "dashDuration", "prevX", "prevY", "hit"],
+  wasabiDash: ["startX", "startY", "endX", "endY", "dashAge", "dashDuration", "prevX", "prevY", "hit", "warnDuration", "warningWidth"],
   wasabiTrail: ["damageTimer"],
-  chopstickJab: ["hit"],
+  chopstickJab: ["hit", "warnDuration", "warningWidth"],
   sushiRoll: ["spin", "turn"],
   soySakeWave: ["damageTimer", "speed", "originX", "originY", "warnDuration", "age", "activeAge", "activeDuration", "surgeDuration", "fadeDuration", "visualPadding", "textureOffset", "waveSeed"],
   wasabiWave: ["lane", "hit"],
-  soyPuddle: ["damageTimer"],
+  soyPuddle: ["damageTimer", "warnDuration"],
   chopstickPin: ["hit"],
   serpentSweep: ["hit"],
 };
@@ -16574,14 +16873,16 @@ function applyRemoteBossSubtargetIntent(peerId, event) {
     const segment = sushiSegments().find((candidate) => candidate.index === segmentIndex);
     if (!segment) return;
     if (peerDistanceToPoint(peer, segment) > 1500 + (segment.r || 0)) return;
-    const damage = segment.weak ? Math.ceil(amount * 1.8) : Math.ceil(amount * 0.82);
+    const damage = segment.weak ? Math.ceil(amount * 2.05) : Math.ceil(amount * 0.82);
     applyDamageBossTargetLocal(boss, damage, segment.weak ? "Weak segment" : "Sushi segment", { remote: true, remoteIntent: true });
     if (segment.weak) {
-      boss.serpentWeakIndex = 1 + ((segment.index + 2) % Math.max(2, sushiSegmentCount() - 2));
-      boss.serpentWeakTimer = boss.enraged ? 1.5 : 2.15;
-      boss.sushiWeakFlashTimer = 0.42;
-      setSushiAnimation("weak", 0.38);
-      particles.push({ x: segment.x, y: segment.y - 34, text: "weak", color: "#9ff089", ttl: 0.75 });
+      rotateSushiWeakSegment(segment.index + 2, sushiTuning.weakHitDuration[clamp(boss.phase || 1, 1, 3)]);
+      boss.sushiWeakFlashTimer = 0.72;
+      boss.sushiPunishTimer = Math.max(boss.sushiPunishTimer || 0, 1.25);
+      boss.sushiRecoveryTimer = Math.max(boss.sushiRecoveryTimer || 0, sushiTuning.recovery.weakHit);
+      boss.attackTimer = Math.max(boss.attackTimer || 0, 1.15);
+      setSushiAnimation("weak", 0.62);
+      particles.push({ x: segment.x, y: segment.y - 34, text: "EXPOSED", color: "#eaff9f", ttl: 0.95 });
     }
     sendMultiplayerState(true);
   }
@@ -17900,6 +18201,7 @@ ui.spriteSheetControls?.addEventListener("input", (event) => {
   const rowInput = event.target.closest("[data-sprite-row], [data-sprite-row-number]");
   const frameInput = event.target.closest("[data-sprite-frame], [data-sprite-frame-number]");
   const adjustInput = event.target.closest("[data-sprite-adjust], [data-sprite-adjust-number]");
+  const frameAdjustInput = event.target.closest("[data-sprite-frame-adjust], [data-sprite-frame-adjust-number]");
   const key = currentSpriteAdjustmentKey();
   if (rowInput) {
     const direction = rowInput.dataset.spriteRow || rowInput.dataset.spriteRowNumber;
@@ -17914,6 +18216,16 @@ ui.spriteSheetControls?.addEventListener("input", (event) => {
     setSpriteFrameValue(key, "frame", frameName, frameInput.value);
     const value = spriteFrameSelectionForKey(key).frames[frameName];
     syncSpriteEditorInputs(`[data-sprite-frame="${frameName}"], [data-sprite-frame-number="${frameName}"]`, value);
+    drawSpriteSheetPreview();
+    return;
+  }
+  if (frameAdjustInput) {
+    const axis = frameAdjustInput.dataset.spriteFrameAdjust || frameAdjustInput.dataset.spriteFrameAdjustNumber;
+    if (!["x", "y", "sheetX", "sheetY"].includes(axis)) return;
+    const selectedCell = selectedSpriteEditorCell(key);
+    setSpriteFrameAdjustmentValue(key, selectedCell.row, selectedCell.col, axis, frameAdjustInput.value);
+    const value = spriteFrameAdjustmentForKey(key, selectedCell.row, selectedCell.col)[axis];
+    syncSpriteEditorInputs(`[data-sprite-frame-adjust="${axis}"], [data-sprite-frame-adjust-number="${axis}"]`, value);
     drawSpriteSheetPreview();
     return;
   }
@@ -17935,6 +18247,20 @@ ui.spriteSheetControls?.addEventListener("click", (event) => {
   const key = currentSpriteAdjustmentKey();
   resetSpriteAdjustment(key);
   resetSpriteFrameSelection(key);
+  renderSpriteSheetEditor();
+});
+ui.spriteSheetPreview?.addEventListener("click", (event) => {
+  if (!spriteSheetPreviewGrid || !ui.spriteSheetPreview) return;
+  const rect = ui.spriteSheetPreview.getBoundingClientRect();
+  const scaleX = ui.spriteSheetPreview.width / Math.max(1, rect.width);
+  const scaleY = ui.spriteSheetPreview.height / Math.max(1, rect.height);
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+  const grid = spriteSheetPreviewGrid;
+  if (x < grid.x || x > grid.x + grid.w || y < grid.y || y > grid.y + grid.h) return;
+  const col = clamp(Math.floor((x - grid.x) / grid.cellWidth), 0, 3);
+  const row = clamp(Math.floor((y - grid.y) / grid.cellHeight), 0, 3);
+  setSelectedSpriteEditorCell(currentSpriteAdjustmentKey(), row, col);
   renderSpriteSheetEditor();
 });
 ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
