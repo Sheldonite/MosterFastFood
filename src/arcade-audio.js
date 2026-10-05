@@ -40,13 +40,20 @@
   const notes = {
     menu: [440, 660], attack: [330, 165], ability: [392, 784], hit: [150, 75],
     hurt: [110, 65], heal: [392, 523, 659], reward: [523, 659, 784],
-    victory: [392, 523, 659, 784], warning: [220, 220], unavailable: [130]
+    victory: [392, 523, 659, 784], warning: [220, 220], unavailable: [130],
+    "bottle-break": [180, 90, 55], "fusion-gather": [110, 130, 165, 196, 220],
+    "fusion-mix": [98, 123, 147, 196, 247, 294], "fusion-reveal": [196, 247, 294, 392],
+    "fusion-roar": [65, 82, 98, 49],
+    "taco-windup": [110, 98, 82], "taco-crunch": [65, 130, 55], "taco-salsa": [196, 165, 130],
+    "sushi-coil": [294, 349, 440], "sushi-pinch": [523, 392], "sushi-tide": [147, 196, 247],
+    "sushi-rest": [440, 330], "boss-phase": [196, 247, 294, 392]
   };
   Object.keys(notes).forEach(function (name) {
     Arcade.on(name, function () {
       if (name === "warning" && performance.now() - lastWarning < 500) return;
       if (name === "warning") lastWarning = performance.now();
-      notes[name].forEach(function (note, index) { tone(note, 0.085, settings.effects, name === "hurt" ? "sawtooth" : "square", index * 0.075); });
+      const fusion = name.startsWith("fusion-");
+      notes[name].forEach(function (note, index) { tone(note, fusion ? .24 : .085, settings.effects, name === "hurt" || name === "fusion-roar" ? "sawtooth" : "square", index * (fusion ? .13 : .075)); });
     });
   });
   document.addEventListener("pointerdown", Arcade.audio.unlock, { once: true });

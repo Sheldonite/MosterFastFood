@@ -25,7 +25,11 @@ flowchart TD
   Route -->|Boss| ArenaReady
   Reward --> ArenaReady["Move to boss arena"]
   ArenaReady --> BossFight["Boss Fight"]
-  BossFight --> Win{"Boss defeated?"}
+  BossFight --> Bottles{"All three condiment bottles defeated?"}
+  Bottles -->|Yes| Fusion["7.2s host-timed amalgamation; preserve resources"]
+  Fusion --> Sauce["Special Sauce: phase two of the same encounter"]
+  Sauce --> Win{"Boss defeated?"}
+  BossFight --> Win
   BossFight --> Death{"Player dies?"}
   Win --> Intermission["Boss clear: record one Mark, choose temporary relic, Continue"]
   Intermission --> Final{"Last encounter?"}
@@ -45,7 +49,7 @@ Notes:
 - The run starts through `beginRun()`, then moves between starter, maze, reward, and arena phases.
 - Normal death or party wipe ends the run. Practice awards no Marks and permits full-health encounter checkpoint retries.
 - Solo menus pause simulation. Co-op menus keep simulation and networking running; a shared input gate prevents menu actions from attacking.
-- A complete run contains eleven encounters. Each has a direct boss path and an optional objective contract; the Trio and Sauce remain separate encounters.
+- A complete run contains ten encounters. The Trio and Special Sauce form one fight, with a protected amalgamation between phases and one clear/relic after Special Sauce. The merged encounter uses the Mixing Station contract; Overflow Cellar remains a development test fixture.
 - In multiplayer, host-driven party phases keep both players aligned before entering gauntlet or arena content.
 - Permanent purchases happen after settlement. Temporary relics shape the current run; unlocked class builds shape subsequent attempts. A versioned journal prevents duplicated earnings and offers solo recovery after reload.
 

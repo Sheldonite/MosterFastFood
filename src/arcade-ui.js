@@ -77,7 +77,7 @@
       const notice=byId("screenNotice");
       notice.hidden=!state.banner||state.modal;
       if(state.banner){const markup="<strong>"+escape(state.banner.title)+"</strong><span>"+escape(state.banner.subtitle)+"</span>";if(notice.innerHTML!==markup)notice.innerHTML=markup;}
-      byId("devToolbar").hidden=!state.dev;
+      byId("devToolbar").hidden=!state.dev || state.cinematic;
       if(state.loadout && loadoutSignature!==state.loadout.signature){
         loadoutSignature=state.loadout.signature;
         const focused=document.activeElement;

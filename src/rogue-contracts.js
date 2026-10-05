@@ -22,6 +22,7 @@ const RogueContracts = {
     const enemyPoints=[[.7,.65],[.56,.3],[.2,.45]];
     const enemies=d.roles.map((role,i)=>{const point=enemyPoints[i%enemyPoints.length],name={worker:"Fizz Worker",guard:"Bun Guard",charger:"Pickle Flanker",sniper:"Salt Sniper",runner:"Kitchen Runner",crusher:"Press Crusher",thief:"Ingredient Thief",lancer:"Chopstick Guard"}[role];return {id:"contract-"+kind+"-"+i,kind:"mazeEnemy",name,role,mazeEnemy:true,x:b.x+b.w*point[0],y:b.y+b.h*point[1],spawnX:b.x+b.w*point[0],spawnY:b.y+b.h*point[1],radius:role==="guard"?24:18,hp:role==="guard"?90:70,maxHp:role==="guard"?90:70,speed:role==="runner"||role==="thief"?105:80,damage:10,ranged:role==="sniper",miniBoss:false,state:"idle",moveTimer:0,attackTimer:1+i*.6,windup:0,recovery:0,shieldTimer:0};});
     if(kind==="sauce"||kind==="nacho")nodes.forEach((n,i)=>enemies.push({id:n.id,kind:"mazeEnemy",name:kind==="sauce"?"Pressure Valve":"Armor Press",role:"objective",mazeEnemy:true,x:n.x,y:n.y,radius:24,hp:kind==="sauce"?65:100,maxHp:kind==="sauce"?65:100,speed:0,damage:0,miniBoss:false,moveTimer:0,attackTimer:99}));
+    enemies.forEach(enemy=>{enemy.maxHp=scaledCombatHealth(enemy.maxHp);enemy.hp=enemy.maxHp;});
     const obstacles=[];
     const rect=(x,y,w,h)=>obstacles.push({shape:"rect",type:"rect",x:b.x+b.w*x-w/2,y:b.y+b.h*y-h/2,w,h,color:"#35455c",outline:"#65738c",label:"Counter"});
     if(kind==="burger"){rect(.32,.45,110,38);rect(.68,.62,110,38);}

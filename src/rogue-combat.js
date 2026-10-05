@@ -144,7 +144,7 @@ function installRogueCombat() {
   updateHazards=function(dt){
     const practice=hazards.filter(h=>h.practice);hazards=hazards.filter(h=>!h.practice);const scaled=[];for(const h of hazards){if(!Number.isFinite(h.vx)||!Number.isFinite(h.vy))continue;let factor=1;for(const e of abilityEffects.concat([...multiplayer.peers.values()].filter(p=>p.room===player.room&&!p.dead).flatMap(p=>p.bardSongs||[]))){if(e.ttl>0&&e.slowFactor&&distance(e,h)<=e.r+(h.r||0))factor=Math.min(factor,e.slowFactor);}if(factor<1){scaled.push({h,vx:h.vx,vy:h.vy});h.vx*=factor;h.vy*=factor;}}
     try{oldHazards(dt);}finally{for(const {h,vx,vy} of scaled){h.vx=vx;h.vy=vy;}}
-    for(const h of practice){h.ttl-=dt;const slow=Math.min(1,...abilityEffects.filter(e=>e.slowFactor&&distance(e,h)<e.r).map(e=>e.slowFactor));h.x+=h.vx*dt*slow;h.y+=h.vy*dt*slow;if(distance(h,player)<player.radius+h.r){if(player.hp>1)damagePlayer(Math.min(4,player.hp-1),"Practice bolt",{fixed:true});h.ttl=0;}if(h.ttl>0&&pointInRect(h.x,h.y,world.starter))hazards.push(h);}
+    for(const h of practice){h.ttl-=dt;const slow=Math.min(1,...abilityEffects.filter(e=>e.slowFactor&&distance(e,h)<e.r).map(e=>e.slowFactor));h.x+=h.vx*dt*slow;h.y+=h.vy*dt*slow;if(distance(h,player)<player.radius+h.r){if(player.hp>1)damagePlayer(Math.min(scaledCombatDamage(4),player.hp-1),"Practice bolt",{fixed:true,skipBossDamageTune:true});h.ttl=0;}if(h.ttl>0&&pointInRect(h.x,h.y,world.starter))hazards.push(h);}
   };
   const oldSpeed=playerSpeed;
   playerSpeed=function(){let speed=oldSpeed();const bonus=Math.max(strongestBardSongValue("battle","speedBuff"),strongestBardSongValue("quickstep","speedBuff")),strips=abilityEffects.concat([...multiplayer.peers.values()].filter(p=>!p.dead&&p.room===player.room&&p.bossKind===boss.kind).flatMap(p=>p.supportZones||[])),stripBonus=strips.some(e=>e.type==="holyStrip"&&e.ttl>0&&rogueSegmentHits(e.x,e.y,e.x2,e.y2,player,e.r))?.1:0;speed=speed/bardMoveSpeedMultiplier()*(1+Math.min(.25,bonus+stripBonus));if(RogueCombat.state.footingUntil>RogueCombat.clock){if(player.tacoGreaseTimer>0)speed*=.832/.58;if(player.pickleSlowTimer>0)speed*=.888/.72;}if(player.castTimer>0&&currentClassKey()==="mage")speed*=.7;return speed;};
@@ -153,7 +153,7 @@ function installRogueCombat() {
   fireFireBlast=function(angle){const c=player.pendingAbilityCast?.cast||{factor:1,origin:RogueTraining.origin(player,angle)},origin=RogueTraining.aim().origin,a=Math.atan2(mouseWorld.y-origin.y,mouseWorld.x-origin.x);playerProjectiles.push({x:origin.x,y:origin.y,vx:Math.cos(a)*520,vy:Math.sin(a)*520,r:18,damage:playerDamage(3*c.factor),ttl:1.05,age:0,heavy:true,tag:"Magic",ability:true,fireBlast:true,explosionRadius:132*(c.radiusMultiplier||1),room:player.room,cast:c});};
   explodeFireBlast=function(p,forcedTarget=null,options={}){const c=p.cast||{};c.impactPoint={x:p.x,y:p.y};const excluded=[],hits=[];if(forcedTarget){excluded.push(forcedTarget);if(damageBossTarget(forcedTarget,p.damage,"Fire Blast",{cast:c,...options}))hits.push(forcedTarget);}hits.push(...damageEnemiesInRadius(p.x,p.y,p.explosionRadius,p.damage,"Fire Blast",excluded,{cast:c}));RogueCombat.effect({type:"fireBlastExplosion",x:p.x,y:p.y,r:p.explosionRadius,ttl:.42});RogueCombat.emit("blastEnd",{projectile:p,cast:c,hits});};
   updateArrowStorm=rogueUpdateStorm;updateMeteorField=rogueUpdateMeteor;updateVolleyTrap=rogueUpdateTrap;updatePoisonCloud=rogueUpdateCloud;updateConsecration=rogueUpdateConsecration;updateSmokeBomb=rogueUpdateSmoke;
-  applyTimeWarpSlow=()=>{};updateBlinkRune=function(e,dt){e.pulseTimer-=dt;if(e.pulseTimer<=0){e.pulseTimer=.35;damageEnemiesInRadius(e.x,e.y,e.r,8,"Blink Rune",[],{proc:true});destroyProjectilesInRadius(e.x,e.y,e.r);}};updateAftershock=()=>{};updateBardEchoNote=()=>{};
+  applyTimeWarpSlow=()=>{};updateBlinkRune=function(e,dt){e.pulseTimer-=dt;if(e.pulseTimer<=0){e.pulseTimer=.35;damageEnemiesInRadius(e.x,e.y,e.r,scaledCombatDamage(8),"Blink Rune",[],{proc:true});destroyProjectilesInRadius(e.x,e.y,e.r);}};updateAftershock=()=>{};updateBardEchoNote=()=>{};
   const oldSongs=bardSongSettings;
   bardSongSettings=function(type,options={}){RogueCombat.legacyDepth++;let e;try{e=oldSongs(type,options);}finally{RogueCombat.legacyDepth--;}e.id="song-"+(++RogueCombat.sequence);RogueCombat.emit("song",{type,field:e,options});return e;};
   updateBardSongBuffs=rogueUpdateHealing;
@@ -190,6 +190,7 @@ function rogueUpdateHealing(dt){
 }
 
 function rogueDamagePlayer(amount,source,options={}) {
+  if(CondimentFusion.active())return false;
   if(player.dead||!runState.active)return false;
   const tuned=options.skipBossDamageTune?amount:tunedBossAbilityDamage(amount,source),now=performance.now();
   player.recentlyHitProjectileIds ||= new Set();if(options.projectileId){const id=String(options.projectileId);if(player.recentlyHitProjectileIds.has(id))return false;player.recentlyHitProjectileIds.add(id);}

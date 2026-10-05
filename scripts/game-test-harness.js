@@ -127,7 +127,7 @@ function createGame(options = {}) {
     setTimeout, clearTimeout: (id) => timers.delete(id), setInterval: window.setInterval, clearInterval() {}, requestAnimationFrame() {},
     WebSocket: Socket, fetch: async () => ({ ok: true, json: async () => ({}) })
   });
-  for (const file of ["arcade-core", "arcade-audio", "arcade-network", "arcade-art", "arcade-ui", "arcade-game", "rogue-data", "rogue-progress", "rogue-training", "rogue-combat", "rogue-talents", "rogue-contracts", "rogue-network", "rogue-relics", "rogue-presentation", "rogue-bosses", "rogue-game", "game"]) {
+  for (const file of ["arcade-core", "arcade-audio", "arcade-network", "arcade-art", "arcade-ui", "arcade-game", "rogue-data", "rogue-progress", "rogue-training", "rogue-combat", "rogue-talents", "rogue-contracts", "rogue-network", "rogue-relics", "rogue-presentation", "rogue-bosses", "signature-bosses", "condiment-fusion", "rogue-game", "game"]) {
     vm.runInContext(fs.readFileSync(path.join(root, "src", file + ".js"), "utf8"), context, { filename: file + ".js" });
     if (file === "arcade-core") context.Arcade = window.Arcade;
   }

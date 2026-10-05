@@ -85,7 +85,7 @@ const type = (value) => (message) => message.type === value;
   fifth.send({type:"event",event:{kind:"party-retry",phaseSeq:6,bossKind:"cola",room:"arena",mazeSequence:1}});
   assert.match((await fifth.next(type("error"))).message,/Practice/i);
   console.log("PASS normal runs reject retries even when a client claims Practice mode");
-  for(const kind of ["run-end","route-choice","contract-state","rogue-hit-result","rogue-dot-result","support-result"]){
+  for(const kind of ["party-phase","run-end","route-choice","contract-state","rogue-hit-result","rogue-dot-result","support-result"]){
     a.send({type:"event",event:{kind,phaseSeq:5,bossKind:"cola",seq:1}});
     assert.match((await a.next(type("error"))).message,/host/i);
   }

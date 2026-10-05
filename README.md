@@ -31,6 +31,12 @@ Use the Node launcher for co-op. Python and direct-file fallbacks support solo p
 
 Choose Solo or Co-op, then one of six heroes and an armor set. Try your equipped permanent build in the training room. The gate locks the loadout and offers a direct boss encounter or a short optional contract. Boss clears and completed contracts earn Marks; their rewards offer temporary relics that last for this run.
 
+Global combat balance now gives players, bosses, enemies, summons, training targets, and damageable boss parts 50% more HP and base damage. Abilities, damage over time, bonus attacks, and hostile hazards use the same increase; integer stats round to the nearest whole number. Armor and other mitigation still apply afterward. Existing solo checkpoints convert their remaining HP once when resumed, preserving progress and defeated targets.
+
+The Condiment Trio and Special Sauce are one encounter. Defeating Ketchup, Mustard, and Mayo starts a seven-second amalgamation: their remains stream into a vortex and rise as the sauce abomination. Phase two continues in the same arena with the same health, potions, cooldowns, and build. The combined fight grants one clear and one relic, then leads to the Shake. A full run now contains ten encounters. Practice retries restart all three bottles.
+
+Taco Titan now commits to a wall-crashing ram, a leaping Crunchquake with broken shell shockwaves, and spaced salsa lobs. Exploit its exposed filling after an attack. Sushi Serpent follows a curved lunge, closes a pair of chopsticks, and sends soy tides with a clear passage. Strike its glowing roll to cancel an attack and stagger it. Later phases add combinations, with pixel warnings, matching collision shapes, and distinct sound cues. See [Taco and Sushi encounter details](docs/TACO_SUSHI_REDESIGN.md).
+
 Death ends a normal run. The results bank its Marks once, including depth milestones, and let you open Permanent upgrades for the next attempt. All 150 talents have gameplay effects. Foundations cost 2 Marks, techniques 4, and keystones 8. Equip four support talents and one keystone; three owned support talents in a class unlock its keystones. Purchases persist, and refunds and build swaps are free between runs.
 
 | Input | Action |

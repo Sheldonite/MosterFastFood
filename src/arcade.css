@@ -283,6 +283,12 @@ kbd { color:var(--gold); font-size:12px; font-weight:bold; white-space:nowrap; }
 /* Permanent hub owns its layout; retire the previous two-column tree shell. */
 .talent-menu #talentTree { display:block; width:100%; overflow:auto; padding-right:8px; }
 #game:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.fusion-overlay { position:absolute; left:16px; right:16px; top:22px; z-index:4; text-align:center; pointer-events:none; color:var(--cream); text-shadow:3px 3px #080e1b; }
+.fusion-overlay[hidden] { display:none; }
+.fusion-overlay .eyebrow { margin:0 0 8px; color:var(--gold); font-size:12px; letter-spacing:3px; }
+.fusion-overlay h2 { margin:0; font-size:clamp(22px,3.3vw,42px); line-height:1.15; letter-spacing:2px; }
+.fusion-overlay p:last-child { margin:10px 0 0; font-size:14px; }
+.fusion-reveal h2 { color:#ffaf77; }
 .rogue-class-tabs { align-items:center; }
 .rogue-class-tabs button { flex:0 0 auto; min-height:38px; }
 .rogue-talents,.rogue-branches,.rogue-branch,.rogue-detail { min-width:0; }

@@ -69,7 +69,37 @@ function boss(kind,row=0,frame=0) {
   } else if(kind==="fries"){
     for(let i=0;i<7;i++){const x=12+i*6,y=6+(i%3)*3;s.rect(x,y+bob,5,34,ink);s.rect(x+1,y+1+bob,3,30,gold);s.rect(x+1,y+2+bob,1,22,cream);}
     s.rect(11,29+bob,44,26,ink);s.rect(13,31+bob,40,22,"#c1544c");s.rect(15,33+bob,6,18,coral);s.rect(20,52+bob,27,5,"#913f45");face(33);
-  } else if(["ketchup","mustard","mayo","sauce"].includes(kind)){
+  } else if(kind==="sauce"){
+    // The Trio's second form: three recognizable heads fused into marbled ooze.
+    const sway=(frame%2?1:-1), orange=row===2?"#ffb885":"#d98a53", dark="#99533f";
+    s.ellipse(32,57,29,5,"#22303a");
+    [[8,37,8,12],[55,39,8,13],[16,52,11,7],[47,53,12,7]].forEach(([x,y,rx,ry],i)=>{
+      s.ellipse(x,y+(i%2?sway:-sway),rx,ry,ink);s.ellipse(x,y-1+(i%2?sway:-sway),rx-2,ry-2,i%2?gold:"#d45f58");
+    });
+    s.ellipse(32,37+bob,25,24,ink);s.ellipse(32,36+bob,23,22,dark);
+    s.ellipse(30,32+bob,22,20,orange);s.ellipse(28,25+bob,17,12,"#e6a36d");
+    // Red, yellow and white veins preserve the original ingredients.
+    s.line(12,33+bob,23,38+bob,"#d45f58",5);s.line(23,38+bob,19,51+bob,"#d45f58",4);
+    s.line(46,25+bob,41,37+bob,gold,5);s.line(41,37+bob,51,45+bob,gold,4);
+    s.line(29,24+bob,33,33+bob,cream,5);s.line(33,33+bob,29,44+bob,cream,3);
+    const head=(x,y,c,eyeSide)=>{
+      s.ellipse(x,y,10,11,ink);s.ellipse(x,y-1,8,9,c);s.rect(x-5,y-6,3,3,cream);
+      s.rect(x-6,y-1,5,4,ink);s.rect(x+2,y-2,5,4,ink);
+      s.rect(x-5+eyeSide,y,2,2,cream);s.rect(x+3+eyeSide,y-1,2,2,cream);
+      s.rect(x-3,y+5,6,3,ink);s.rect(x-1,y+5,2,1,cream);
+    };
+    head(16,22+bob,"#d45f58",1);head(48,23+bob,gold,-1);head(33,14+bob,"#e5dfc1",0);
+    // Broken bottle collars and a crooked three-cap crown.
+    s.rect(9,8+bob,12,5,ink);s.rect(10,9+bob,8,3,"#d45f58");s.rect(19,7+bob,3,3,"#b8c6d4");
+    s.rect(43,8+bob,12,5,ink);s.rect(45,9+bob,9,3,gold);
+    s.rect(28,0+bob,10,7,ink);s.rect(30,1+bob,6,4,cream);s.rect(34,5+bob,6,2,"#b8c6d4");
+    const mouthHeight=row===1?11:7;
+    s.ellipse(33,45+bob,13,mouthHeight,ink);s.ellipse(33,48+bob,8,3,"#a3464e");
+    for(let i=0;i<5;i++){s.rect(23+i*4,40+bob,2,i%2?5:3,cream);s.rect(25+i*4,49+bob,2,i%2?3:4,cream);}
+    s.rect(20,30+bob,4,2,cream);s.rect(45,34+bob,3,2,cream);
+    s.rect(8,42+sway,3,6,"#ed685a");s.rect(54,45-sway,3,7,gold);
+    if(row===3){s.rect(12,33,3,3,coral);s.rect(48,34,3,3,coral);}
+  } else if(["ketchup","mustard","mayo"].includes(kind)){
     const c={ketchup:"#d45f58",mustard:"#efbe55",mayo:"#e5dfc1",sauce:"#bd8858"}[kind];
     s.rect(25,4+bob,14,10,ink);s.rect(27,5+bob,10,8,c);s.rect(22,13+bob,20,7,ink);s.rect(16,20+bob,32,35,ink);s.rect(18,21+bob,28,32,c);s.rect(20,23+bob,4,26,cream);s.rect(20,53+bob,24,3,c);face(30);
   } else if(kind==="pizza"||kind==="nacho"||kind==="taco"){
@@ -104,7 +134,7 @@ const manifest={version:1,tiles:{size:16},classes:{},bosses:{},icons:{}};
 for(const kind of Object.keys(classes)){
   const sheet=surface(128,192);for(let row=0;row<4;row++)for(let frame=0;frame<4;frame++)paste(sheet,hero(kind,row,frame),frame*32,row*48);
   write("classes/"+kind,sheet);write("portraits/"+kind,hero(kind));
-  manifest.classes[kind]={src:"./assets/pixel/classes/"+kind+".png",frameWidth:32,frameHeight:48,columns:4,rows:4,anchor:[16,44],attachments:{down:{feet:[16,44],hand:[20,28],weaponTip:[20,32],cast:[20,28]},up:{feet:[16,44],hand:[12,17],weaponTip:[12,13],cast:[12,17]},left:{feet:[16,44],hand:[7,23],weaponTip:[3,23],cast:[7,23]},right:{feet:[16,44],hand:[25,23],weaponTip:[29,23],cast:[25,23]}},animations:{idle:[0],walk:[0,1,2,3],attack:[2,3]},fps:8};
+  manifest.classes[kind]={src:"./assets/pixel/classes/"+kind+".png",frameWidth:32,frameHeight:48,columns:4,rows:4,anchor:[16,44],animations:{idle:[0],walk:[0,1,2,3],attack:[2,3]},fps:8,attachments:{down:{feet:[16,44],hand:[20,28],weaponTip:[20,32],cast:[20,28]},up:{feet:[16,44],hand:[12,17],weaponTip:[12,13],cast:[12,17]},left:{feet:[16,44],hand:[7,23],weaponTip:[3,23],cast:[7,23]},right:{feet:[16,44],hand:[25,23],weaponTip:[29,23],cast:[25,23]}}};
   for(let index=0;index<4;index++){write("icons/"+kind+"-"+index,icon(kind,index));manifest.icons[kind+"-"+index]="./assets/pixel/icons/"+kind+"-"+index+".png";}
 }
 for(const kind of ["burger","cola","fries","ketchup","mustard","mayo","sauce","shake","nacho","pizza","taco","donut","sushi"]){

@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-04",
+  "method": "Local IAB development UI: Trio, Test Arena, Clear Test, phase-two death, Retry Encounter",
+  "layouts": [
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "title": "THREE BOTTLES. ONE MONSTER.",
+      "titleFits": true,
+      "visible": true,
+      "width": 960,
+      "withinViewport": true
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "title": "THREE BOTTLES. ONE MONSTER.",
+      "titleFits": true,
+      "visible": true,
+      "width": 1280,
+      "withinViewport": true
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "title": "THREE BOTTLES. ONE MONSTER.",
+      "titleFits": true,
+      "visible": true,
+      "width": 1440,
+      "withinViewport": true
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "title": "THREE BOTTLES. ONE MONSTER.",
+      "titleFits": true,
+      "visible": true,
+      "width": 1920,
+      "withinViewport": true
+    }
+  ],
+  "performance": {
+    "averageMs": 0.28,
+    "fps": 144,
+    "p95Ms": 0.4,
+    "scope": "Short fusion scene sample; not remote-party performance"
+  },
+  "resourcesBefore": {
+    "health": "225/225",
+    "potions": "F3 potions"
+  },
+  "resourcesAfter": {
+    "health": "225/225",
+    "potions": "F3 potions"
+  },
+  "recording": {
+    "frames": 197,
+    "durationMs": 6930
+  },
+  "limits": [
+    "Controlled development clear is not human balance testing",
+    "Two/four-client authority and recovery use deterministic fixtures",
+    "Real remote latency and packaged Electron remain unverified"
+  ],
+  "singleReward": {
+    "clearedEncounters": 1,
+    "nextBoss": "Peanut Buster Shake",
+    "practiceMarks": 0
+  },
+  "consoleErrors": []
+}

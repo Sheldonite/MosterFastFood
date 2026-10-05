@@ -43,6 +43,8 @@ const focused={
  ranger_storm_cloudburst:'useAbility(1);useAbility(0);',
  ranger_storm_endless_quiver:'useAbility(1);for(let i=0;i<3;i++)damageBossTarget(trainingDummy,27,"Shot",{rangedBasic:true});',
  mage_pyro_burn:'useAbility(0);tick(1.1);',
+ mage_pyro_molten_splash:'applyBurn(trainingDummy);mouseWorld=RogueTraining.targetPoint(trainingDummy);useAbility(1);tick(.5);',
+ mage_pyro_chain_ignite:'trainingDummy.hp=1;trainingDummy.lastHitAt=performance.now();applyBurn(trainingDummy);useAbility(0);tick(1.1);',
  rogue_shadow_ambush_echo:'trainingDummy.x=570;trainingDummy.y=player.y;useAbility(2);tick(.4);',
  rogue_shadow_expose_bleed:'RogueCombat.expose(trainingDummy);useAbility(0);tick(.6);',
  rogue_shadow_knife_dance:'player.abilityCooldowns[2]=8;useAbility(0);',

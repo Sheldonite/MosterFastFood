@@ -13,7 +13,7 @@
     "dist:win": "electron-builder --win",
     "publish:win": "electron-builder --win --publish always",
     "generate:pixel": "node scripts/generate-pixel-art.js",
-    "test": "node scripts/test-projectile-damage-once.js && node scripts/test-arcade.js && node scripts/test-rogue.js && node scripts/test-rogue-talents.js && node scripts/test-coop-server.js"
+    "test": "node scripts/test-projectile-damage-once.js && node scripts/test-combat-balance.js && node scripts/test-signature-bosses.js && node scripts/test-arcade.js && node scripts/test-rogue.js && node scripts/test-condiment-fusion.js && node scripts/test-rogue-talents.js && node scripts/test-coop-server.js"
   },
   "devDependencies": {
     "electron": "^30.5.1",

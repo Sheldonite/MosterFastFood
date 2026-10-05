@@ -1,10 +1,10 @@
 # Mechanics and roguelite implementation
 
-The October 4 mechanics redesign is playable through the existing local browser and Windows/Electron entry points. Six classes, eleven boss encounters, stable talent IDs, saved gear, default bindings, and server configuration are retained. Starting balance values have changed where specified by the mechanics redesign; they require human difficulty testing.
+The mechanics redesign is playable through the existing local browser and Windows/Electron entry points. Six classes, stable talent IDs, saved gear, default bindings, and server configuration are retained. A full run now has ten encounters: Condiment Trio transforms into Special Sauce in the same fight. Starting balance values require human difficulty testing.
 
 ## Run loop and permanent builds
 
-Normal death or party wipe ends the run. Each distinct boss clear and completed optional contract earns one Mark. Depths 1, 3, 6, and 11 award two bonus Marks once per profile; final victory adds three. End Run displays the pending bank amount. Currency settles once through the run journal on death, victory, explicit ending, or banking a recovered run.
+Normal death or party wipe ends the run. Each distinct encounter clear and completed optional contract earns one Mark. Depths 1, 3, 6, and 10 award two bonus Marks once per profile; final victory adds three. The Trio and Sauce grant one combined clear. Existing banked Marks remain intact; old depth-11 milestones migrate to depth 10 without another award. Currency settles once through the run journal on death, victory, explicit ending, or banking a recovered run.
 
 The post-run hub contains 25 talents per class, organized into three branches, with persistent details, purchase costs, Equip/Unequip, and Refund. Four support slots and one keystone define the active build. Three owned support talents in a class open its keystones. Conditional Bleed/Burn builds reject missing status sources. All 150 nodes have explicit combat handlers; echoes and bonus attacks carry proc flags to prevent recursive damage. [The exported catalogue](IMPLEMENTED_TALENTS.md) documents the shipped effects.
 
@@ -23,23 +23,22 @@ Practice and development modes award no Marks. Practice preserves encounter retr
 
 ## Optional contracts and encounter revisions
 
-Every encounter offers a direct boss route. All eleven contracts have short timed objectives, two mirrored objective layouts, low-durability role enemies, explicit attack anticipation/recovery, and no generic wave/warden requirement. Completion grants one Mark and a temporary relic. Timeout or leaving opens the boss route without an award. The pause menu includes Leave Contract.
+Every encounter offers a direct boss route. Ten normal-route contracts have short timed objectives, two mirrored objective layouts, low-durability role enemies, explicit attack anticipation/recovery, and no generic wave/warden requirement. The former Sauce contract remains available as a development fixture. Completion grants one Mark and a temporary relic. Timeout or leaving opens the boss route without an award. The pause menu includes Leave Contract.
 
 | Encounter | Shipped contract | Main boss revision |
 | --- | --- | --- |
 | Cola | Operate three pressure pumps; interrupt workers | Lower opening health, ordered major patterns, shootable pressure bubbles, vent recovery |
 | Burger | Carry three ingredients; redirect conveyors | Bait a charge into a grill; committed bite and stagger window |
 | Fries | Cross the fryer lanes and open a drain | Alternating firing sweeps and heat vent |
-| Trio | Rotate three nozzles to matching vats | Breaking a bottle interrupts the surviving pair |
-| Sauce | Attack three valves amid pressure lanes | Interrupt mixer windup to clear a dry island |
+| Trio → Sauce | Rotate three nozzles to matching vats | Bottle breaks interrupt the pair; all three amalgamate into Special Sauce; interrupt its mixer to clear a dry island |
 | Shake | Carry a battery and power heaters; thawed areas remove ice slowdown | One health bar; breaks at 66% and 33% |
 | Nacho | Destroy two armor presses | Shorter invulnerability, quadrant recovery, rear opening |
 | Pizza | Deliver a cooling crate; toggle the oven door/conveyor | Attackable topping stations disable their pattern for nine seconds |
 | Donut | Collect three stamps; five improve the relic | Three stages, fewer overlapping rings and adds, recovery windows |
-| Taco | Intercept thieves and recover their ingredient crates | Readable 50% shell guard and ×2.35 exposed filling |
-| Sushi | Place bait and reverse the river current | Shared body damage and weak-segment interruption |
+| Taco | Intercept thieves and recover their ingredient crates | Committed wall ram, leaping shell shockwaves, salsa lobs; 50% shell guard and ×2.35 exposed filling |
+| Sushi | Place bait and reverse the river current | Curved lunge, closing chopsticks, soy tides; shared body damage and weak-roll interruption |
 
-These are functional objective-room implementations. Further authored layout families, richer props/animation, enemy mixture reactions, cache/seasoning variants, and boss-specific route consequences remain content polish rather than additional progression systems. The first pass retains the eleven-boss order and existing full refills between encounters. Shorter six-boss routes and partial healing/potion refills remain the plan's later playtest experiments.
+The [amalgamation](CONDIMENT_AMALGAMATION.md) preserves health, potions, cooldowns, build and encounter time across its cinematic. It awards no intermediate clear or relic. Further authored layout families, enemy mixture reactions, cache/seasoning variants, and boss-specific route consequences remain content polish. Full refills still occur between encounters. Shorter six-boss routes and partial healing/potion refills remain later playtest experiments.
 
 ## Co-op
 
@@ -49,7 +48,9 @@ The existing host authority and message types remain. Adapters add sequenced run
 
 Run `npm run check`. It syntax-checks shipped code and executes the actual client scripts in deterministic browser fixtures plus the real WebSocket server:
 
-- Existing projectile regression and 16 arcade regression groups, including six complete progression fixtures through eleven bosses and stable HUD markup.
+- Existing projectile regression and 16 arcade regression groups, including six complete progression fixtures through ten encounters and stable HUD markup.
+- Seven combined-condiment groups cover resource preservation, one reward, pause/reduced motion, reload, whole-encounter Practice retry, two/four-client host timing and snapshot recovery, departure, and old-profile migration.
+- Eleven [Taco/Sushi groups](TACO_SUSHI_REDESIGN.md) cover target locks, swept movement, warning/collision geometry, dedicated rendering, recovery, phase cancellation, pause/retry, two/four-client choreography, damage mediation, and all six classes.
 - 15 mechanics groups covering all contract objective actions, timeout, training travel/misses, settlement/reload/milestones, builds/dependencies, conditional caps and DOT budgets, two/four-client receipts/wipes, support, objective deduplication, and Sushi body behavior.
 - All 150 baseline-versus-upgraded talent gameplay probes. These compare casts, collisions, status ticks, defenses, and recovery outputs; they do not merely check registration.
 - Seven real-server protocol groups covering readiness, four-player limit, projectile deduplication/piercing, Practice retries, normal retry rejection, host-only events, sequenced settlement, and host departure.
@@ -60,4 +61,4 @@ Automated progression fixtures use controlled damage and invulnerability to veri
 
 ## Code ownership
 
-`rogue-progress` owns saves and settlement; `rogue-training` owns targets/origins/projectile collision; `rogue-combat` and `rogue-talents` own casts and bounded effects; `rogue-contracts` owns objectives/enemy roles; `rogue-bosses` adapts encounter decisions; `rogue-network` extends host messages; `rogue-relics` owns temporary reward waiting; `rogue-presentation` owns pixel effects; `rogue-game` connects the run loop and hub. The original controllers and arcade screen/input/asset/audio modules remain underneath these adapters. Further extraction should preserve the gameplay regressions.
+`rogue-progress` owns saves and settlement; `rogue-training` owns targets/origins/projectile collision; `rogue-combat` and `rogue-talents` own casts and bounded effects; `rogue-contracts` owns objectives/enemy roles; `rogue-bosses` adapts encounter decisions; `signature-bosses` owns Taco/Sushi choreography and geometry; `rogue-network` extends host messages; `rogue-relics` owns temporary reward waiting; `rogue-presentation` owns pixel effects; `rogue-game` connects the run loop and hub. The original controllers and arcade screen/input/asset/audio modules remain underneath these adapters. Further extraction should preserve the gameplay regressions.

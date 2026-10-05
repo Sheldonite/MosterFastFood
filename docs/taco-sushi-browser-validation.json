@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-05",
+  "url": "http://localhost:4173/",
+  "mode": "existing Dev Test UI; Ranger with Mage Armor",
+  "viewportChecks": [
+    {"width": 960, "height": 640, "combatScroll": false, "allVisibleButtonsWithinViewport": true},
+    {"width": 1280, "height": 720, "combatScroll": false, "allVisibleButtonsWithinViewport": true},
+    {"width": 1440, "height": 900, "combatScroll": false, "allVisibleButtonsWithinViewport": true},
+    {"width": 1920, "height": 1080, "combatScroll": false, "allVisibleButtonsWithinViewport": true}
+  ],
+  "liveAttackSamples": [
+    {"boss": "Taco Titan", "seconds": 19, "fps": 144.0, "frameAverageMs": 0.25, "frameP95Ms": 0.30, "consoleErrors": []},
+    {"boss": "Sushi Serpent", "seconds": 19, "fps": 144.0, "frameAverageMs": 0.22, "frameP95Ms": 0.30, "consoleErrors": []}
+  ],
+  "observations": [
+    "Taco charges along its warning, visibly jumps to its landing, releases broken rings and launches salsa lobs.",
+    "Sushi follows its curved route, closes paired chopsticks and sends a soy front with an open passage.",
+    "New warning fills have uniform opacity; attack art clips to the arena.",
+    "Taco death reports Salsa pool; Practice retry restores health and the initial attack sequence.",
+    "Temporary viewport overrides were reset and the Dev Test ended at the main menu."
+  ],
+  "automation": "11 actual-implementation encounter groups; existing full suite including 150 talent probes and real WebSocket protocol tests passes",
+  "limits": "Live samples are solo phase-one attack cycles. Later phases and two/four-client snapshots are covered by deterministic fixtures, not four human players on remote machines."
+}

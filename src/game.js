@@ -252,7 +252,7 @@ const mazeThemes = {
 const mazeRewardPool = [
   { id: "damage", name: "Sharper Strikes", description: "+8% damage for this run.", values: { damageMultiplier: 0.08 } },
   { id: "speed", name: "Quick Feet", description: "+10% move speed for this run.", values: { speedMultiplier: 0.1 } },
-  { id: "hp", name: "Heartier Build", description: "+15 maximum health for this run.", values: { maxHp: 15 } },
+  { id: "hp", name: "Heartier Build", get description() { return "+" + scaledCombatHealth(15) + " maximum health for this run."; }, values: { maxHp: 15 } },
   { id: "armor", name: "Extra Plating", description: "+1 armor for this run.", values: { armor: 1 } },
   { id: "attackSpeed", name: "Fast Hands", description: "+8% basic attack speed for this run.", values: { attackSpeed: 0.08 } },
   { id: "potion", name: "Spare Flask", description: "+1 potion now, up to 4.", values: { potion: 1 } },
@@ -270,6 +270,18 @@ const mazeRewardVisuals = {
 };
 
 const playerBaseHealthMultiplier = 3;
+// Keep the global balance increase at stat creation / incoming damage tuning.
+// Network packets and attacks derived from player stats already carry it.
+const combatBalance = { healthMultiplier: 1.5, damageMultiplier: 1.5 };
+
+function scaledCombatHealth(amount) {
+  return Math.round(amount * combatBalance.healthMultiplier);
+}
+
+function scaledCombatDamage(amount) {
+  return amount * combatBalance.damageMultiplier;
+}
+
 const playerArmorHealthOffsets = {
   channelerRobe: 0,
   duelistCoat: 25,
@@ -1090,7 +1102,7 @@ function createPlayer() {
     slide: null,
     gear: { weapon: "ironBlade", armor: "duelistCoat" },
     talentSaves: {},
-    stats: { damage: 26, range: 54, speed: 250, armor: 2 },
+    stats: { damage: Math.round(scaledCombatDamage(26)), range: 54, speed: 250, armor: 2 },
   };
 }
 
@@ -1296,12 +1308,13 @@ function createBoss(kind = "burger") {
     napkinTimer: 0,
   };
   if (kind === "sushi") initializeSushiTrail(createdBoss);
+  if (kind === "trio") Object.assign(createdBoss, { encounterId: "trio", totalPhases: 2, condimentRemains: [] });
   return createdBoss;
 }
 
 function scaledBossHp(kind, baseHp) {
   const multiplier = combatTuning.bossHealthMultipliers[kind] || 1;
-  return Math.round(baseHp * multiplier * combatTuning.globalBossHealthMultiplier);
+  return scaledCombatHealth(Math.round(baseHp * multiplier * combatTuning.globalBossHealthMultiplier));
 }
 
 function createTrainingDummy() {
@@ -1311,8 +1324,8 @@ function createTrainingDummy() {
     x: world.starter.x + world.starter.w - 255,
     y: world.starter.y + world.starter.h - 96,
     radius: 34,
-    hp: 1200,
-    maxHp: 1200,
+    hp: scaledCombatHealth(1200),
+    maxHp: scaledCombatHealth(1200),
     shieldTimer: 0,
     markedTimer: 0,
     markedShots: 0,
@@ -1538,19 +1551,19 @@ function applyGear() {
   const rogueArmorBonus = weapon.tag === "Rogue" ? 2 : 0;
   const warriorArmorBonus = isWarriorTag(weapon.tag) ? 4 : 0;
   player.stats = {
-    damage: Math.round(weapon.damage * (armor.damageMultiplier || 1) * (1 + (runState.mazeBuffs.damageMultiplier || 0))),
+    damage: Math.round(scaledCombatDamage(weapon.damage * (armor.damageMultiplier || 1) * (1 + (runState.mazeBuffs.damageMultiplier || 0)))),
     range: weapon.range,
     speed: Math.round((armor.speed + (weapon.moveSpeedBonus || 0)) * (1 + (runState.mazeBuffs.speedMultiplier || 0))),
     armor: armor.armor + rogueArmorBonus + warriorArmorBonus + (runState.mazeBuffs.armor || 0),
   };
   const hpPercent = player.hp / player.maxHp || 1;
-  player.maxHp = playerBaseMaxHpForArmor(player.gear.armor) + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0);
+  player.maxHp = playerBaseMaxHpForArmor(player.gear.armor) + talentMaxHpBonus() + scaledCombatHealth(runState.mazeBuffs.maxHp || 0);
   player.hp = Math.min(player.maxHp, Math.max(1, Math.round(player.maxHp * hpPercent)));
 }
 
 function playerBaseMaxHpForArmor(armorId) {
   const mageBaseHp = gear.armor.channelerRobe.maxHp * playerBaseHealthMultiplier;
-  return mageBaseHp + (playerArmorHealthOffsets[armorId] || 0);
+  return scaledCombatHealth(mageBaseHp + (playerArmorHealthOffsets[armorId] || 0));
 }
 
 function loadGame() {
@@ -2339,6 +2352,7 @@ function applyPartyPhase(event, local = false, options = {}) {
 function applyPartyPhaseInner(event, local = false, options = {}) {
   if (!event || event.bossKind && lockedBosses.has(event.bossKind)) return;
   if (!local && !options.force && Number.isFinite(event.phaseSeq) && event.phaseSeq <= multiplayer.phaseSeq) return;
+  if (CondimentFusion.applyPhase(event)) return;
   if (Number.isFinite(event.phaseSeq)) multiplayer.phaseSeq = event.phaseSeq;
   multiplayer.partyPhase = event.phase || multiplayer.partyPhase;
   multiplayer.localPartyReady = null;
@@ -2435,6 +2449,8 @@ function partyPhaseNeedsRecovery(event) {
   if (!event) return false;
   const phaseBossKind = event.bossKind || boss.kind;
   if (boss.kind !== phaseBossKind) return true;
+  if (event.phase === "condiment-fusion") return !CondimentFusion.active();
+  if (event.phase === "condiment-abomination") return boss.encounterId !== "trio" || boss.phase !== 2;
   if (event.phase === "gauntlet") {
     return player.room !== "maze"
       || !mazeState
@@ -2507,7 +2523,7 @@ function tunedBossAbilityDamage(amount, source, subject = null) {
     || definition.hazardTypes?.includes(subjectType)
     || (subjectType === "ingredientDrop" && definition.sources?.includes(`${subjectIngredient} drop`))
   ));
-  return match ? bossAbilityDamageValue(boss.kind, match.key) : amount;
+  return scaledCombatDamage(match ? bossAbilityDamageValue(boss.kind, match.key) : amount);
 }
 
 function resetBossDamageOverrides(kind = boss.kind) {
@@ -3126,7 +3142,7 @@ function createGauntletMiniBoss(kind, sequence, bounds, obstacles, rng) {
     rng,
   );
   const enemy = createMazeEnemy(kind, spawn.x, spawn.y, 99, true, rng);
-  enemy.maxHp = 500 + Math.min(150, sequence * 18);
+  enemy.maxHp = scaledCombatHealth(500 + Math.min(150, sequence * 18));
   enemy.hp = enemy.maxHp;
   enemy.attackTimer = 1.1;
   enemy.speed = 86;
@@ -3459,8 +3475,8 @@ function createMazeEnemy(kind, x, y, index, miniBoss, rng) {
     spawnX: x,
     spawnY: y,
     radius: miniBoss ? 34 : ranged ? 17 : 19,
-    maxHp: miniBoss ? 360 : ranged ? 80 : 95,
-    hp: miniBoss ? 360 : ranged ? 80 : 95,
+    maxHp: scaledCombatHealth(miniBoss ? 360 : ranged ? 80 : 95),
+    hp: scaledCombatHealth(miniBoss ? 360 : ranged ? 80 : 95),
     color: miniBoss ? theme.mini : theme.enemy,
     attackTimer: miniBoss ? 1.15 : 0.75 + rng() * 0.7,
     patternIndex: 0,
@@ -5530,7 +5546,7 @@ function isDonutFinalPhase() {
 }
 
 function createDonutHoles(count) {
-  const holeHp = Math.round((isDonutFinalPhase() ? 58 : 78) * 1.35);
+  const holeHp = scaledCombatHealth(Math.round((isDonutFinalPhase() ? 58 : 78) * 1.35));
   const waveId = (boss.donutHoleWaveSeq = (boss.donutHoleWaveSeq || 0) + 1);
   return Array.from({ length: count }, (_, index) => ({
     id: `hole-${waveId}-${index}`,
@@ -5616,8 +5632,8 @@ function spawnDonutMinion(index, elapsed) {
     x: spawn.x,
     y: spawn.y,
     r: stats.r,
-    hp: stats.hp,
-    maxHp: stats.hp,
+    hp: scaledCombatHealth(stats.hp),
+    maxHp: scaledCombatHealth(stats.hp),
     speed: stats.speed,
     color: stats.color,
     driftAngle: Math.random() * Math.PI * 2,
@@ -7018,7 +7034,7 @@ function backstabStrike() {
   targets.forEach((target) => {
     applyBleed(target);
     if (target.poisonStacks > 0) player.abilityCooldowns[0] = Math.max(0, player.abilityCooldowns[0] - 2);
-    if (empowered && hasTalent("rogue_shadow_cap") && target.exposedStacks > 0) damageBossTarget(target, target.exposedStacks * 12, "Deathblow");
+    if (empowered && hasTalent("rogue_shadow_cap") && target.exposedStacks > 0) damageBossTarget(target, scaledCombatDamage(target.exposedStacks * 12), "Deathblow");
     if (empowered) consumeExposed(target);
   });
   player.backstabTimer = 0;
@@ -9421,6 +9437,7 @@ function hitSushiSegment(projectile) {
 }
 
 function damagePlayer(amount, source, options = {}) {
+  if (CondimentFusion.active()) return false;
   const tunedAmount = options.skipBossDamageTune ? amount : tunedBossAbilityDamage(amount, source);
   if (options.projectileId) {
     const projectileId = String(options.projectileId);
@@ -9522,7 +9539,7 @@ function drinkPotion() {
 }
 
 function nextProgressionBoss(kind) {
-  if (kind === "trio") return "sauce";
+  if (kind === "trio") return "shake";
   if (kind === "sauce") return "shake";
   const index = progressionBosses.indexOf(kind);
   if (index < 0 || index >= progressionBosses.length - 1) return null;
@@ -9535,7 +9552,7 @@ function prepareNextBoss(kind, defeatedName) {
   player.hp = player.maxHp;
   player.potions = 3;
   sendPlayerToStarterRoom();
-  ui.status.textContent = `${defeatedName} defeated. +2 Talent Points. Next Boss: ${boss.name}.`;
+  ui.status.textContent = `${defeatedName} defeated. Next Boss: ${boss.name}.`;
   showScreenBanner(`${defeatedName} Defeated`, `Next Boss: ${boss.name}`, "victory", 2.8);
   showFloat(`Next boss: ${boss.name}`);
   if (isMultiplayerHost()) {
@@ -9551,6 +9568,7 @@ function prepareNextBoss(kind, defeatedName) {
 
 function winFight() {
   if (intermission || player.won) return;
+  if (boss.kind === "trio") { CondimentFusion.begin(); return; }
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
@@ -9577,7 +9595,7 @@ function winFight() {
     return;
   }
   log(`Victory in ${seconds}s.`);
-  const defeatedName = boss.name;
+  const defeatedName = boss.encounterId === "trio" ? "Condiment Trio & Special Sauce" : boss.name;
   const nextBoss = nextProgressionBoss(boss.kind);
   clearedBosses.push(defeatedName); Arcade.emit("victory");
   if (nextBoss) {
@@ -9852,7 +9870,7 @@ function updateBlinkRune(effect, dt) {
   if (effect.pulseTimer > 0) return;
   effect.pulseTimer = 0.35;
   livingBosses().forEach((target) => {
-    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, hasTalent("mage_chrono_blink") ? 14 : 8, "Blink Rune");
+    if (distance(effect, target) < effect.r + target.radius) damageBossTarget(target, scaledCombatDamage(hasTalent("mage_chrono_blink") ? 14 : 8), "Blink Rune");
   });
   const hazardIds = [];
   hazards.forEach((hazard) => {
@@ -9952,6 +9970,9 @@ function update(dt) {
     return;
   }
   runElapsedSeconds += dt;
+  if (CondimentFusion.active()) {
+    CondimentFusion.update(dt); updateMultiplayer(dt); updateArcadeCamera(); return;
+  }
   runUpdateStep("movePlayer", () => movePlayer(dt));
   runUpdateStep("playerTimers", () => {
     player.attackCooldown = Math.max(0, player.attackCooldown - dt);
@@ -10126,7 +10147,7 @@ function markBossTarget(target) {
 }
 
 function damageBossTarget(target, amount, source, options = {}) {
-  if (!target || target.hp <= 0) return false;
+  if (!target || target.hp <= 0 || CondimentFusion.active()) return false;
   if (shouldSendHostHitIntent(target, source, options)) {
     sendHitIntent(target, amount, source, damageIntentOptions(source, options));
     particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
@@ -10320,6 +10341,7 @@ function handleBossDefeated(target) {
     handleMazeEnemyDefeated(target);
     return;
   }
+  CondimentFusion.remember(target);
   particles.push({ x: target.x, y: target.y - 62, text: `${target.name} down`, color: "#ffd27a", ttl: 1.2 });
   if (target === selectedBoss) selectedBoss = null;
   if (target.kind === "ketchup") clearKetchupHazards();
@@ -10481,18 +10503,7 @@ function isCondimentDead(kind) {
 }
 
 function spawnSpecialSauce() {
-  selectedBoss = null;
-  hazards = [];
-  playerProjectiles = [];
-  remoteProjectiles = [];
-  abilityEffects = [];
-  remoteAbilityEffects = [];
-  condimentBosses = [];
-  boss = createBoss("sauce");
-  fightStartedAt = performance.now();
-  player.hp = Math.min(player.maxHp, player.hp + 25);
-  ui.status.textContent = "The trio combines into Special Sauce.";
-  showFloat("Special Sauce appears");
+  CondimentFusion.reveal();
 }
 
 function draw() {
@@ -10915,6 +10926,7 @@ function drawGeneratedBossSprite(target, kind) { return Arcade.art.boss(ctx, tar
 
 function drawBoss() {
   if (player.room !== "arena") return;
+  if (boss.kind === "trio") CondimentFusion.draw();
   if (boss.kind === "trio") {
     condimentBosses.forEach(drawCondimentBoss);
     return;
@@ -10970,8 +10982,8 @@ function drawBoss() {
 }
 
 function drawCondimentBoss(target) {
-  if (Arcade.art.boss(ctx, target, target.kind)) { drawCondimentHealth(target); return; }
   if (target.hp <= 0) return;
+  if (Arcade.art.boss(ctx, target, target.kind)) { drawCondimentHealth(target); return; }
   if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
   if (target.kind === "mustard" && target.state === "winding") drawRing(target.x, target.y, target.radius + 18, "#fff08a");
   const generatedCondimentDrawn = drawGeneratedBossSprite(target, target.kind, { scale: 1.05 });
@@ -15146,6 +15158,10 @@ function renderUi() {
   const mazeHpLabel = mazeState?.miniBossSpawned ? "Warden" : "Wave";
   Arcade.setText(ui.bossHpText, player.room === "maze"
     ? mazeState?.contract ? `${mazeState.contract.completed}/${mazeState.contract.goal} ${RogueContracts.units[mazeState.contract.mode]}` : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} ${mazeHpLabel}`
+    : CondimentFusion.active()
+    ? "Amalgamating · Phase I → II"
+    : boss.encounterId === "trio"
+    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/2`
     : boss.kind === "shake"
     ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Flavor ${boss.phase}/3`
     : boss.kind === "donut"
@@ -15539,6 +15555,7 @@ function handleMultiplayerMessage(message) {
     multiplayer.count = multiplayer.peers.size + 1;
     setCoopStatus("In Room", multiplayer.room?.players?.length || multiplayer.count);
     applyHostPartyPhaseSnapshot(message.state, message.id);
+    CondimentFusion.syncClock(message.state, message.id);
     applyRemoteBossProgress(message.state, message.id);
     if (isMultiplayerHost()) maybeAdvancePartyPhase();
     return;
@@ -15864,6 +15881,7 @@ function normalizeRemoteBossHazard(remoteHazard, serverTime = 0) {
     if (Number.isFinite(hazard[key])) hazard[key] = Math.max(0, hazard[key] - lag);
   });
   hazard.age = (hazard.age || 0) + lag;
+  if(hazard.type==="signature")hazard.activeAge=(hazard.activeAge||0)+Math.max(0,lag-Math.max(0,remoteHazard.warn||0));
   return hazard;
 }
 
@@ -15966,6 +15984,8 @@ function collectHostileActors() {
         "sushiPunishTimer", "sushiLastPattern", "whirlpoolTimer", "whirlpoolWarnTimer", "markedTimer", "markedShots", "poisonStacks",
         "poisonTimer", "poisonTickTimer", "poisonDamagePerStack", "bleedTimer", "bleedTickTimer", "bleedDamage",
         "burnTimer", "burnTickTimer", "burnDamage", "exposedStacks", "exposedTimer", "judgmentTimer",
+        "signature", "signatureSeq", "signatureCancelSeq", "signatureTurn", "signatureRecovery", "signatureName", "signatureHint",
+        "shellGuardActive", "exposedFillingTimer", "shellCrackStacks", "rogueRecovery", "rogueExposed",
       ],
     }));
   }
@@ -16754,7 +16774,7 @@ function remoteIntentAmountCap(peer) {
   const baseDamage = Number(weapon.damage) || 55;
   const multiplier = Number(armor.damageMultiplier) || 1;
   const burstFactor = peer.weaponTag === "Magic" ? 58 : peer.weaponTag === "Bard" ? 58 : peer.weaponTag === "Ranged" ? 44 : 50;
-  return Math.max(900, Math.min(3600, Math.ceil(baseDamage * multiplier * burstFactor)));
+  return Math.max(scaledCombatDamage(900), Math.min(scaledCombatDamage(3600), Math.ceil(scaledCombatDamage(baseDamage * multiplier * burstFactor))));
 }
 
 function validRemoteIntentAmount(peer, amount, multiplier = 1) {
@@ -17422,6 +17442,11 @@ function multiplayerSnapshot() {
   if (isMultiplayerHost() && multiplayer.lastPartyPhaseEvent) {
     snapshot.partyPhaseEvent = cloneSyncObject(multiplayer.lastPartyPhaseEvent);
     snapshot.partySpawns = multiplayerArenaSpawns();
+    if (CondimentFusion.active()) snapshot.partyPhaseEvent.fusion = cloneSyncObject(boss.condimentFusion);
+  }
+  if (isMultiplayerHost() && boss.kind === "trio") {
+    snapshot.condimentFusion = cloneSyncObject(boss.condimentFusion);
+    snapshot.condimentRemains = cloneSyncObject(boss.condimentRemains);
   }
   if (player.room === "arena") {
     snapshot.bossHp = Math.max(0, Math.ceil(bossHealthSummary().hp));

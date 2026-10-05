@@ -9,7 +9,10 @@ for (const directory of ["src", "scripts", "electron"]) {
 }
 new vm.Script(fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8"), { filename:"server.js" });
 require("./test-projectile-damage-once");
+require("./test-combat-balance");
+require("./test-signature-bosses");
 require("./test-arcade");
 require("./test-rogue");
+require("./test-condiment-fusion");
 require("./test-rogue-talents");
 require("./test-coop-server");

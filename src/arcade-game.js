@@ -11,7 +11,7 @@ function arcadeInputAllowed() {
     active: runState.active, dead: player.dead, won: player.won,
     menu: !ui.menuOverlay.classList.contains("hidden"),
     modal: Boolean(Arcade.screens.current), reward: Boolean(mazeState?.rewardPending),
-    intermission: Boolean(intermission)
+    intermission: Boolean(intermission) || CondimentFusion.active()
   });
 }
 
@@ -55,6 +55,7 @@ function requestEncounterRetry() {
 }
 
 function retryEncounterLocally(event) {
+  if (boss.encounterId === "trio" && event.bossKind === "sauce") event = { ...event, bossKind: "trio" };
   if (!encounterCheckpoint || event.bossKind !== encounterCheckpoint.bossKind || event.room !== encounterCheckpoint.room) return;
   const checkpoint = encounterCheckpoint;
   Arcade.screens.close(true);
@@ -106,7 +107,7 @@ function arcadeBuildSummary() {
 function arcadeBuffLabel(key, value) {
   const labels = { maxHp:"Maximum health", armor:"Defense", damageMultiplier:"Damage", speedMultiplier:"Move speed", attackSpeed:"Basic attack speed", cooldownRecovery:"Cooldown recovery" };
   const percent = ["damageMultiplier","speedMultiplier","attackSpeed","cooldownRecovery"].includes(key);
-  return (labels[key] || key) + ": +" + (percent ? Math.round(value * 100) + "%" : value);
+  return (labels[key] || key) + ": +" + (percent ? Math.round(value * 100) + "%" : key === "maxHp" ? scaledCombatHealth(value) : value);
 }
 
 function showEncounterResults(final) {
@@ -155,7 +156,7 @@ function renderArcadeUi() {
     dummyFeedback: typeof RogueTraining!=="undefined"?"Last: "+(trainingDummy.lastDamage||0)+" · 5s DPS: "+RogueTraining.dps().toFixed(1)+(trainingDummy.lastSource?" · "+trainingDummy.lastSource:""):"Crossing the gate locks your loadout.",
     playerStatus, encounterCaption, room: player.room, potions: player.potions, hp: player.hp, maxHp: player.maxHp,
     inputAllowed: arcadeInputAllowed(), party, spectate: spectate ? spectatePeerLabel(spectate.id) : "",
-    banner: screenBanner, modal: Boolean(Arcade.screens.current), dev: runState.mode === "dev",
+    banner: screenBanner, modal: Boolean(Arcade.screens.current), dev: runState.mode === "dev", cinematic: CondimentFusion.active(),
     active: runState.active, intermission: Boolean(intermission), coop: isPartySyncActive(),
     retryAllowed: isMultiplayerHost() && isPartyWiped(),
     loadout: Arcade.screens.current === ui.classMenuOverlay ? {
@@ -164,10 +165,10 @@ function renderArcadeUi() {
       weapon: weapon.name, armor: armor.name, damage: playerDamage(), defense: effectivePlayerArmor(), speed: Math.round(playerSpeed()),
       armors: Object.entries(gear.armor).map(([id, item]) => ({
         id, name: item.name, selected: id === player.gear.armor,
-        hp: playerBaseMaxHpForArmor(id) + talentMaxHpBonus() + (runState.mazeBuffs.maxHp || 0),
+        hp: playerBaseMaxHpForArmor(id) + talentMaxHpBonus() + scaledCombatHealth(runState.mazeBuffs.maxHp || 0),
         armor: item.armor + (isWarriorTag(weapon.tag) ? 4 : weapon.tag === "Rogue" ? 2 : 0) + (runState.mazeBuffs.armor || 0),
         speed: Math.round((item.speed + (weapon.moveSpeedBonus || 0)) * (1 + (runState.mazeBuffs.speedMultiplier || 0))),
-        damage: Math.round(weapon.damage * (item.damageMultiplier || 1) * (1 + (runState.mazeBuffs.damageMultiplier || 0)))
+        damage: Math.round(scaledCombatDamage(weapon.damage * (item.damageMultiplier || 1) * (1 + (runState.mazeBuffs.damageMultiplier || 0))))
       }))
     } : null
   });

@@ -1,6 +1,6 @@
 # Retro pixel arcade implementation
 
-The pixel redesign retains six classes, food bosses, armor, co-op messages, saved gear, and Electron integration. The subsequent mechanics redesign adds permanent talent builds and optional contracts, with revised talent effects and boss pacing. The default keys and eleven-encounter order remain. See [the current mechanics implementation](docs/MECHANICS_IMPLEMENTATION.md) and [all 150 implemented talents](docs/IMPLEMENTED_TALENTS.md).
+The pixel redesign retains six classes, food bosses, armor, co-op messages, saved gear, and Electron integration. The mechanics redesign adds permanent talent builds and optional contracts. Condiment Trio now transforms into Special Sauce within one encounter, bringing a full run to ten encounters. See [the current mechanics implementation](docs/MECHANICS_IMPLEMENTATION.md), [the amalgamation implementation](docs/CONDIMENT_AMALGAMATION.md), and [all 150 implemented talents](docs/IMPLEMENTED_TALENTS.md).
 
 ## Implemented
 
@@ -40,7 +40,7 @@ Run npm run check. The harness executes all shipped client scripts rather than c
 - Deliberate reward confirmation, delayed-click protection, stale callback rejection, and rollback on retry.
 - Practice full-health retries and normal-run retry rejection; idempotent permanent settlement and reload recovery.
 - All six classes' attacks and abilities, and update/render smoke coverage across every encounter and gauntlet.
-- Six complete solo progression fixtures, one per class, through all eleven encounters, temporary relics, revised Shake/Donut phases, and final settlement. These fixtures use controlled damage to verify transitions.
+- Six complete solo progression fixtures, one per class, through all ten encounters, including the Trio-to-Sauce transformation, temporary relics, revised Shake/Donut phases, and final settlement. These fixtures use controlled damage to verify transitions.
 - Four client simulations exchanging their actual messages through readiness, reward waiting, spectating, wipe/retry, intermission, and the next encounter.
 - Actual server two/four-player readiness, four-player limit, host-only retry, new-run sequence reset, and host departure.
 - Stable HUD markup across repeated renders and changing health.

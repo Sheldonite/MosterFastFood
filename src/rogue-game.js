@@ -26,17 +26,24 @@ const RogueGame = {
   },
   saveCheckpoint() {
     if (!runState.active || this.practice() || isPartySyncActive()) return;
-    Arcade.progress.checkpoint({bossKind:boss.kind,room:player.room,x:player.x,y:player.y,hp:player.hp,potions:player.potions,cooldowns:player.abilityCooldowns.slice(),gear:{...player.gear},buffs:{...runState.mazeBuffs},seconds:runElapsedSeconds,cleared:clearedBosses.slice(),talentSaves:{...RogueCombat.state.saves},bossTargets:boss.kind==="trio"?condimentBosses.map(t=>({kind:t.kind,hp:t.hp})):null,toppingParts:RogueBosses.parts().map(t=>({kind:t.kind,hp:t.hp,disabledFor:Math.max(0,t.disabledUntil-RogueCombat.clock)})),contractEnemies:mazeState?.contract?mazeState.enemies.map(e=>({id:e.id,hp:e.hp,x:e.x,y:e.y})):null,intermission:intermission?{name:intermission.name,nextBoss:intermission.nextBoss,relicChosen:intermission.relicChosen}:null,contractRewardChosen:Boolean(mazeState?.rewardChosen),bossHp:boss.hp,bossPhase:boss.phase,contract:mazeState?.contract?JSON.parse(JSON.stringify(mazeState.contract)):null});
+    Arcade.progress.checkpoint({healthMultiplier:combatBalance.healthMultiplier,bossKind:boss.kind,encounterId:boss.encounterId,condimentFusion:cloneSyncObject(boss.condimentFusion),condimentRemains:cloneSyncObject(boss.condimentRemains),room:player.room,x:player.x,y:player.y,hp:player.hp,potions:player.potions,cooldowns:player.abilityCooldowns.slice(),gear:{...player.gear},buffs:{...runState.mazeBuffs},seconds:runElapsedSeconds,cleared:clearedBosses.slice(),talentSaves:{...RogueCombat.state.saves},bossTargets:boss.kind==="trio"?condimentBosses.map(t=>({kind:t.kind,hp:t.hp})):null,toppingParts:RogueBosses.parts().map(t=>({kind:t.kind,hp:t.hp,disabledFor:Math.max(0,t.disabledUntil-RogueCombat.clock)})),contractEnemies:mazeState?.contract?mazeState.enemies.map(e=>({id:e.id,hp:e.hp,x:e.x,y:e.y})):null,intermission:intermission?{name:intermission.name,nextBoss:intermission.nextBoss,relicChosen:intermission.relicChosen}:null,contractRewardChosen:Boolean(mazeState?.rewardChosen),bossHp:boss.hp,bossPhase:boss.phase,contract:mazeState?.contract?JSON.parse(JSON.stringify(mazeState.contract)):null});
   },
   resume() {
-    const journal=Arcade.progress.profile.journal, saved=journal?.checkpoint;
+    const journal=Arcade.progress.profile.journal, saved=cloneSyncObject(journal?.checkpoint);
     if(!journal || journal.settled)return;
     if(journal.mode==="multiplayer" || !saved){this.end("saved run",false,false);return;}
+    // Old saves predate the global HP increase. Convert once before restoring,
+    // including defeated targets (zero stays zero), then save the new scale.
+    const savedHealthMultiplier=Number(saved.healthMultiplier)>0?Number(saved.healthMultiplier):1;
+    const healthRatio=combatBalance.healthMultiplier/savedHealthMultiplier;
+    for(const key of ["hp","bossHp"])if(Number.isFinite(saved[key]))saved[key]*=healthRatio;
+    for(const key of ["bossTargets","toppingParts","contractEnemies"])for(const target of saved[key]||[])if(Number.isFinite(target.hp))target.hp*=healthRatio;
     this.resuming=true;player.gear={...saved.gear};beginRun("single",saved.bossKind);this.resuming=false;
     closeClassMenu();runState.mazeBuffs={...saved.buffs};this.activate();runElapsedSeconds=saved.seconds||0;clearedBosses=saved.cleared||[];RogueCombat.state.saves={...saved.talentSaves};
     if(saved.room==="arena"){enterBossArena();boss.hp=Math.max(1,Math.min(boss.maxHp,saved.bossHp));boss.phase=saved.bossPhase||1;for(const t of condimentBosses){const s=saved.bossTargets?.find(s=>s.kind===t.kind);if(s)t.hp=Math.max(0,Math.min(t.maxHp,s.hp));}for(const t of RogueBosses.parts()){const s=saved.toppingParts?.find(s=>s.kind===t.kind);if(s){t.hp=Math.max(0,Math.min(t.maxHp,s.hp));t.disabledUntil=RogueCombat.clock+s.disabledFor;}}if(boss.kind==="donut"&&boss.phase>=2)boss.donutHoles=createDonutHoles(boss.phase===3?2:1);}
     if(saved.room==="maze"){startMazeForBoss(saved.bossKind);if(saved.contract&&mazeState){mazeState.contract=saved.contract;for(const e of mazeState.enemies){const p=saved.contractEnemies?.find(p=>p.id===e.id);if(p)Object.assign(e,p);}if(saved.contract.finished){mazeState.cleared=true;mazeState.exitOpen=Boolean(saved.contract.failed||saved.contractRewardChosen);mazeState.rewardChosen=Boolean(saved.contractRewardChosen);mazeState.rewardPending=!mazeState.exitOpen;if(mazeState.rewardPending)showMazeRewardChoices();}}}
-    if(saved.intermission){intermission={...saved.intermission};showEncounterResults(false);}
+    if(saved.room==="arena")CondimentFusion.restore(saved);
+    if(saved.intermission){intermission={...saved.intermission};if(intermission.nextBoss==="sauce")intermission.nextBoss="shake";showEncounterResults(false);}
     player.hp=Math.max(1,Math.min(player.maxHp,saved.hp));player.potions=saved.potions;if(Number.isFinite(saved.x)&&Number.isFinite(saved.y)){const p=constrainToRoom(saved.x,saved.y);player.x=p.x;player.y=p.y;}if(Array.isArray(saved.cooldowns))player.abilityCooldowns=saved.cooldowns.map(c=>Math.max(0,Number(c)||0));if(!saved.intermission&&!mazeState?.rewardPending)Arcade.screens.close(true);this.finished=false;this.saveCheckpoint();
   },
   openRecovery() {
@@ -86,6 +93,7 @@ function rogueAbilityHint(index) {
 }
 
 function rogueEncounterCaption(fallback) {
+  if(CondimentFusion.active())return "The condiments are combining · combat resumes after the reveal";
   if(player.room==="starter")return "Practice your build · gate opens route choices";
   if(player.room==="maze"&&mazeState?.contract)return mazeState.rewardChosen?"Relic collected · the boss exit is open":mazeState.contract.caption;
   if(player.room==="arena")return boss.rogueRecovery>0?"EXPOSED · "+boss.rogueRecovery.toFixed(1)+"s":boss.kind==="taco"?(boss.exposedFillingTimer>0?"EXPOSED FILLING · "+boss.exposedFillingTimer.toFixed(1)+"s · ×2.35 damage":"Shell guard · 50% damage · solve the ingredient objective"):RogueBosses.tips[boss.kind];
@@ -120,11 +128,12 @@ function renderRogueTalents(force=false) {
 }
 
 function initializeRogueGame() {
+  document.querySelector(".game-wrap").appendChild(document.getElementById("fusionOverlay"));
   isPartySyncActive=()=>isMultiplayerGame()&&["multiplayer","practice"].includes(runState.mode);
   Arcade.progress.configure(talentDefinitions);
   for(const talent of talentDefinitions){const data=Arcade.progress.catalogue.get(talent.id);talent.description=data[2];talent.purchaseTier=data[1];}
   talentById.get("melee_earth_cap").name="Earth Battery";
-  installRogueTraining();installRogueCombat();installRogueContracts();installRogueNetwork();installRoguePresentation();installRogueBosses();updatePlayerProjectiles=rogueUpdateProjectiles;
+  installRogueTraining();installRogueCombat();installRogueContracts();installRogueNetwork();installRoguePresentation();installRogueBosses();installSignatureBosses();updatePlayerProjectiles=rogueUpdateProjectiles;
   const oldBegin=beginRun,oldReset=resetRunTalents,oldEquip=equipClass,oldDeath=enterDeathState,oldRetry=requestEncounterRetry,oldMenu=returnToMainMenu,oldContinue=continueArcadeRun,oldResults=showEncounterResults,oldRender=renderArcadeUi,oldUpdate=update,oldParty=maybeAdvancePartyPhase,oldLobby=returnToMultiplayerLobby;
   resetRunTalents=function(){oldReset();if(runState.active)runState.learnedTalents=new Set(Arcade.progress.selection(currentClassKey()));};
   beginRun=function(mode,first="cola"){
@@ -135,7 +144,7 @@ function initializeRogueGame() {
   equipClass=function(id){const result=oldEquip(id);if(!runState.buildLocked)RogueGame.activate();return result;};
   canLearnTalent=id=>RogueGame.inHub()&&Arcade.progress.canPurchase(id);
   learnTalent=function(id){if(!canLearnTalent(id)||!Arcade.progress.purchase(id))return false;const cls=talentById.get(id).classKey,ids=Arcade.progress.selection(cls);if(Arcade.progress.validBuild(ids.concat(id),cls)&&rogueBuildDependency(id,ids.concat(id)))Arcade.progress.select(cls,ids.concat(id));RogueGame.hubSignature="";renderRogueTalents(true);Arcade.emit("reward");return true;};
-  grantTalentPoints=function(){Arcade.progress.record("bosses",boss.kind);};
+  grantTalentPoints=function(){Arcade.progress.record("bosses",CondimentFusion.rewardId());};
   renderTalentTree=renderRogueTalents;
   openTalentMenu=function(){if(RogueGame.inHub())RogueGame.hubClass=currentClassKey();Arcade.screens.open(ui.talentMenuOverlay,Boolean(Arcade.screens.current));renderRogueTalents(true);};
   enterDeathState=function(source){oldDeath(source);if(!RogueGame.practice()&&!isPartySyncActive())RogueGame.end("death");};
@@ -148,6 +157,7 @@ function initializeRogueGame() {
   updateRoom=function(dt){player.gateCooldown=Math.max(0,player.gateCooldown-dt);if(player.room==="starter"&&player.gateCooldown<=0&&circleIntersectsRect(player.x,player.y,player.radius,world.gate))RogueGame.openRoute();if(player.room==="maze"&&player.gateCooldown<=0&&mazeState?.exitOpen&&circleIntersectsRect(player.x,player.y,player.radius,mazeState.exit))enterBossArena();};
   update=function(dt){oldUpdate(dt);if(!runState.active)return;if(!Arcade.screens.paused()){RogueGame.saveTimer+=dt;if(RogueGame.saveTimer>=2){RogueGame.saveTimer=0;RogueGame.saveCheckpoint();}}if(isPartySyncActive()&&isMultiplayerHost()&&isPartyWiped()&&!RogueGame.practice())RogueGame.end("party wipe");};
   renderArcadeUi=function(){oldRender();Arcade.setText(document.getElementById("skillsButton"),"Talents");document.getElementById("trainingButton").hidden=player.room!=="starter";document.getElementById("resumeRunButton").hidden=!Arcade.progress.profile.journal||Arcade.progress.profile.journal.settled;
+    CondimentFusion.renderUi();
     if(!document.getElementById("buildOverlay").hidden){const readout=document.getElementById("talentReadout"),html=rogueCombatReadout().map(line=>'<span>'+escapeHtml(line)+'</span>').join("");if(readout.innerHTML!==html)readout.innerHTML=html;}
     const breakdown=RogueTraining.targets.reduce((sum,t)=>({direct:sum.direct+t.breakdown.direct,dot:sum.dot+t.breakdown.dot,proc:sum.proc+t.breakdown.proc}),{direct:0,dot:0,proc:0});Arcade.setText(document.getElementById("trainingDetails"),"Direct: "+breakdown.direct+" · Damage over time: "+breakdown.dot+" · Bonus attacks: "+breakdown.proc+". "+RogueTraining.targets.map(t=>[t.markedShots?"Mark ×"+t.markedShots:"",t.poisonStacks?"Poison ×"+t.poisonStacks:"",t.bleedTimer>0?"Bleed "+t.bleedTimer.toFixed(1)+"s":"",t.burnTimer>0?"Burn "+t.burnTimer.toFixed(1)+"s":""].filter(Boolean).join(" / ")).filter(Boolean).join(" · "));
     document.getElementById("skipContractButton").hidden=!(mazeState?.contract&&!mazeState.contract.finished&&player.room==="maze");document.getElementById("skipContractButton").disabled=isPartySyncActive()&&!isMultiplayerHost();

@@ -425,7 +425,7 @@ function handlePeerMessage(peer, message) {
     const room = rooms.get(peer.roomId);
     if (room && room.state === "inGame") {
       const event = message.event;
-      const hostEvents = new Set(["run-end", "route-choice", "contract-state", "rogue-hit-result", "rogue-dot-result", "support-result"]);
+      const hostEvents = new Set(["party-phase", "run-end", "route-choice", "contract-state", "rogue-hit-result", "rogue-dot-result", "support-result"]);
       if (hostEvents.has(event.kind) && room.hostId !== peer.id) {
         send(peer, { type: "error", message: "Only the host can resolve this encounter event." });
         return;
