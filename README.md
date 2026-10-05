@@ -25,39 +25,48 @@ http://localhost:4173
 
 The launchers try Node.js first, then Python. If neither is installed, Windows opens `index.html` directly as a fallback.
 
-## Character Sprite
+Use the Node launcher for co-op. Python and direct-file fallbacks support solo play; they do not provide the WebSocket lobby server.
 
-Place the player spritesheet at:
+## Playing
 
-```text
-assets/player-spritesheet.png
+Choose Solo or Co-op, then one of six heroes and an armor set. Try your equipped permanent build in the training room. The gate locks the loadout and offers a direct boss encounter or a short optional contract. Boss clears and completed contracts earn Marks; their rewards offer temporary relics that last for this run.
+
+Death ends a normal run. The results bank its Marks once, including depth milestones, and let you open Permanent upgrades for the next attempt. All 150 talents have gameplay effects. Foundations cost 2 Marks, techniques 4, and keystones 8. Equip four support talents and one keystone; three owned support talents in a class unlock its keystones. Purchases persist, and refunds and build swaps are free between runs.
+
+| Input | Action |
+| --- | --- |
+| WASD | Move |
+| Mouse / hold left click | Aim / attack |
+| Q, E, Space, R | Four class abilities |
+| F | Drink a potion |
+| Enter | Interact with an objective; hold to operate pumps/heaters |
+| Escape | Open or close the menu |
+| Tab, left/right arrows | Switch living teammates while spectating |
+
+Solo menus pause the simulation. Co-op menus keep the party running. Defeated players spectate; a party wipe ends a normal run for everyone. The host selects routes and resolves encounters. Practice awards no Marks and retains full-health encounter retries, including synchronized host-only retries after a party wipe. The host selects Practice in the co-op lobby.
+
+The versioned progression profile and journal save on this device. Reloading offers solo encounter recovery or banking its confirmed earnings; a disconnected party run can bank confirmed progress. Existing saved gear remains separate. The same browser profile is shared across tabs, so use separate profiles for different local co-op players.
+
+Settings include effects and music volume, mute, reduced motion, screen shake, and fullscreen. They save locally. Co-op's Advanced connection section retains the configurable server URL. Existing saved gear and Electron configuration remain supported.
+
+## Pixel art and presentation
+
+The authored PNG library is in assets/pixel. Regenerate it with npm run generate:pixel.
+
+Hero frames are 32×48 with a four-column, four-direction grid. Boss frames are 64×64, environment tiles 16×16, and ability icons 32×32. assets/pixel/manifest.json records frame dimensions, anchors, animation frames, and timing. PNG transparency is authored in the generator. Physics footprints remain independent of image size.
+
+The world renders to a 640×360 canvas with nearest-neighbor presentation, integer scaling when space permits, and letterboxing. Simulation coordinates remain continuous. HUD and menu text use readable CSS sizes.
+
+The arcade and rogue modules separate UI, progression, combat hooks, contracts, boss revisions, and networking adapters from the original game controllers. See [implementation and validation](docs/MECHANICS_IMPLEMENTATION.md) and [all implemented talents](docs/IMPLEMENTED_TALENTS.md).
+
+## Checks and encounter testing
+
+```sh
+npm run check
 ```
 
-The game expects a 4 column by 4 row PNG:
+This syntax-checks the shipped scripts and runs regressions against the actual game code and WebSocket server: training collision, input gating, projectile deduplication, reward confirmation, Practice retries, permanent builds, settlement/reload, all classes and bosses, all 150 talent effects, and two/four-client synchronization.
 
-```text
-row 1: walk down
-row 2: walk left
-row 3: walk right
-row 4: walk up
-```
+Run `node scripts/document-talents.js` to export the implemented talent catalogue from the shipped descriptions. The original review proposal is retained as historical design context.
 
-If the file is missing, the game falls back to the simple canvas-drawn character.
-
-## Curly Fries Sprite
-
-Place the Curly Fries boss spritesheet at:
-
-```text
-assets/curly-fries-spritesheet.png
-```
-
-The game expects a 4 column by 3 row PNG:
-
-```text
-row 1: idle
-row 2: french fry machine gun
-row 3: curly fry launch
-```
-
-If the file is missing, Curly Fries falls back to the simple canvas-drawn boss.
+The title's Development tools entry retains the existing developer password flow. Dev Test exposes Boss, Test Arena, Test Gauntlet, and Clear Test controls for exercising encounters and results. These controls are hidden during ordinary runs.

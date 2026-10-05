@@ -1,245 +1,58 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Boss Fight</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260517-6" />
-  </head>
-  <body>
-    <div id="menuOverlay" class="menu-overlay">
-      <section id="mainMenu" class="menu-screen active" aria-label="Main menu">
-        <h1>Boss Fight</h1>
-        <div class="menu-actions">
-          <button id="singlePlayerButton" type="button">Single Player</button>
-          <button id="multiplayerButton" type="button">Multiplayer</button>
-          <button id="desktopUpdateButton" type="button" hidden>Check for Updates</button>
-          <button id="devTestButton" type="button">Dev Test</button>
-        </div>
-      </section>
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Six heroes. A menu of monsters. A pixel arcade boss gauntlet for solo adventurers and parties of four.">
+  <title>Boss Fight</title>
+  <link rel="stylesheet" href="./src/styles.css?v=arcade-1">
+  <link rel="stylesheet" href="./src/arcade.css?v=arcade-1">
+</head>
+<body>
+  <div id="menuOverlay" class="menu-overlay">
+    <section id="mainMenu" class="menu-screen title-screen active" aria-label="Main menu">
+      <div class="title-copy"><p class="eyebrow">THE KITCHEN FIGHTS BACK</p><h1 class="pixel-logo" aria-label="Boss Fight"><img src="./assets/pixel/ui/logo.png" alt="Boss Fight"></h1><p class="title-description">Six heroes. A menu of monsters.<br>Bring your appetite for adventure.</p>
+        <div class="menu-actions row"><button id="singlePlayerButton" class="primary" type="button">Play Solo <span>01</span></button><button id="multiplayerButton" type="button">Play Co-op <span>1–4</span></button></div>
+        <div class="title-secondary"><button id="hubButton" type="button">Permanent upgrades</button><button id="practiceButton" type="button">Practice</button><button id="resumeRunButton" type="button" hidden>Resume saved run</button><button data-open="settingsOverlay" type="button">Settings</button><button data-open="helpOverlay" type="button">How to Play</button><button id="desktopUpdateButton" type="button" hidden>Check for Updates</button></div>
+        <p class="title-footnote">WASD + MOUSE · FOOD FANTASY ARCADE</p>
+      </div>
+      <div class="title-scene" aria-hidden="true"><div class="scene-stars"></div><span class="scene-label">TODAY’S SPECIAL</span><img class="scene-boss" src="./assets/pixel/bosses/burger.png" alt=""><div class="scene-heroes"><img src="./assets/pixel/portraits/warrior.png" alt=""><img src="./assets/pixel/portraits/mage.png" alt=""><img src="./assets/pixel/portraits/ranger.png" alt=""></div><div class="scene-floor"></div><span class="scene-caption">ORDER UP. SWORDS OUT.</span></div>
+      <details class="dev-entry"><summary>Development tools</summary><button id="devTestButton" type="button">Open Dev Test</button></details>
+    </section>
+    <section id="devMenu" class="menu-screen" aria-label="Dev test password"><div class="menu-head"><h1>Developer test</h1><button id="backFromDevButton" type="button">Back</button></div><div class="lobby-form"><label><span>Password</span><input id="devPasswordInput" maxlength="18" type="password" autocomplete="off"></label><button id="startDevButton" type="button">Start Dev Test</button></div><p id="devStatus" class="menu-status">Enter the dev password.</p></section>
+    <section id="multiplayerMenu" class="menu-screen" aria-label="Multiplayer rooms"><div class="menu-head"><div><p class="eyebrow">BETTER TOGETHER</p><h1>Find your party</h1></div><button id="backToMainButton" type="button">Back</button></div><div class="lobby-form"><label><span>Your name</span><input id="playerNameInput" maxlength="18" value="Player"></label><label><span>Room name</span><input id="roomNameInput" maxlength="26" value="Boss Room"></label><button id="createRoomButton" class="primary" type="button">Create Room</button><button id="refreshRoomsButton" type="button">Refresh</button></div><details class="advanced-connection"><summary>Advanced connection</summary><label><span>Server URL</span><input id="serverUrlInput" maxlength="120" placeholder="wss://your-server.example.com"></label><button id="connectServerButton" type="button">Connect to server</button></details><div id="roomList" class="room-list"></div><p id="multiplayerStatus" class="menu-status" role="status">Choose Co-op to connect.</p></section>
+    <section id="roomLobby" class="menu-screen" aria-label="Room lobby"><div class="menu-head"><div><p class="eyebrow">PARTY OF FOUR</p><h1 id="lobbyTitle">Lobby</h1></div><button id="leaveRoomButton" type="button">Leave</button></div><div id="lobbyPlayers" class="lobby-players"></div><div class="menu-actions row"><button id="readyButton" type="button">Ready</button><label class="party-practice"><input id="partyPractice" type="checkbox"> Practice · retries, no Marks</label><button id="startRoomButton" class="primary" type="button">Start Run</button></div><p id="lobbyStatus" class="menu-status" role="status">Waiting in lobby.</p></section>
+  </div>
+  <main class="shell">
+    <header class="combat-header">
+      <section class="player-hud" aria-label="Player health"><img id="hudPortrait" src="./assets/pixel/portraits/warrior.png" alt=""><div><div class="meter-label"><strong id="hudName">Warrior</strong><span id="hpText">250/250</span></div><div class="meter-track"><div id="hpBar" class="meter-fill hp"></div></div><span id="playerStatus" class="hud-caption">Ready for adventure</span></div></section>
+      <section class="encounter-hud" aria-label="Encounter"><div class="meter-label"><strong id="roomText">Starter Room</strong><span id="bossHpText"></span></div><div id="bossMeter" class="meter-track"><div id="bossHpBar" class="meter-fill boss"></div></div><span id="encounterCaption" class="hud-caption">Choose your loadout, then cross the gate</span></section>
+      <section class="party-hud" aria-label="Party"><div class="party-heading"><span id="coopStatus">Solo</span><strong id="coopCount">1</strong><button id="pauseButton" type="button" aria-label="Pause menu">Menu <kbd>Esc</kbd></button></div><div id="partyPortraits" class="party-portraits"></div></section>
+    </header>
+    <section class="game-wrap" aria-label="Boss arena game"><div class="game-stage"><canvas id="game" width="640" height="360" aria-label="Game world; move with WASD and aim with the mouse" tabindex="0"></canvas></div><aside id="starterCoach" class="starter-coach" hidden><strong>TRAINING ROOM</strong><p><kbd>W A S D</kbd> Move to the gate</p><p><kbd>Hold click</kbd> Aim and attack the dummy</p><p><kbd>Q E Space R</kbd> Try your four abilities</p><p><kbd>F</kbd> Drink a potion when hurt</p><span id="dummyFeedback">Crossing the gate locks your loadout.</span></aside><div id="screenNotice" class="screen-notice" aria-live="polite" hidden></div><div id="floatText" class="float-text" aria-live="polite"></div><div id="multiplayerDebugHud" class="debug-hud" hidden></div><div id="spectateHud" class="spectate-hud" hidden><span id="spectateLabel"></span><button id="spectatePrevious" type="button" aria-label="Previous teammate">←</button><button id="spectateNext" type="button" aria-label="Next teammate">→</button></div></section>
+    <footer class="combat-footer"><div class="footer-tools"><button id="trainingButton" type="button">Practice</button><button id="classMenuButton" type="button">Loadout</button><button id="buildButton" data-open="buildOverlay" type="button">Build</button><button id="skillsButton" type="button">Talents</button></div><div id="abilityBar" class="ability-bar" aria-label="Abilities"></div><button id="potionButton" class="potion-slot" type="button" title="Drink potion (F)"><img src="./assets/pixel/icons/potion.png" alt=""><span><kbd>F</kbd><strong id="potionCount">3 potions</strong></span></button><p id="statusText" class="status-line" role="status">Choose a mode to begin.</p></footer>
+  <div id="devToolbar" class="dev-toolbar" hidden><button id="devBossButton" type="button">Boss</button><button id="devArenaButton" type="button">Test Arena</button><button id="devGauntletButton" type="button">Test Gauntlet</button><button id="devClearButton" type="button">Clear Test</button><button id="devDamageButton" type="button">Damage</button><button id="devSpriteButton" type="button">Sprites</button></div>
+  </main>
+  <div id="classMenuOverlay" class="class-menu-overlay" hidden><section class="class-menu loadout-menu" aria-labelledby="loadoutTitle"><div class="menu-head"><div><p class="eyebrow">MAKE IT YOUR OWN</p><h1 id="loadoutTitle">Choose your hero</h1></div><button id="classMenuClose" type="button">Done</button></div><div class="loadout-grid"><div><div id="classSelector" class="class-cards"></div><h2 class="section-label">Armor</h2><div id="armorSelector" class="armor-cards"></div></div><aside id="loadoutPreview" class="loadout-preview"></aside></div><p class="menu-status">Try your build on the training dummy. Class and armor lock when you cross the gate.</p></section></div>
+  <div id="buildOverlay" class="class-menu-overlay" hidden><section class="class-menu" aria-labelledby="buildTitle"><div class="menu-head"><h1 id="buildTitle">Your build</h1><button data-close type="button">Close</button></div><aside class="hud"><section class="panel"><div id="buildPanel" class="stat-grid"></div><h2 class="section-label">Run bonuses</h2><div id="runBuffList" class="run-buff-list"></div><h2 class="section-label">Equipped talents</h2><div id="buildTalents" class="run-buff-list"></div><h2 class="section-label">Combat readout</h2><div id="talentReadout" class="run-buff-list" role="status"></div></section></aside></section></div>
+  <div id="talentMenuOverlay" class="class-menu-overlay" hidden><section class="class-menu talent-menu" aria-labelledby="talentMenuTitle"><div class="menu-head"><h1 id="talentMenuTitle">Talents</h1><button id="talentMenuClose" type="button">Close</button></div><div id="talentMenuPoints" class="talent-points">Talent Points: 0</div><div id="talentTree" class="talent-tree"></div></section></div>
+  <div id="mazeRewardOverlay" class="reward-overlay" hidden><section class="reward-panel" aria-labelledby="mazeRewardTitle"><p class="eyebrow">ON THE HOUSE</p><h1 id="mazeRewardTitle">Choose a reward</h1><p class="reward-subtitle">Pick one upgrade for this run.</p><div id="mazeRewardCards" class="reward-cards"></div><button id="rewardConfirmButton" class="primary" type="button" disabled>Choose a reward first</button><p class="reward-note">Your selection applies only after confirmation.</p></section></div>
+  <div id="pauseOverlay" class="class-menu-overlay" hidden><section class="class-menu pause-menu" aria-labelledby="pauseTitle"><p class="eyebrow">TAKE A BREATHER</p><h1 id="pauseTitle">Paused</h1><p id="pauseCaption">Your adventure will be here when you return.</p><div class="menu-actions"><button data-close class="primary" data-autofocus type="button">Resume</button><button data-open="settingsOverlay" type="button">Settings</button><button data-open="helpOverlay" type="button">Controls</button><button id="resetButton" type="button">Retry Encounter</button><button id="skipContractButton" type="button" hidden>Leave contract · go to boss</button><button id="returnMenuButton" type="button">Return to Menu</button><button id="debugReportButton" type="button" hidden>Debug Report</button></div></section></div>
+  <div id="settingsOverlay" class="class-menu-overlay" hidden><section class="class-menu settings-menu" aria-labelledby="settingsTitle"><div class="menu-head"><h1 id="settingsTitle">Settings</h1><button data-close type="button">Done</button></div><label class="setting-row"><span>Sound effects</span><input id="effectsVolume" type="range" min="0" max="100" step="5"></label><label class="setting-row"><span>Music</span><input id="musicVolume" type="range" min="0" max="100" step="5"></label><label class="setting-row"><span>Mute all audio</span><input id="muteAudio" type="checkbox"></label><label class="setting-row"><span>Reduced motion</span><input id="reducedMotion" type="checkbox"></label><label class="setting-row"><span>Screen shake</span><input id="screenShake" type="checkbox"></label><button id="fullscreenButton" type="button">Toggle fullscreen</button><p id="settingsStatus" class="menu-status" role="status">Settings save on this device.</p></section></div>
+  <div id="helpOverlay" class="class-menu-overlay" hidden><section class="class-menu" aria-labelledby="helpTitle"><div class="menu-head"><h1 id="helpTitle">Order of battle</h1><button data-close type="button">Got it</button></div><div class="controls-grid"><kbd>W A S D</kbd><span>Move. Aim with your mouse.</span><kbd>HOLD CLICK</kbd><span>Keep attacking toward the cursor.</span><kbd>Q E SPACE R</kbd><span>Use your four class abilities.</span><kbd>ENTER</kbd><span>Interact with a contract objective. Hold it to operate pumps.</span><kbd>F</kbd><span>Drink a potion to recover health.</span><kbd>ESC</kbd><span>Open the menu. Co-op keeps running.</span><kbd>TAB / ← →</kbd><span>Switch teammates while spectating.</span></div><p class="menu-status">Choose a hero and permanent build → boss or optional contract → temporary relic → next boss.<br>Death ends the run and banks earned Marks. Buy permanent upgrades in the hub for your next run. Practice awards no Marks.</p></section></div>
+  <div id="deathScreen" class="class-menu-overlay" hidden><section class="class-menu results-menu" aria-labelledby="deathTitle"><p class="eyebrow">THE KITCHEN WINS THIS ROUND</p><h1 id="deathTitle">You're Stuffed</h1><p id="deathCause"></p><p id="deathPartyStatus" class="menu-status"></p><div class="menu-actions"><button id="deathResetFightButton" class="primary" type="button">Retry Encounter</button><button id="deathResetButton" type="button">Return to Menu</button></div></section></div>
+  <div id="resultsOverlay" class="class-menu-overlay" hidden><section class="class-menu results-menu" aria-labelledby="resultsTitle"><p id="resultsEyebrow" class="eyebrow">ORDER COMPLETE</p><h1 id="resultsTitle">Boss defeated</h1><p id="resultsSummary"></p><div id="resultsStats" class="results-stats"></div><p id="resultsBuild" class="results-build"></p><div class="menu-actions"><button id="continueButton" class="primary" data-autofocus type="button">Continue</button><button id="resultsTalentsButton" type="button">Spend talent points</button><button data-open="buildOverlay" type="button">View build</button><button id="resultsMenuButton" type="button">Main Menu</button></div></section></div>
+  <div id="bossMenuOverlay" class="class-menu-overlay" hidden><section class="class-menu" aria-label="Select boss"><div class="menu-head"><h1>Select boss</h1><button id="bossMenuClose" type="button">Close</button></div><div id="bossSelector" class="choice-list"></div><section id="bossTestPanel" hidden><button id="bossMenuButton" type="button">Select Boss</button></section></section></div>
+  <div id="devToolsOverlay" class="class-menu-overlay" hidden><section class="class-menu" aria-label="Developer tools"><div class="menu-head"><h1>Developer tools</h1><button data-close type="button">Close</button></div><section id="bossDamagePanel" class="panel compact boss-damage-panel" hidden><button id="bossDamageToggle" type="button" aria-expanded="false">Boss Damage</button><div id="bossDamageBody" hidden></div></section><section id="spriteAdjustPanel" class="panel compact sprite-adjust-panel" hidden><button id="spriteAdjustToggle" type="button" aria-expanded="false">Sprite Sheet</button><div id="spriteAdjustBody" hidden></div></section></section></div>
+  <div id="spriteSheetOverlay" class="sprite-sheet-overlay" hidden><section class="sprite-sheet-editor" aria-label="Sprite sheet editor"><div class="menu-head"><h1 id="spriteSheetTitle">Sprite Sheet Editor</h1><button id="spriteSheetClose" type="button">Close</button></div><div class="sprite-sheet-editor-grid"><canvas id="spriteSheetPreview" class="sprite-sheet-preview" width="520" height="520"></canvas><div id="spriteSheetControls" class="sprite-sheet-controls"></div></div></section></div>
+  <div id="debugReportOverlay" class="debug-report-overlay" hidden><section class="debug-report-panel" aria-label="Debug report"><div class="debug-report-head"><div><h1>Debug report</h1><p>Copy this report when asking for help.</p></div><button id="debugReportDismiss" type="button">Dismiss</button></div><textarea id="debugReportText" readonly spellcheck="false"></textarea><button id="debugReportCopy" type="button">Copy Report</button></section></div>
 
-      <section id="devMenu" class="menu-screen" aria-label="Dev test password">
-        <div class="menu-head">
-          <h1>Dev Test</h1>
-          <button id="backFromDevButton" type="button">Back</button>
-        </div>
-        <div class="lobby-form">
-          <label>
-            <span>Password</span>
-            <input id="devPasswordInput" maxlength="18" type="password" autocomplete="off" />
-          </label>
-          <button id="startDevButton" type="button">Start Dev Test</button>
-        </div>
-        <p id="devStatus" class="menu-status">Enter the dev password.</p>
-      </section>
-
-      <section id="multiplayerMenu" class="menu-screen" aria-label="Multiplayer rooms">
-        <div class="menu-head">
-          <h1>Multiplayer</h1>
-          <button id="backToMainButton" type="button">Back</button>
-        </div>
-        <div class="lobby-form">
-          <label>
-            <span>Name</span>
-            <input id="playerNameInput" maxlength="18" value="Player" />
-          </label>
-          <label>
-            <span>Room</span>
-            <input id="roomNameInput" maxlength="26" value="Boss Room" />
-          </label>
-          <label>
-            <span>Server</span>
-            <input id="serverUrlInput" maxlength="120" placeholder="wss://your-server.example.com" />
-          </label>
-          <button id="createRoomButton" type="button">Create Room</button>
-          <button id="refreshRoomsButton" type="button">Refresh</button>
-        </div>
-        <div id="roomList" class="room-list"></div>
-        <p id="multiplayerStatus" class="menu-status">Choose Multiplayer to connect.</p>
-      </section>
-
-      <section id="roomLobby" class="menu-screen" aria-label="Room lobby">
-        <div class="menu-head">
-          <h1 id="lobbyTitle">Lobby</h1>
-          <button id="leaveRoomButton" type="button">Leave</button>
-        </div>
-        <div id="lobbyPlayers" class="lobby-players"></div>
-        <div class="menu-actions row">
-          <button id="readyButton" type="button">Ready</button>
-          <button id="startRoomButton" type="button">Start Fight</button>
-        </div>
-        <p id="lobbyStatus" class="menu-status">Waiting in lobby.</p>
-      </section>
-    </div>
-
-    <main class="shell">
-      <section class="game-wrap" aria-label="Boss arena game">
-        <canvas id="game" width="1280" height="720"></canvas>
-        <div class="topbar">
-          <div>
-            <strong>Boss Fight</strong>
-            <span id="statusText">Gear up, use WASD to enter the arena, then click to shoot.</span>
-          </div>
-          <button id="potionButton" type="button" title="Drink potion (F)" data-tooltip="Press F to use potion">Potion</button>
-          <button id="resetButton" type="button" title="Reset fight">Reset Fight</button>
-          <button id="debugReportButton" type="button" title="Capture debug report" hidden>Debug</button>
-        </div>
-        <div id="floatText" class="float-text" aria-live="polite"></div>
-        <div id="multiplayerDebugHud" class="debug-hud" hidden></div>
-        <div id="deathScreen" class="death-screen" aria-live="assertive" hidden>
-          <div class="death-title">You're Stuffed</div>
-          <div class="death-actions">
-            <button id="deathResetFightButton" class="death-reset" type="button">Reset Fight</button>
-            <button id="deathResetButton" class="death-reset secondary" type="button">Reset Run</button>
-          </div>
-        </div>
-        <div id="mazeRewardOverlay" class="reward-overlay" hidden>
-          <section class="reward-panel" aria-label="Choose gauntlet reward">
-            <div class="reward-emblem" aria-hidden="true"></div>
-            <h1 id="mazeRewardTitle">Choose a Reward</h1>
-            <p class="reward-subtitle">Choose a reward to power your run.</p>
-            <div id="mazeRewardCards" class="reward-cards"></div>
-            <p class="reward-note"><span aria-hidden="true"></span>Rewards are active for this run only.</p>
-          </section>
-        </div>
-        <div id="debugReportOverlay" class="debug-report-overlay" hidden>
-          <section class="debug-report-panel" aria-label="Debug report">
-            <div class="debug-report-head">
-              <div>
-                <h1>Debug Report</h1>
-                <p>Paste this to Codex.</p>
-              </div>
-              <button id="debugReportDismiss" type="button">Dismiss</button>
-            </div>
-            <textarea id="debugReportText" readonly spellcheck="false"></textarea>
-            <div class="debug-report-actions">
-              <button id="debugReportCopy" type="button">Copy Report</button>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <aside class="hud" aria-label="Character information">
-        <section id="bossDamagePanel" class="panel compact boss-damage-panel" hidden>
-          <button id="bossDamageToggle" class="selector-button boss-damage-toggle" type="button" aria-expanded="false">Boss Damage</button>
-          <div id="bossDamageBody" class="boss-damage-body" hidden></div>
-        </section>
-
-        <section id="spriteAdjustPanel" class="panel compact sprite-adjust-panel" hidden>
-          <button id="spriteAdjustToggle" class="selector-button sprite-adjust-toggle" type="button" aria-expanded="false">Sprite Sheet</button>
-          <div id="spriteAdjustBody" class="sprite-adjust-body" hidden></div>
-        </section>
-
-        <section class="panel">
-          <div class="portrait-row">
-            <div class="portrait" aria-hidden="true"></div>
-            <div>
-              <h1>Rook</h1>
-              <p><span id="roomText">Starter Room</span></p>
-            </div>
-          </div>
-          <div class="meters">
-            <div class="meter">
-              <div class="meter-label"><span>Health</span><span id="hpText">30/30</span></div>
-              <div class="meter-track"><div id="hpBar" class="meter-fill hp"></div></div>
-            </div>
-            <div class="meter">
-              <div class="meter-label"><span>Boss</span><span id="bossHpText">600/600</span></div>
-              <div class="meter-track"><div id="bossHpBar" class="meter-fill boss"></div></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel compact">
-          <h2>Build</h2>
-          <div id="buildPanel" class="stat-grid"></div>
-        </section>
-
-        <section class="panel compact">
-          <h2>Class</h2>
-          <button id="classMenuButton" class="selector-button" type="button">Select Class</button>
-        </section>
-
-        <section class="panel compact">
-          <h2>Armor</h2>
-          <button id="armorMenuButton" class="selector-button" type="button">Select Armor</button>
-        </section>
-
-        <section class="panel compact">
-          <h2>Skills</h2>
-          <button id="skillsButton" class="selector-button skills-button" type="button">Skills (0)</button>
-        </section>
-
-        <section class="panel compact">
-          <h2>Co-op</h2>
-          <div class="coop-row">
-            <span id="coopStatus">Solo</span>
-            <strong id="coopCount">1</strong>
-          </div>
-        </section>
-
-        <section id="bossTestPanel" class="panel compact" hidden>
-          <h2>Boss Test</h2>
-          <button id="bossMenuButton" class="selector-button" type="button">Select Boss</button>
-        </section>
-
-      </aside>
-    </main>
-
-    <div id="classMenuOverlay" class="class-menu-overlay" hidden>
-      <section class="class-menu" aria-label="Select class">
-        <div class="menu-head">
-          <h1>Select Class</h1>
-          <button id="classMenuClose" type="button">Close</button>
-        </div>
-        <div id="classSelector" class="choice-list class-menu-list"></div>
-      </section>
-    </div>
-
-    <div id="armorMenuOverlay" class="class-menu-overlay" hidden>
-      <section class="class-menu" aria-label="Select armor">
-        <div class="menu-head">
-          <h1>Select Armor</h1>
-          <button id="armorMenuClose" type="button">Close</button>
-        </div>
-        <div id="armorSelector" class="choice-list class-menu-list"></div>
-      </section>
-    </div>
-
-    <div id="talentMenuOverlay" class="class-menu-overlay" hidden>
-      <section class="class-menu talent-menu" aria-label="Class talents">
-        <div class="menu-head">
-          <h1 id="talentMenuTitle">Talents</h1>
-          <button id="talentMenuClose" type="button">Close</button>
-        </div>
-        <div id="talentMenuPoints" class="talent-points">Talent Points: 0</div>
-        <div id="talentTree" class="talent-tree"></div>
-      </section>
-    </div>
-
-    <div id="bossMenuOverlay" class="class-menu-overlay" hidden>
-      <section class="class-menu" aria-label="Select boss">
-        <div class="menu-head">
-          <h1>Select Boss</h1>
-          <button id="bossMenuClose" type="button">Close</button>
-        </div>
-        <div id="bossSelector" class="choice-list class-menu-list"></div>
-      </section>
-    </div>
-
-    <div id="spriteSheetOverlay" class="sprite-sheet-overlay" hidden>
-      <section class="sprite-sheet-editor" aria-label="Sprite sheet editor">
-        <div class="menu-head">
-          <h1 id="spriteSheetTitle">Sprite Sheet Editor</h1>
-          <button id="spriteSheetClose" type="button">Close</button>
-        </div>
-        <div class="sprite-sheet-editor-grid">
-          <canvas id="spriteSheetPreview" class="sprite-sheet-preview" width="520" height="520"></canvas>
-          <div id="spriteSheetControls" class="sprite-sheet-controls"></div>
-        </div>
-      </section>
-    </div>
-
-    <script src="./src/game.js?v=20260517-cutout-editor"></script>
-  </body>
+<div id="routeOverlay" class="class-menu-overlay" hidden><section class="class-menu route-menu" aria-labelledby="routeTitle"><p class="eyebrow">CHOOSE YOUR APPROACH</p><h1 id="routeTitle">Next encounter</h1><p id="routeDescription"></p><div class="route-cards"><button id="routeBossButton" class="primary" type="button">Go directly to the boss</button><button id="routeContractButton" type="button">Optional contract</button></div><p id="routeStatus" role="status"></p><button data-close type="button">Back to training</button></section></div>
+<div id="trainingOverlay" class="class-menu-overlay" hidden><section class="class-menu training-menu" aria-labelledby="trainingTitle"><div class="menu-head"><h1 id="trainingTitle">Practice controls</h1><button data-close type="button">Close</button></div><div class="training-actions"><button data-training-mode="single" type="button">Stationary target</button><button data-training-mode="cluster" type="button">Three targets</button><button data-training-mode="moving" type="button">Moving target</button><button id="trainingReset" type="button">Reset targets</button><button id="trainingCooldowns" type="button">Reset cooldowns</button><button id="trainingHurt" type="button">Lose 25% health</button><button id="trainingIncoming" type="button" aria-pressed="false">Practice incoming bolts</button></div><p id="trainingDetails" role="status"></p></section></div>
+<div id="resumeOverlay" class="class-menu-overlay" hidden><section class="class-menu" aria-labelledby="resumeTitle"><h1 id="resumeTitle">An unfinished run is saved</h1><p id="resumeSummary"></p><div class="menu-actions"><button id="resumeConfirm" class="primary" type="button">Resume encounter</button><button id="bankSavedRun" type="button">End run and bank earnings</button><button data-close type="button">Back</button></div></section></div>
+  <script src="./src/arcade-core.js"></script><script src="./src/arcade-audio.js"></script><script src="./src/arcade-network.js"></script><script src="./src/arcade-art.js"></script><script src="./src/arcade-ui.js"></script><script src="./src/arcade-game.js"></script><script src="./src/rogue-data.js"></script><script src="./src/rogue-progress.js"></script><script src="./src/rogue-training.js"></script><script src="./src/rogue-combat.js"></script><script src="./src/rogue-talents.js"></script><script src="./src/rogue-contracts.js"></script><script src="./src/rogue-network.js"></script>
+  <script src="./src/rogue-relics.js"></script>
+  <script src="./src/rogue-presentation.js"></script>
+  <script src="./src/rogue-bosses.js"></script>
+  <script src="./src/rogue-game.js"></script><script src="./src/game.js?v=rogue-2"></script>
+</body>
 </html>

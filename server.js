@@ -132,6 +132,7 @@ function publicRooms() {
     name: room.name,
     hostId: room.hostId,
     bossKind: room.bossKind,
+    practice: Boolean(room.practice),
     bossName: bossNames[room.bossKind] || room.bossKind,
     state: room.state,
     playerCount: room.players.size,
@@ -157,10 +158,12 @@ function roomSnapshot(room) {
     name: room.name,
     hostId: room.hostId,
     bossKind: room.bossKind,
+    practice: Boolean(room.practice),
     bossName: bossNames[room.bossKind] || room.bossKind,
     state: room.state,
     maxPlayers: room.maxPlayers,
     players: publicPlayers(room),
+    runSeed: room.runSeed||0,
     startAt: room.startAt,
   };
 }
@@ -276,7 +279,7 @@ function selectBoss(peer, message) {
   broadcastRoomUpdate(room);
 }
 
-function startGame(peer) {
+function startGame(peer, message = {}) {
   const room = rooms.get(peer.roomId);
   if (!room || room.hostId !== peer.id || room.state !== "lobby") return;
   const players = [...room.players].map((peerId) => peers.get(peerId)).filter(Boolean);
@@ -285,7 +288,10 @@ function startGame(peer) {
     return;
   }
   room.state = "inGame";
-  room.startAt = Date.now() + 1200;
+  room.retrySeq = 0;
+  room.runEndSeq=0;room.practice=Boolean(message.practice);
+  players.forEach((player) => { player.state = null; });
+  room.startAt = Date.now() + 1200;room.runSeed=room.startAt;
   room.projectileHits = new Set();
   room.consumedProjectiles = new Set();
   broadcastRoom(room, {
@@ -319,6 +325,10 @@ function sanitizeText(value, maxLength) {
 function handleProjectileHit(peer, message) {
   const room = rooms.get(peer.roomId);
   if (!room || room.state !== "inGame" || !room.players.has(peer.id)) return;
+  if (Number.isInteger(message.phaseSeq) && message.phaseSeq < (room.retrySeq || 0)) {
+    send(peer, { type: "projectile-damage-ignored", projectileId: message.projectileId, playerId: peer.id, reason: "stale-encounter" });
+    return;
+  }
   const projectileId = sanitizeText(message.projectileId, 80);
   if (!projectileId) return;
   const playerId = peer.id;
@@ -386,7 +396,17 @@ function handlePeerMessage(peer, message) {
     return;
   }
   if (message.type === "start-game") {
-    startGame(peer);
+    startGame(peer, message);
+    return;
+  }
+  if (message.type === "return-lobby") {
+    const room = rooms.get(peer.roomId);
+    if (!room || room.hostId !== peer.id || room.state !== "inGame") return;
+    room.state = "lobby";
+    room.startAt = 0;
+    room.players.forEach((id) => { const member = peers.get(id); if (member) { member.ready = false; member.state = null; } });
+    broadcastRoom(room, { type: "run-ended", room: roomSnapshot(room), message: "Run complete. Ready up for another adventure." });
+    broadcastRoomUpdate(room);
     return;
   }
   if (message.type === "projectile-hit") {
@@ -404,6 +424,32 @@ function handlePeerMessage(peer, message) {
   if (message.type === "event" && message.event) {
     const room = rooms.get(peer.roomId);
     if (room && room.state === "inGame") {
+      const event = message.event;
+      const hostEvents = new Set(["run-end", "route-choice", "contract-state", "rogue-hit-result", "rogue-dot-result", "support-result"]);
+      if (hostEvents.has(event.kind) && room.hostId !== peer.id) {
+        send(peer, { type: "error", message: "Only the host can resolve this encounter event." });
+        return;
+      }
+      if (event.kind === "run-end") {
+        if (!Number.isInteger(event.seq) || event.seq <= (room.runEndSeq || 0) || event.phaseSeq !== peer.state?.phaseSeq || event.bossKind !== peer.state?.bossKind) return;
+        room.runEndSeq = event.seq;
+      }
+      if (message.event.kind === "party-retry") {
+        const event = message.event;
+        const wiped = [...room.players].every((id) => peers.get(id)?.state?.dead === true);
+        if (!room.practice || room.hostId !== peer.id || !wiped || !Number.isInteger(event.phaseSeq) ||
+          event.phaseSeq <= (room.retrySeq || 0) || event.phaseSeq <= (peer.state?.phaseSeq || 0) ||
+          event.bossKind !== peer.state?.bossKind || event.room !== peer.state?.room || !["maze", "arena", "starter"].includes(event.room) ||
+          !Number.isInteger(event.mazeSequence) || event.mazeSequence < 0) {
+          send(peer, { type: "error", message: "Only the host can retry a Practice encounter after the whole party is defeated." });
+          return;
+        }
+        room.retrySeq = event.phaseSeq;
+        room.projectileHits = new Set();
+        room.consumedProjectiles = new Set();
+        broadcastRoom(room, { type: "peer-event", id: peer.id, event: { ...event, serverTime: Date.now() } });
+        return;
+      }
       broadcastRoom(room, { type: "peer-event", id: peer.id, event: { ...message.event, serverTime: Date.now() } }, peer.id);
     }
   }
@@ -491,9 +537,12 @@ setInterval(() => {
     if (room.players.size === 0) rooms.delete(room.id);
     if (room.state === "inGame" && now - room.startAt > 1000 * 60 * 60 * 3) rooms.delete(room.id);
   });
-}, 30000);
+}, 30000).unref();
 
 server.listen(port, () => {
   console.log(`Boss Fight running at http://localhost:${port}`);
   console.log(`Co-op lobby websocket ready at ws://localhost:${port}/coop`);
 });
+
+// Allow protocol regression tests to start and close the actual server.
+module.exports = { server };

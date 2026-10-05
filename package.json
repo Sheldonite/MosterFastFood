@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "author": "Sheldonite",
-  "description": "A baseline click-to-move boss fighting browser game prototype.",
+  "description": "A pixel food-fantasy boss roguelite for solo players and parties of four.",
   "main": "electron/main.js",
   "scripts": {
     "generate:art": "node scripts/generate-game-art.js",
-    "check": "node --check src/game.js && node --check server.js && node --check scripts/generate-game-art.js && node scripts/test-projectile-damage-once.js",
+    "check": "node scripts/check.js",
     "start": "node server.js",
     "desktop": "electron .",
     "dist:win": "electron-builder --win",
-    "publish:win": "electron-builder --win --publish always"
+    "publish:win": "electron-builder --win --publish always",
+    "generate:pixel": "node scripts/generate-pixel-art.js",
+    "test": "node scripts/test-projectile-damage-once.js && node scripts/test-arcade.js && node scripts/test-rogue.js && node scripts/test-rogue-talents.js && node scripts/test-coop-server.js"
   },
   "devDependencies": {
     "electron": "^30.5.1",

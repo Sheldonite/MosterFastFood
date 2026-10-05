@@ -1,0 +1,1352 @@
+{
+  "checkedSizes": [
+    {
+      "width": 960,
+      "height": 640
+    },
+    {
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "responsiveChecks": [
+    {
+      "actions": [
+        {
+          "selector": "#fullscreenButton",
+          "visible": true
+        },
+        {
+          "selector": "#settingsOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "settings",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#fullscreenButton",
+          "visible": true
+        },
+        {
+          "selector": "#settingsOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "settings",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#fullscreenButton",
+          "visible": true
+        },
+        {
+          "selector": "#settingsOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "settings",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#fullscreenButton",
+          "visible": true
+        },
+        {
+          "selector": "#settingsOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "settings",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#mazeRewardCards [data-reward]",
+          "visible": true
+        },
+        {
+          "selector": "#rewardConfirmButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "rewards",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#mazeRewardCards [data-reward]",
+          "visible": true
+        },
+        {
+          "selector": "#rewardConfirmButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "rewards",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#mazeRewardCards [data-reward]",
+          "visible": true
+        },
+        {
+          "selector": "#rewardConfirmButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "rewards",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#mazeRewardCards [data-reward]",
+          "visible": true
+        },
+        {
+          "selector": "#rewardConfirmButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "rewards",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsTalentsButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "intermission",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsTalentsButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "intermission",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsTalentsButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "intermission",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsTalentsButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "intermission",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#buildOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "build",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#buildOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "build",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#buildOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "build",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#buildOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "build",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#helpOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "how-to-play",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#helpOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "how-to-play",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#helpOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "how-to-play",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#helpOverlay [data-close]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "how-to-play",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#refreshRoomsButton",
+          "visible": true
+        },
+        {
+          "selector": "#backToMainButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "co-op-browser",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#refreshRoomsButton",
+          "visible": true
+        },
+        {
+          "selector": "#backToMainButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "co-op-browser",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#refreshRoomsButton",
+          "visible": true
+        },
+        {
+          "selector": "#backToMainButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "co-op-browser",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#refreshRoomsButton",
+          "visible": true
+        },
+        {
+          "selector": "#backToMainButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "co-op-browser",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "advanced-connection",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "advanced-connection",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "advanced-connection",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "advanced-connection",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#leaveRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#readyButton",
+          "visible": true
+        },
+        {
+          "selector": "#startRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "co-op-lobby",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#leaveRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#readyButton",
+          "visible": true
+        },
+        {
+          "selector": "#startRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "co-op-lobby",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#leaveRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#readyButton",
+          "visible": true
+        },
+        {
+          "selector": "#startRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "co-op-lobby",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#leaveRoomButton",
+          "visible": true
+        },
+        {
+          "selector": "#readyButton",
+          "visible": true
+        },
+        {
+          "selector": "#startRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "co-op-lobby",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#pauseOverlay [data-close]",
+          "visible": true
+        },
+        {
+          "selector": "#returnMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resetButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "pause",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#pauseOverlay [data-close]",
+          "visible": true
+        },
+        {
+          "selector": "#returnMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resetButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "pause",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#pauseOverlay [data-close]",
+          "visible": true
+        },
+        {
+          "selector": "#returnMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resetButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "pause",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#pauseOverlay [data-close]",
+          "visible": true
+        },
+        {
+          "selector": "#returnMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resetButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "pause",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#deathResetFightButton",
+          "visible": true
+        },
+        {
+          "selector": "#deathResetButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "death",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#deathResetFightButton",
+          "visible": true
+        },
+        {
+          "selector": "#deathResetButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "death",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#deathResetFightButton",
+          "visible": true
+        },
+        {
+          "selector": "#deathResetButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "death",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#deathResetFightButton",
+          "visible": true
+        },
+        {
+          "selector": "#deathResetButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "death",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsOverlay [data-open]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "final-victory",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsOverlay [data-open]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "final-victory",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsOverlay [data-open]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "final-victory",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#continueButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsMenuButton",
+          "visible": true
+        },
+        {
+          "selector": "#resultsOverlay [data-open]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "final-victory",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#connectServerButton",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "advanced-connection-final",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#connectServerButton",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "advanced-connection-final",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#connectServerButton",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "advanced-connection-final",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#serverUrlInput",
+          "visible": true
+        },
+        {
+          "selector": "#connectServerButton",
+          "visible": true
+        },
+        {
+          "selector": "#createRoomButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "advanced-connection-final",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#singlePlayerButton",
+          "visible": true
+        },
+        {
+          "selector": "#multiplayerButton",
+          "visible": true
+        },
+        {
+          "selector": ".title-secondary [data-open=\"settingsOverlay\"]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "title-final",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#singlePlayerButton",
+          "visible": true
+        },
+        {
+          "selector": "#multiplayerButton",
+          "visible": true
+        },
+        {
+          "selector": ".title-secondary [data-open=\"settingsOverlay\"]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "title-final",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#singlePlayerButton",
+          "visible": true
+        },
+        {
+          "selector": "#multiplayerButton",
+          "visible": true
+        },
+        {
+          "selector": ".title-secondary [data-open=\"settingsOverlay\"]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "title-final",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#singlePlayerButton",
+          "visible": true
+        },
+        {
+          "selector": "#multiplayerButton",
+          "visible": true
+        },
+        {
+          "selector": ".title-secondary [data-open=\"settingsOverlay\"]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "title-final",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#classMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#classSelector [data-class=\"bard\"]",
+          "visible": true
+        },
+        {
+          "selector": "#armorSelector [data-armor=\"channelerRobe\"]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "loadout-final",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#classMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#classSelector [data-class=\"bard\"]",
+          "visible": true
+        },
+        {
+          "selector": "#armorSelector [data-armor=\"channelerRobe\"]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "loadout-final",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#classMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#classSelector [data-class=\"bard\"]",
+          "visible": true
+        },
+        {
+          "selector": "#armorSelector [data-armor=\"channelerRobe\"]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "loadout-final",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#classMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#classSelector [data-class=\"bard\"]",
+          "visible": true
+        },
+        {
+          "selector": "#armorSelector [data-armor=\"channelerRobe\"]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "loadout-final",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#abilityBar [data-ability=\"0\"]",
+          "visible": true
+        },
+        {
+          "selector": "#abilityBar [data-ability=\"3\"]",
+          "visible": true
+        },
+        {
+          "selector": "#potionButton",
+          "visible": true
+        },
+        {
+          "selector": "#pauseButton",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "combat-final",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#abilityBar [data-ability=\"0\"]",
+          "visible": true
+        },
+        {
+          "selector": "#abilityBar [data-ability=\"3\"]",
+          "visible": true
+        },
+        {
+          "selector": "#potionButton",
+          "visible": true
+        },
+        {
+          "selector": "#pauseButton",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "combat-final",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#abilityBar [data-ability=\"0\"]",
+          "visible": true
+        },
+        {
+          "selector": "#abilityBar [data-ability=\"3\"]",
+          "visible": true
+        },
+        {
+          "selector": "#potionButton",
+          "visible": true
+        },
+        {
+          "selector": "#pauseButton",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "combat-final",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#abilityBar [data-ability=\"0\"]",
+          "visible": true
+        },
+        {
+          "selector": "#abilityBar [data-ability=\"3\"]",
+          "visible": true
+        },
+        {
+          "selector": "#potionButton",
+          "visible": true
+        },
+        {
+          "selector": "#pauseButton",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "combat-final",
+      "w": 1920
+    },
+    {
+      "actions": [
+        {
+          "selector": "#talentMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#talentTree [data-learn-talent]",
+          "visible": true
+        }
+      ],
+      "h": 640,
+      "noPageScroll": true,
+      "screen": "talents-final",
+      "w": 960
+    },
+    {
+      "actions": [
+        {
+          "selector": "#talentMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#talentTree [data-learn-talent]",
+          "visible": true
+        }
+      ],
+      "h": 720,
+      "noPageScroll": true,
+      "screen": "talents-final",
+      "w": 1280
+    },
+    {
+      "actions": [
+        {
+          "selector": "#talentMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#talentTree [data-learn-talent]",
+          "visible": true
+        }
+      ],
+      "h": 900,
+      "noPageScroll": true,
+      "screen": "talents-final",
+      "w": 1440
+    },
+    {
+      "actions": [
+        {
+          "selector": "#talentMenuClose",
+          "visible": true
+        },
+        {
+          "selector": "#talentTree [data-learn-talent]",
+          "visible": true
+        }
+      ],
+      "h": 1080,
+      "noPageScroll": true,
+      "screen": "talents-final",
+      "w": 1920
+    }
+  ],
+  "minimumSizeClassHudChecks": [
+    {
+      "hero": "Warrior",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Shield Bash"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Groundbreaker"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Whirlwind Dash"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Shield Wall"
+        }
+      ],
+      "noPageScroll": true
+    },
+    {
+      "hero": "Ranger",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Marked Shot"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Arrow Storm"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Tumble Shot"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Volley Trap"
+        }
+      ],
+      "noPageScroll": true
+    },
+    {
+      "hero": "Mage",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Fire Blast"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Meteor Field"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Blink Step"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Time Warp"
+        }
+      ],
+      "noPageScroll": true
+    },
+    {
+      "hero": "Rogue",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Backstab"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Poison Cloud"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Shadow Step"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Smoke Bomb"
+        }
+      ],
+      "noPageScroll": true
+    },
+    {
+      "hero": "Paladin",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Radiant Smite"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Consecration"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Aegis Step"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Divine Bulwark"
+        }
+      ],
+      "noPageScroll": true
+    },
+    {
+      "hero": "Bard",
+      "labels": [
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Power Chord"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Battle Hymn"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Quickstep Verse"
+        },
+        {
+          "clipped": false,
+          "font": "12px",
+          "name": "Healing Ballad"
+        }
+      ],
+      "noPageScroll": true
+    }
+  ],
+  "keyboardFocus": {
+    "forward": "Resume",
+    "backward": "Return to Menu"
+  },
+  "liveSoloProfile": {
+    "encounter": "Big Cola",
+    "hp": "83/250",
+    "metrics": {
+      "fps": "144.0",
+      "frameAverage": "0.17",
+      "frameP95": "0.30"
+    },
+    "modalOpen": false
+  },
+  "connectionFailure": "Unreachable localhost server showed an explicit failure; reconnecting to port 4173 succeeded.",
+  "limits": [
+    "Browser viewport checks do not replace physical high-DPI or packaged Electron testing.",
+    "Solo Big Cola timing does not establish worst-case four-player performance.",
+    "Full solo and co-op progression tests use deterministic fixtures; human playtesting remains necessary."
+  ]
+}

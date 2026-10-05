@@ -8,33 +8,46 @@ Companion implementation map: `ROADMAP_IMPLEMENTATION.md`.
 
 ```mermaid
 flowchart TD
-  Menu["Main Menu"] --> Build["Choose class, weapon, armor, talents"]
-  Build --> RunStart["beginRun() resets player, boss, talents, rooms"]
+  Menu["Main Menu"] --> Hub["Permanent upgrades: buy / refund / equip"]
+  Hub --> Build["Hero, armor, four support talents and one keystone"]
+  Menu --> Build
+  Build --> RunStart["New journal; reset temporary state; activate saved build"]
   RunStart --> Starter["Starter Room"]
   Starter --> Ready{"Multiplayer?"}
   Ready -->|Solo| Gate["Cross gate"]
   Ready -->|Co-op| PartyReady["markPartyReady('starter')"]
   PartyReady --> PhaseGate["Host broadcasts party phase"]
   PhaseGate --> Gate
-  Gate --> Gauntlet["Gauntlet Maze"]
-  Gauntlet --> Waves["Spawn and clear enemy waves"]
-  Waves --> MiniBoss["Mini-boss / warden"]
-  MiniBoss --> Reward["Reward choice"]
+  Gate --> Route{"Direct boss or optional contract?"}
+  Route -->|Contract| Gauntlet["Short themed objective"]
+  Gauntlet -->|Complete| Reward["Earn one Mark; select relic, then Confirm"]
+  Gauntlet -->|Timeout / Leave| ArenaReady
+  Route -->|Boss| ArenaReady
   Reward --> ArenaReady["Move to boss arena"]
   ArenaReady --> BossFight["Boss Fight"]
   BossFight --> Win{"Boss defeated?"}
   BossFight --> Death{"Player dies?"}
-  Win --> Victory["Victory / next run direction"]
-  Death -->|Solo| GameOver["Death screen"]
+  Win --> Intermission["Boss clear: record one Mark, choose temporary relic, Continue"]
+  Intermission --> Final{"Last encounter?"}
+  Final -->|No| Starter
+  Final -->|Yes| Victory["Bank earnings once; run results and upgrade hub"]
+  Death -->|Solo| GameOver["Bank earnings; New Run or permanent upgrades"]
   Death -->|Co-op| Spectate["Spectate living teammate"]
-  Spectate --> BossFight
-  Victory --> Starter
+  Spectate --> Wipe{"Party wiped?"}
+  Wipe -->|No| BossFight
+  Wipe -->|Yes| PartyEnd["Host sends sequenced run end; everyone banks progress"]
+  PartyEnd --> Hub
+  GameOver --> Hub
+  Victory --> Menu
 ```
 
 Notes:
 - The run starts through `beginRun()`, then moves between starter, maze, reward, and arena phases.
+- Normal death or party wipe ends the run. Practice awards no Marks and permits full-health encounter checkpoint retries.
+- Solo menus pause simulation. Co-op menus keep simulation and networking running; a shared input gate prevents menu actions from attacking.
+- A complete run contains eleven encounters. Each has a direct boss path and an optional objective contract; the Trio and Sauce remain separate encounters.
 - In multiplayer, host-driven party phases keep both players aligned before entering gauntlet or arena content.
-- The current core loop is already roguelite-shaped: fight, earn a reward, progress to a harder boss phase or next encounter.
+- Permanent purchases happen after settlement. Temporary relics shape the current run; unlocked class builds shape subsequent attempts. A versioned journal prevents duplicated earnings and offers solo recovery after reload.
 
 ## Update And Render Loop
 
@@ -116,21 +129,27 @@ flowchart TD
   Host --> Visuals
   SharedPhase --> Death["Dead player"]
   Death --> Spectate["Spectate living teammate"]
+  Spectate --> Wipe["Party wipe"]
+  Wipe --> End["Normal: host-only sequenced run-end"]
+  End --> Settlement["Bank confirmed progress once"]
+  Wipe --> Retry["Practice: host-only sequenced party-retry"]
+  Retry --> SharedPhase
 ```
 
 Notes:
 - The host is authoritative for shared enemies, boss HP, hostile hazards, wave progression, and party phase.
 - Clients send intent, not final truth, for enemy damage and hazard cleanup.
 - `hostile-sync` is the key smoothing path for enemies, boss bodies, boss sub-objects, and moving hazards.
-- Remaining multiplayer priorities are reducing stale packets, making boss hazards consistent, and keeping client feedback immediate.
+- Practice retry events are validated against the server's room mode, host identity, party wipe, encounter kind/room, and increasing sequence. Normal runs reject retries. Run-end messages are host-only and sequenced; progression is device-local and settles once.
+- Host departure ends the active run and returns the remaining party to lobby state with an explanation.
 
 ## Current Systems At A Glance
 
 | System | Current role | What matters most |
 | --- | --- | --- |
 | Classes | Weapon tags, ability loadouts, talents, projectiles, visuals | Strong identity and clear combat role |
-| Talents | Run-time build modifiers | Fewer dead choices, better class-specific synergies |
-| Gauntlet | Pre-boss survival and reward phase | Enemy pathing, reward pacing, multiplayer sync |
+| Talents | Permanent ownership; four support slots and one keystone | Meaningful interactions and class-specific synergies |
+| Contracts | Optional themed objectives; temporary relic and Mark | More authored routes, enemy composition and fair risk/reward |
 | Mini-boss rewards | Power spikes between encounters | Delayed selection, good choices, no accidental clicks |
 | Bosses | Main content and mechanical variety | Telegraph clarity, fair hazards, phase identity |
 | Multiplayer | Shared run with host authority | Smooth enemies, stable phase sync, fair damage |

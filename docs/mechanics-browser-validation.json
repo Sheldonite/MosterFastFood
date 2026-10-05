@@ -1,0 +1,602 @@
+{
+  "date": "2026-10-04",
+  "browser": "Codex in-app browser",
+  "screens": [
+    {
+      "class": "Warrior",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Ranger",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Mage",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Rogue",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Paladin",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Bard",
+      "detailWidth": 250,
+      "height": 640,
+      "nodeMinHeight": 55,
+      "nodeMinWidth": 170.8854217529297,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 960
+    },
+    {
+      "class": "Warrior",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Ranger",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Mage",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Rogue",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Paladin",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Bard",
+      "detailWidth": 310,
+      "height": 720,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1280
+    },
+    {
+      "class": "Warrior",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Ranger",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Mage",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Rogue",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Paladin",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Bard",
+      "detailWidth": 310,
+      "height": 900,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1440
+    },
+    {
+      "class": "Warrior",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "class": "Ranger",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "class": "Mage",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "class": "Rogue",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "class": "Paladin",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "class": "Bard",
+      "detailWidth": 310,
+      "height": 1080,
+      "nodeMinHeight": 61.66666793823242,
+      "nodeMinWidth": 235.55209350585935,
+      "nodes": 25,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "hub",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "title",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "title",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "title",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "title",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "loadout",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "loadout",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "loadout",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "loadout",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "training",
+      "width": 960
+    },
+    {
+      "allVisible": true,
+      "buttons": 5,
+      "height": 640,
+      "screen": "ability-bar",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "training",
+      "width": 1280
+    },
+    {
+      "allVisible": true,
+      "buttons": 5,
+      "height": 720,
+      "screen": "ability-bar",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "training",
+      "width": 1440
+    },
+    {
+      "allVisible": true,
+      "buttons": 5,
+      "height": 900,
+      "screen": "ability-bar",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "training",
+      "width": 1920
+    },
+    {
+      "allVisible": true,
+      "buttons": 5,
+      "height": 1080,
+      "screen": "ability-bar",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "practice-controls",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "practice-controls",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "practice-controls",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "practice-controls",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "pause",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "pause",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "pause",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "pause",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "settings",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "settings",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "settings",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "settings",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "normal-results",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "normal-results",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "normal-results",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "normal-results",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "room-browser",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "room-browser",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "room-browser",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "room-browser",
+      "width": 1920
+    },
+    {
+      "height": 640,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "lobby",
+      "width": 960
+    },
+    {
+      "height": 720,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "lobby",
+      "width": 1280
+    },
+    {
+      "height": 900,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "lobby",
+      "width": 1440
+    },
+    {
+      "height": 1080,
+      "pageOverflow": false,
+      "panelFits": true,
+      "screen": "lobby",
+      "width": 1920
+    }
+  ],
+  "focus": {
+    "selectedTalent": "mage_pyro_kindling",
+    "retained": true
+  },
+  "liveChecks": [
+    "Projectile travel and dummy direct-damage feedback",
+    "Leave Contract enters Big Cola without a reward",
+    "Normal End Run banks once and opens permanent-upgrade results",
+    "Server-selected co-op Practice shows End Practice and party-running caption"
+  ],
+  "performance": [
+    {
+      "scene": "Pressure Works, three role enemies",
+      "fps": 144,
+      "averageMs": 0.23,
+      "p95Ms": 0.3
+    },
+    {
+      "averageMs": 0.22,
+      "fps": 144,
+      "p95Ms": 0.3,
+      "scene": "Big Cola"
+    }
+  ],
+  "limits": [
+    "Performance samples are short scene windows, not a worst-case four-player profile.",
+    "Physical high-DPI, OS fullscreen and remote-machine latency remain untested."
+  ]
+}

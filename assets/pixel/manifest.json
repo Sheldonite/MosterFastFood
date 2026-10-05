@@ -1,0 +1,1032 @@
+{
+  "version": 1,
+  "tiles": {
+    "size": 16
+  },
+  "classes": {
+    "warrior": {
+      "src": "./assets/pixel/classes/warrior.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    },
+    "ranger": {
+      "src": "./assets/pixel/classes/ranger.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    },
+    "mage": {
+      "src": "./assets/pixel/classes/mage.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    },
+    "rogue": {
+      "src": "./assets/pixel/classes/rogue.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    },
+    "paladin": {
+      "src": "./assets/pixel/classes/paladin.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    },
+    "bard": {
+      "src": "./assets/pixel/classes/bard.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        16,
+        44
+      ],
+      "animations": {
+        "idle": [
+          0
+        ],
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "attack": [
+          2,
+          3
+        ]
+      },
+      "fps": 8,
+      "attachments": {
+        "down": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            20,
+            28
+          ],
+          "weaponTip": [
+            20,
+            32
+          ],
+          "cast": [
+            20,
+            28
+          ]
+        },
+        "up": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            12,
+            17
+          ],
+          "weaponTip": [
+            12,
+            13
+          ],
+          "cast": [
+            12,
+            17
+          ]
+        },
+        "left": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            7,
+            23
+          ],
+          "weaponTip": [
+            3,
+            23
+          ],
+          "cast": [
+            7,
+            23
+          ]
+        },
+        "right": {
+          "feet": [
+            16,
+            44
+          ],
+          "hand": [
+            25,
+            23
+          ],
+          "weaponTip": [
+            29,
+            23
+          ],
+          "cast": [
+            25,
+            23
+          ]
+        }
+      }
+    }
+  },
+  "bosses": {
+    "burger": {
+      "src": "./assets/pixel/bosses/burger-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "cola": {
+      "src": "./assets/pixel/bosses/cola-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "fries": {
+      "src": "./assets/pixel/bosses/fries-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "ketchup": {
+      "src": "./assets/pixel/bosses/ketchup-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "mustard": {
+      "src": "./assets/pixel/bosses/mustard-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "mayo": {
+      "src": "./assets/pixel/bosses/mayo-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "sauce": {
+      "src": "./assets/pixel/bosses/sauce-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "shake": {
+      "src": "./assets/pixel/bosses/shake-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "nacho": {
+      "src": "./assets/pixel/bosses/nacho-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "pizza": {
+      "src": "./assets/pixel/bosses/pizza-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "taco": {
+      "src": "./assets/pixel/bosses/taco-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "donut": {
+      "src": "./assets/pixel/bosses/donut-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    },
+    "sushi": {
+      "src": "./assets/pixel/bosses/sushi-sheet.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 4,
+      "anchor": [
+        32,
+        58
+      ],
+      "animations": {
+        "idle": [
+          0,
+          1
+        ],
+        "attack": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "hurt": [
+          2
+        ],
+        "defeat": [
+          3
+        ]
+      },
+      "fps": 6
+    }
+  },
+  "icons": {
+    "warrior-0": "./assets/pixel/icons/warrior-0.png",
+    "warrior-1": "./assets/pixel/icons/warrior-1.png",
+    "warrior-2": "./assets/pixel/icons/warrior-2.png",
+    "warrior-3": "./assets/pixel/icons/warrior-3.png",
+    "ranger-0": "./assets/pixel/icons/ranger-0.png",
+    "ranger-1": "./assets/pixel/icons/ranger-1.png",
+    "ranger-2": "./assets/pixel/icons/ranger-2.png",
+    "ranger-3": "./assets/pixel/icons/ranger-3.png",
+    "mage-0": "./assets/pixel/icons/mage-0.png",
+    "mage-1": "./assets/pixel/icons/mage-1.png",
+    "mage-2": "./assets/pixel/icons/mage-2.png",
+    "mage-3": "./assets/pixel/icons/mage-3.png",
+    "rogue-0": "./assets/pixel/icons/rogue-0.png",
+    "rogue-1": "./assets/pixel/icons/rogue-1.png",
+    "rogue-2": "./assets/pixel/icons/rogue-2.png",
+    "rogue-3": "./assets/pixel/icons/rogue-3.png",
+    "paladin-0": "./assets/pixel/icons/paladin-0.png",
+    "paladin-1": "./assets/pixel/icons/paladin-1.png",
+    "paladin-2": "./assets/pixel/icons/paladin-2.png",
+    "paladin-3": "./assets/pixel/icons/paladin-3.png",
+    "bard-0": "./assets/pixel/icons/bard-0.png",
+    "bard-1": "./assets/pixel/icons/bard-1.png",
+    "bard-2": "./assets/pixel/icons/bard-2.png",
+    "bard-3": "./assets/pixel/icons/bard-3.png"
+  }
+}

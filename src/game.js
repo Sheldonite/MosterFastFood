@@ -1,4 +1,4 @@
-﻿const canvas = document.querySelector("#game");
+const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 
 const ui = {
@@ -46,7 +46,7 @@ const ui = {
   classMenuClose: document.querySelector("#classMenuClose"),
   armorSelector: document.querySelector("#armorSelector"),
   armorMenuButton: document.querySelector("#armorMenuButton"),
-  armorMenuOverlay: document.querySelector("#armorMenuOverlay"),
+  armorMenuOverlay: document.querySelector("#classMenuOverlay"),
   armorMenuClose: document.querySelector("#armorMenuClose"),
   skillsButton: document.querySelector("#skillsButton"),
   talentMenuOverlay: document.querySelector("#talentMenuOverlay"),
@@ -367,7 +367,7 @@ const abilityLoadouts = {
     { key: "Q", name: "Backstab", cooldown: 6, description: "Slash in front of you; after Shadow Step, it becomes a much stronger empowered strike." },
     { key: "E", name: "Poison Cloud", cooldown: 11, description: "Create a poison zone that damages enemies, stacks poison, and slows hazards." },
     { key: "Space", name: "Shadow Step", cooldown: 8, description: "Teleport toward your aim direction, briefly evade, and ready an empowered Backstab." },
-    { key: "R", name: "Smoke Bomb", cooldown: 16, description: "Drop a smoke zone that grants evasion, weakens hazards, and sets up an ambush when you leave." },
+    { key: "R", name: "Smoke Bomb", cooldown: 16, description: "Drop smoke that reduces damage by 25%, halves projectile speed inside, and empowers Backstab when you leave." },
   ],
   paladin: [
     { key: "Q", name: "Radiant Smite", cooldown: 5.5, description: "Blast a holy area in front of you, damaging and interrupting enemies." },
@@ -651,51 +651,51 @@ const stands = [
 const saveKey = "boss-fight-save-v1";
 const playerSprite = new Image();
 let cleanedPlayerSprite = null;
-playerSprite.src = "./assets/player-spritesheet.png";
+playerSprite.src = "./assets/pixel/classes/warrior.png";
 playerSprite.addEventListener("load", () => {
-  cleanedPlayerSprite = createTransparentSprite(playerSprite);
+  cleanedPlayerSprite = playerSprite;
 });
 const glassMageSprite = new Image();
 let cleanedGlassMageSprite = null;
-glassMageSprite.src = "./assets/glass-mage-spritesheet.png";
+glassMageSprite.src = "./assets/pixel/classes/mage.png";
 glassMageSprite.addEventListener("load", () => {
-  cleanedGlassMageSprite = createTransparentSprite(glassMageSprite);
+  cleanedGlassMageSprite = glassMageSprite;
 });
 const rangedSprite = new Image();
 let cleanedRangedSprite = null;
-rangedSprite.src = "./assets/ranged-spritesheet.png";
+rangedSprite.src = "./assets/pixel/classes/ranger.png";
 rangedSprite.addEventListener("load", () => {
-  cleanedRangedSprite = createTransparentSprite(rangedSprite);
+  cleanedRangedSprite = rangedSprite;
 });
 const meleeSprite = new Image();
 let cleanedMeleeSprite = null;
-meleeSprite.src = "./assets/melee-spritesheet.png";
+meleeSprite.src = "./assets/pixel/classes/warrior.png";
 meleeSprite.addEventListener("load", () => {
-  cleanedMeleeSprite = createTransparentSprite(meleeSprite);
+  cleanedMeleeSprite = meleeSprite;
 });
 const rogueSprite = new Image();
 let cleanedRogueSprite = null;
-rogueSprite.src = "./assets/rogue-spritesheet.png";
+rogueSprite.src = "./assets/pixel/classes/rogue.png";
 rogueSprite.addEventListener("load", () => {
-  cleanedRogueSprite = createTransparentSprite(rogueSprite);
+  cleanedRogueSprite = rogueSprite;
 });
 const bardSprite = new Image();
 let cleanedBardSprite = null;
-bardSprite.src = "./assets/bard-spritesheet.png";
+bardSprite.src = "./assets/pixel/classes/bard.png";
 bardSprite.addEventListener("load", () => {
-  cleanedBardSprite = createTransparentSprite(bardSprite);
+  cleanedBardSprite = bardSprite;
 });
 const paladinSprite = new Image();
 let cleanedPaladinSprite = null;
-paladinSprite.src = "./assets/paladin-spritesheet.png";
+paladinSprite.src = "./assets/pixel/classes/paladin.png";
 paladinSprite.addEventListener("load", () => {
-  cleanedPaladinSprite = createTransparentSprite(paladinSprite);
+  cleanedPaladinSprite = paladinSprite;
 });
 const curlyFriesSprite = new Image();
 let cleanedCurlyFriesSprite = null;
-curlyFriesSprite.src = "./assets/curly-fries-spritesheet.png";
+curlyFriesSprite.src = "./assets/pixel/bosses/fries-sheet.png";
 curlyFriesSprite.addEventListener("load", () => {
-  cleanedCurlyFriesSprite = createTransparentSprite(curlyFriesSprite);
+  cleanedCurlyFriesSprite = curlyFriesSprite;
 });
 
 const generatedClassArtKeys = ["warrior", "ranger", "mage", "rogue", "paladin", "bard"];
@@ -776,7 +776,7 @@ const generatedArtImages = new Map();
 
 function registerGeneratedArt(id, src) {
   const image = new Image();
-  image.src = src;
+  image.src = Arcade.art.source(id, src);
   generatedArtImages.set(id, image);
   return image;
 }
@@ -832,9 +832,9 @@ function drawGeneratedImage(id, x, y, w, h, options = {}) {
   ctx.translate(x, y);
   if (rotation) ctx.rotate(rotation);
   ctx.globalAlpha *= alpha;
-  if (shadowColor && shadowBlur > 0) {
+  if (false && shadowColor && shadowBlur > 0) {
     ctx.shadowColor = shadowColor;
-    ctx.shadowBlur = shadowBlur;
+    ctx.shadowBlur = 0;
   }
   ctx.drawImage(image, centered ? -w / 2 : 0, centered ? -h / 2 : 0, w, h);
   ctx.restore();
@@ -859,7 +859,7 @@ function drawGeneratedSpriteFrame(id, row, col, x, y, w, h, options = {}) {
   ctx.globalAlpha *= alpha;
   if (shadowColor && shadowBlur > 0) {
     ctx.shadowColor = shadowColor;
-    ctx.shadowBlur = shadowBlur;
+    ctx.shadowBlur = 0;
   }
   ctx.drawImage(
     image,
@@ -935,6 +935,14 @@ let selectedTalentId = "";
 let lastCanvasPointerAttackAt = 0;
 let primaryAttackHeld = false;
 let primaryAttackPointerId = null;
+let encounterCheckpoint = null;
+let intermission = null;
+let runElapsedSeconds = 0;
+let clearedBosses = [];
+let deathCause = "";
+let buildPanelSignature = "";
+let cosmeticShakeUntil = 0;
+let maxFrameMs = 0;
 const multiplayer = {
   socket: null,
   id: null,
@@ -1208,7 +1216,7 @@ function createBoss(kind = "burger") {
     y: 450,
     hp: scaledMaxHp,
     phase: 1,
-    totalPhases: kind === "donut" ? 6 : kind === "burger" ? 2 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
+    totalPhases: kind === "donut" ? 6 : ["burger", "cola", "fries"].includes(kind) ? 2 : kind === "shake" || kind === "nacho" || kind === "pizza" || kind === "taco" || kind === "sushi" ? 3 : 1,
     enraged: false,
     animation: "idle",
     animationTime: 0,
@@ -1413,6 +1421,8 @@ function learnTalent(talentId) {
   runState.talentPoints -= 1;
   applyTalentEffects(oldMaxHp);
   talentTreeSignature = "";
+  if (encounterCheckpoint) { encounterCheckpoint.talentPoints = runState.talentPoints; encounterCheckpoint.learnedTalents = Array.from(runState.learnedTalents); }
+  Arcade.emit("reward");
   const talent = talentById.get(talentId);
   showFloat(talent ? talent.name : "Talent learned");
   return true;
@@ -1559,13 +1569,7 @@ function saveGear() {
   localStorage.setItem(saveKey, JSON.stringify({ gear: player.gear }));
 }
 
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  canvas.width = Math.floor(rect.width * dpr);
-  canvas.height = Math.floor(rect.height * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
+function resizeCanvas() { Arcade.viewport.resize(canvas); }
 
 function resetFight(keepPosition = false) {
   const gearState = { ...player.gear };
@@ -1700,6 +1704,7 @@ function startMazeForBoss(kind, options = {}) {
   mazeState = generateMazeForBoss(kind, runState.mazeCount);
   ensureGauntletRuntimeState();
   const start = mazeState.playerStart || mazeCellCenter(mazeState, mazeState.entranceCell.x, mazeState.entranceCell.y);
+  Arcade.screens.close(true); clearArcadeInputs();
   player.room = "maze";
   player.x = start.x;
   player.y = start.y;
@@ -1707,8 +1712,9 @@ function startMazeForBoss(kind, options = {}) {
   player.slide = null;
   player.gateCooldown = 1.2;
   mouseWorld = { x: player.x + 120, y: player.y };
-  ui.status.textContent = `${mazeState.theme.name}: clear the gauntlet before ${boss.name}.`;
-  showScreenBanner(mazeState.theme.name, `Survive the room before ${boss.name}`, "neutral", 2.4);
+  ui.status.textContent = mazeState.contract ? RogueContracts.definitions[kind].description : `${mazeState.theme.name}: clear the gauntlet before ${boss.name}.`;
+  showScreenBanner(mazeState.theme.name, mazeState.contract ? "Optional objective · Enter to interact · Menu to leave" : `Survive the room before ${boss.name}`, "neutral", 2.4);
+  updateArcadeCamera(); captureEncounterCheckpoint();
   log(`${mazeState.theme.name} generated.`);
   sendMultiplayerState(true);
 }
@@ -1721,6 +1727,7 @@ function enterBossArena(options = {}) {
   recordDebugEvent("arena-enter", { fromParty: Boolean(options.fromParty), bossKind: boss.kind, phaseSeq: multiplayer.phaseSeq });
   clearEncounterState();
   clearMazeState();
+  Arcade.screens.close(true); clearArcadeInputs();
   player.room = "arena";
   const spawn = multiplayer.mode === "multiplayer" ? multiplayer.assignedSpawn : null;
   player.x = spawn?.x || world.arena.x + 130;
@@ -1730,11 +1737,14 @@ function enterBossArena(options = {}) {
   player.slide = null;
   player.gateCooldown = 1.2;
   ui.status.textContent = `${boss.name} arena reached.`;
+  updateArcadeCamera(); captureEncounterCheckpoint();
   startFight();
   sendMultiplayerState(true);
 }
 
 function beginRun(mode, firstBoss = "cola") {
+  Arcade.screens.close(true); clearArcadeInputs(); encounterCheckpoint = null; intermission = null;
+  runElapsedSeconds = 0; clearedBosses = []; deathCause = "";
   const gearState = { ...player.gear };
   runState.mode = mode;
   runState.active = true;
@@ -1753,10 +1763,12 @@ function beginRun(mode, firstBoss = "cola") {
   setCoopStatus(mode === "multiplayer" ? "In Room" : mode === "dev" ? "Dev Test" : "Solo", mode === "multiplayer" ? multiplayer.room?.players?.length || 1 : 1);
   ui.status.textContent = `Choose class and armor, then cross the gate for ${boss.name}.`;
   showFloat(`${boss.name} ready`);
+  updateArcadeCamera(); captureEncounterCheckpoint(); openClassMenu();
   sendMultiplayerState(true);
 }
 
 function returnToMainMenu(message = "Choose a mode.") {
+  Arcade.screens.close(true); intermission = null; encounterCheckpoint = null; clearArcadeInputs();
   closeMultiplayerSocket();
   closeClassMenu();
   closeArmorMenu();
@@ -2016,7 +2028,7 @@ function showDebugReport(error, context = {}) {
     debugReportState.lastReport = report;
     debugReportState.visible = true;
     if (ui.debugReportText) ui.debugReportText.value = report;
-    if (ui.debugReportOverlay) ui.debugReportOverlay.hidden = false;
+    if (ui.debugReportOverlay) Arcade.screens.open(ui.debugReportOverlay, Boolean(Arcade.screens.current));
     if (ui.debugReportCopy) ui.debugReportCopy.textContent = "Copy Report";
     if (ui.status) ui.status.textContent = "Debug report captured. Copy it and paste it to Codex.";
   } catch (reportError) {
@@ -2299,6 +2311,7 @@ function broadcastPartyPhase(phase, options = {}) {
     spawns: options.spawns || multiplayerArenaSpawns(),
     defeatedName: options.defeatedName || "",
     talentPoints: options.talentPoints || 0,
+    nextBoss: options.nextBoss || null,
   };
   multiplayer.lastPartyPhaseEvent = cloneSyncObject(event);
   recordDebugEvent("party-phase-broadcast", { phase, phaseSeq: event.phaseSeq, bossKind: event.bossKind, mazeSequence: event.mazeSequence });
@@ -2336,6 +2349,12 @@ function applyPartyPhaseInner(event, local = false, options = {}) {
   });
   resetHostileNetState();
   const phaseBossKind = event.bossKind || boss.kind;
+  if (event.phase === "intermission") {
+    grantTalentPoints(event.talentPoints || 2, event.defeatedName);
+    clearedBosses.push(event.defeatedName || boss.name); clearEncounterState();
+    intermission = { name: event.defeatedName || boss.name, nextBoss: event.nextBoss };
+    showEncounterResults(false); return;
+  }
   recordDebugEvent("party-phase-apply", {
     phase: event.phase,
     phaseSeq: event.phaseSeq,
@@ -2379,6 +2398,7 @@ function applyPartyPhaseInner(event, local = false, options = {}) {
     return;
   }
   if (event.phase === "starter") {
+    Arcade.screens.close(true); intermission = null;
     if (event.talentPoints) grantTalentPoints(event.talentPoints, event.defeatedName || "Boss");
     loadBoss(phaseBossKind);
     player.hp = player.maxHp;
@@ -2387,6 +2407,7 @@ function applyPartyPhaseInner(event, local = false, options = {}) {
     ui.status.textContent = `${event.defeatedName || "Boss"} defeated. Next Boss: ${boss.name}.`;
     showScreenBanner(`${event.defeatedName || "Boss"} Defeated`, `Next Boss: ${boss.name}`, "victory", 2.8);
     showFloat(`Next boss: ${boss.name}`);
+    updateArcadeCamera(); captureEncounterCheckpoint();
     return;
   }
   if (event.phase === "victory") {
@@ -2400,7 +2421,8 @@ function applyPartyPhaseInner(event, local = false, options = {}) {
     player.slide = null;
     ui.status.textContent = "Victory. You cleared the full boss run.";
     showScreenBanner("Run Cleared", "All bosses defeated", "victory", 4);
-    showFloat("Run complete");
+    clearedBosses.push(event.defeatedName || boss.name);
+    showFloat("Run complete"); showEncounterResults(true);
   }
 }
 
@@ -2850,6 +2872,7 @@ function nachoQuadrantBounds() {
 }
 
 function handleCanvasClick(x, y) {
+  if (!arcadeInputAllowed() && !player.dead) return;
   if (player.dead) {
     if (isPartySyncActive()) cycleSpectateTarget(1);
     stopHeldPrimaryAttack();
@@ -2861,7 +2884,7 @@ function handleCanvasClick(x, y) {
 }
 
 function updatePlayerFacingTowardAttackTarget(x, y) {
-  const targetPoint = player.room === "starter" ? trainingDummy : { x, y };
+  const targetPoint = { x, y };
   const dx = targetPoint.x - player.x;
   const dy = targetPoint.y - player.y;
   if (Math.hypot(dx, dy) < 6) return null;
@@ -3474,6 +3497,7 @@ function equipFromStand(stand) {
   const item = gear[stand.type][stand.id];
   log(`Equipped ${item.name}.`);
   showFloat(item.name);
+  if (runState.active && player.room === "starter") captureEncounterCheckpoint();
 }
 
 function equipClass(classId) {
@@ -3504,9 +3528,11 @@ function equipGear(slot, id) {
   const item = gear[slot][id];
   log(`Equipped ${item.name}.`);
   showFloat(item.name);
+  if (runState.active && player.room === "starter") captureEncounterCheckpoint();
 }
 
 function movePlayer(dt) {
+  if (!arcadeInputAllowed()) return;
   if (mazeState?.rewardPending) {
     player.destination = null;
     player.slide = null;
@@ -3671,6 +3697,7 @@ function updateGauntletProgressInner(dt) {
   if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending) return;
   mazeState.waveTimer = Math.max(0, (mazeState.waveTimer || 0) - dt);
   updateGauntletPickups(dt);
+  if (mazeState.cleared || mazeState.rewardChosen) return;
   if (mazeState.waveIndex < 0) {
     if (gauntletWaveAdvanceReady()) recoverGauntletWaveAdvance("initial-timer");
     return;
@@ -3714,7 +3741,7 @@ function clearGauntletWave(wave, reason = "normal") {
 
 function recoverGauntletWaveAdvance(reason = "watchdog") {
   if (!canAdvanceGauntletLocally()) return false;
-  if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending) return false;
+  if (!mazeState || mazeState.encounterType !== "gauntlet" || mazeState.rewardPending || mazeState.cleared || mazeState.rewardChosen) return false;
   ensureGauntletRuntimeState();
   if (hasActiveGauntletTrash()) return false;
   const waves = Array.isArray(mazeState.waves) ? mazeState.waves : [];
@@ -6404,16 +6431,13 @@ function randomArenaPointNearThreat(spread, minDistance = 0) {
 }
 
 function shootAt(x, y) {
+  if (!arcadeInputAllowed()) return;
   if (mazeState?.rewardPending) return;
   const attackTarget = updatePlayerFacingTowardAttackTarget(x, y);
   if (player.attackCooldown > 0) return;
   if (!attackTarget) return;
   if (player.room === "arena") startFight();
   const projectile = firePlayerProjectile(attackTarget.angle);
-  if (player.room === "starter" && projectile) {
-    projectile.hitTargets = [trainingDummy];
-    damageTrainingDummy(trainingDummy, projectile.damage, "Training Hit");
-  }
 }
 
 function firePlayerProjectile(angle) {
@@ -6462,7 +6486,7 @@ function firePlayerProjectile(angle) {
     player.meleeAttackTimer = 0.22;
     player.meleeAttackAngle = angle;
   }
-  player.attackCooldown = basicAttackCooldown(weapon);
+  player.attackCooldown = basicAttackCooldown(weapon); Arcade.emit("attack");
   ui.status.textContent = bardAttack ? `Playing ${weapon.name}.` : meleeAttack || rogueAttack ? `Slashing ${weapon.name}.` : `Firing ${weapon.name}.`;
   multiplayer.attackSeq += 1;
   sendMultiplayerEvent({
@@ -6499,6 +6523,7 @@ function basicAttackCooldown(weapon) {
 }
 
 function updateHeldPrimaryAttack() {
+  if (!arcadeInputAllowed()) { stopHeldPrimaryAttack(); return; }
   if (!primaryAttackHeld) return;
   if (player.dead || player.won) {
     stopHeldPrimaryAttack();
@@ -6517,10 +6542,13 @@ function stopHeldPrimaryAttack(pointerId = null) {
 }
 
 function useAbility(index) {
+  if (!arcadeInputAllowed()) return;
   if (mazeState?.rewardPending) return;
   if (player.dead || player.won || (player.room !== "arena" && player.room !== "starter" && player.room !== "maze")) return;
   const ability = currentAbilities()[index];
-  if (!ability || player.abilityCooldowns[index] > 0) return;
+  if (!ability || player.abilityCooldowns[index] > 0) {
+    if (ability) { showFloat(ability.name + " is cooling down"); Arcade.emit("unavailable"); } return;
+  }
   if (player.room === "arena") startFight();
   if (currentClassKey() === "melee") useMeleeAbility(index, ability);
   if (currentClassKey() === "ranger") useRangerAbility(index, ability);
@@ -6536,6 +6564,7 @@ function abilityIndexForKey(event) {
 }
 
 function spendAbility(index, ability) {
+  Arcade.emit("ability");
   player.abilityCooldowns[index] = ability.cooldown * talentAbilityCooldownMultiplier(index);
   runTalentHook("onAbilityCast", { index, ability });
   ui.status.textContent = `${ability.name}.`;
@@ -9417,7 +9446,7 @@ function damagePlayer(amount, source, options = {}) {
   if (player.consecrationTimer > 0) hit = Math.max(1, Math.ceil(hit * 0.78));
   if (hit >= player.hp && triggerTalentLethalSave(source)) return false;
   player.hp = Math.max(0, player.hp - hit);
-  player.lastDamageAt = now;
+  player.lastDamageAt = now; Arcade.emit("hurt"); cosmeticShakeUntil = now + 140;
   if (options.projectileId) recordDebugEvent("player-projectile-damage-applied", { projectileId: String(options.projectileId), playerId: localPlayerDamageId(), source, hit });
   runTalentHook("onDamageTaken", { amount: tunedAmount, hit, source, options });
   particles.push({ x: player.x, y: player.y - 35, text: `-${hit}`, color: "#ff8f7e", ttl: 0.8 });
@@ -9457,6 +9486,7 @@ function triggerTalentLethalSave(source) {
 }
 
 function enterDeathState(source) {
+  deathCause = source; clearArcadeInputs();
   if (player.dead) return;
   player.dead = true;
   player.hp = 0;
@@ -9473,59 +9503,26 @@ function enterDeathState(source) {
     movementKeys[direction] = false;
   });
   log(`${source} stuffed you.`);
+  sendMultiplayerState(true);
   if (activateSpectateMode(source)) return;
-  ui.status.textContent = "You're Stuffed. Reset the fight or reset the run.";
+  ui.status.textContent = "You're Stuffed. Retry this encounter or return to the menu.";
   showFloat("You're Stuffed");
 }
 
-function resetFightFromDeath() {
-  if (!player.dead) return;
-  const room = player.room;
-  const bossKind = boss.kind;
-  const mazeSequence = mazeState?.sequence || runState.mazeCount || 1;
-  resetSpectateState();
-  player.dead = false;
-  player.hp = player.maxHp;
-  player.potions = 3;
-  player.destination = null;
-  player.slide = null;
-  player.moving = false;
-  clearPlayerTransientState();
-  player.hp = player.maxHp;
-  player.potions = 3;
-  if (room === "maze") {
-    loadBoss(bossKind);
-    startMazeForBoss(bossKind, { fromParty: true, sequence: mazeSequence });
-    ui.status.textContent = `${mazeState?.theme.name || "Gauntlet"} reset. Try the room again.`;
-    showFloat("Room reset");
-    log("Gauntlet room reset.");
-  } else if (room === "arena") {
-    loadBoss(bossKind);
-    enterBossArena({ fromParty: true });
-    ui.status.textContent = `${boss.name} reset. Try the fight again.`;
-    showFloat("Fight reset");
-    log("Boss fight reset.");
-  } else {
-    loadBoss(bossKind);
-    sendPlayerToStarterRoom();
-    player.hp = player.maxHp;
-    player.potions = 3;
-    ui.status.textContent = "Starter room reset. Cross the gate when ready.";
-    showFloat("Fight reset");
-    log("Starter room reset.");
-  }
-  sendMultiplayerState(true);
-}
+function resetFightFromDeath() { requestEncounterRetry(); }
 
 function drinkPotion() {
-  if (player.potions <= 0 || player.hp >= player.maxHp || player.dead || player.won) return;
+  if (!arcadeInputAllowed()) return;
+  if (player.potions <= 0 || player.hp >= player.maxHp) { showFloat(player.potions <= 0 ? "No potions left" : "Health is full"); Arcade.emit("unavailable"); return; }
   player.potions -= 1;
   player.hp = Math.min(player.maxHp, player.hp + Math.ceil(player.maxHp * 0.6));
+  Arcade.emit("heal");
   showFloat("Potion used");
   log("Potion restored health.");
 }
 
 function nextProgressionBoss(kind) {
+  if (kind === "trio") return "sauce";
   if (kind === "sauce") return "shake";
   const index = progressionBosses.indexOf(kind);
   if (index < 0 || index >= progressionBosses.length - 1) return null;
@@ -9533,7 +9530,7 @@ function nextProgressionBoss(kind) {
 }
 
 function prepareNextBoss(kind, defeatedName) {
-  grantTalentPoints(2, defeatedName);
+  Arcade.screens.close(true); intermission = null;
   loadBoss(kind);
   player.hp = player.maxHp;
   player.potions = 3;
@@ -9545,7 +9542,7 @@ function prepareNextBoss(kind, defeatedName) {
     broadcastPartyPhase("starter", {
       bossKind: kind,
       defeatedName,
-      talentPoints: 2,
+      talentPoints: 0,
       applyLocal: false,
     });
   }
@@ -9553,6 +9550,7 @@ function prepareNextBoss(kind, defeatedName) {
 }
 
 function winFight() {
+  if (intermission || player.won) return;
   selectedBoss = null;
   hazards = [];
   playerProjectiles = [];
@@ -9581,9 +9579,11 @@ function winFight() {
   log(`Victory in ${seconds}s.`);
   const defeatedName = boss.name;
   const nextBoss = nextProgressionBoss(boss.kind);
+  clearedBosses.push(defeatedName); Arcade.emit("victory");
   if (nextBoss) {
-    prepareNextBoss(nextBoss, defeatedName);
-    return;
+    grantTalentPoints(2, defeatedName); intermission = { name: defeatedName, nextBoss }; clearEncounterState();
+    if (isMultiplayerHost()) broadcastPartyPhase("intermission", { bossKind: boss.kind, defeatedName, nextBoss, talentPoints: 2, applyLocal: false });
+    showEncounterResults(false); return;
   }
   grantTalentPoints(2, defeatedName);
   clearEncounterState();
@@ -9594,7 +9594,7 @@ function winFight() {
   player.slide = null;
   ui.status.textContent = "Victory. You cleared the full boss run.";
   showScreenBanner("Run Cleared", "All bosses defeated", "victory", 4);
-  showFloat("Run complete");
+  showFloat("Run complete"); showEncounterResults(true);
   if (isMultiplayerHost()) {
     broadcastPartyPhase("victory", {
       bossKind: boss.kind,
@@ -9947,6 +9947,11 @@ function runUpdateStep(area, step) {
 }
 
 function update(dt) {
+  if (!runState.active || intermission || Arcade.screens.paused() || (player.dead && !isPartySyncActive())) {
+    updateMultiplayer(dt);
+    return;
+  }
+  runElapsedSeconds += dt;
   runUpdateStep("movePlayer", () => movePlayer(dt));
   runUpdateStep("playerTimers", () => {
     player.attackCooldown = Math.max(0, player.attackCooldown - dt);
@@ -9958,7 +9963,7 @@ function update(dt) {
   runUpdateStep("heldPrimaryAttack", updateHeldPrimaryAttack);
   runUpdateStep("updateAbilities", () => updateAbilities(dt));
   runUpdateStep("updateTrainingDummy", () => updateTrainingDummy(dt));
-  runUpdateStep("updateRoom", () => updateRoom(dt));
+  if (arcadeInputAllowed()) runUpdateStep("updateRoom", () => updateRoom(dt));
   runUpdateStep("updateMazeCombat", () => updateMazeCombat(dt));
   runUpdateStep("updateCombat", () => updateCombat(dt));
   runUpdateStep("updateHazards", () => updateHazards(dt));
@@ -9987,9 +9992,7 @@ function update(dt) {
   });
   runUpdateStep("updateMultiplayer", () => updateMultiplayer(dt));
   runUpdateStep("camera", () => {
-    const cameraTarget = player.dead && isPartySyncActive() ? spectateCameraPoint() : player;
-    camera.x = clamp(cameraTarget.x - canvas.clientWidth / 2, 0, world.width - canvas.clientWidth);
-    camera.y = clamp(cameraTarget.y - canvas.clientHeight / 2, 0, world.height - canvas.clientHeight);
+    updateArcadeCamera();
   });
 }
 
@@ -10124,7 +10127,6 @@ function markBossTarget(target) {
 
 function damageBossTarget(target, amount, source, options = {}) {
   if (!target || target.hp <= 0) return false;
-  if (target.kind === "trainingDummy") return damageTrainingDummy(target, amount, source);
   if (shouldSendHostHitIntent(target, source, options)) {
     sendHitIntent(target, amount, source, damageIntentOptions(source, options));
     particles.push({ x: target.x, y: target.y - 40, text: "hit", color: "#ffe08a", ttl: 0.45 });
@@ -10207,10 +10209,11 @@ function applyDamageBossTargetLocal(target, amount, source, options = {}) {
   }
   let damage = target.shieldTimer > 0 ? Math.ceil(tunedAmount * 0.5) : tunedAmount;
   if (target.kind === "taco" && !options.tacoBypassGuard) {
-    if (target.shellGuardActive && target.exposedFillingTimer <= 0) damage = Math.max(1, Math.ceil(damage * 0.32));
+    if (target.shellGuardActive && target.exposedFillingTimer <= 0) damage = Math.max(1, Math.ceil(damage * 0.5));
     if (target.exposedFillingTimer > 0) damage = Math.ceil(damage * 2.35);
   }
   target.hp = Math.max(0, target.hp - damage);
+  target.hitFlashUntil = performance.now() + 120; Arcade.emit("hit");
   const hookPayload = { target, amount: damage, source, options };
   if (!options.remote && !options.remoteIntent) {
     runTalentHook(source === "Shot" ? "onBasicHit" : "onAbilityHit", hookPayload);
@@ -10327,8 +10330,7 @@ function handleBossDefeated(target) {
       showFloat("Waiting for host");
       return;
     }
-    if (boss.kind === "trio") prepareNextBoss("sauce", "Condiment Trio");
-    else winFight();
+    winFight();
   }
 }
 
@@ -10365,21 +10367,13 @@ function showMazeRewardChoices() {
   ui.mazeRewardTitle.textContent = `${mazeState.theme.name} Reward`;
   ui.mazeRewardCards.innerHTML = mazeState.rewardOptions.map((reward) => {
     const visual = mazeRewardVisual(reward);
-    return `
-    <button class="reward-card reward-card--${visual.tone}" type="button" data-reward="${reward.id}" data-tone="${visual.tone}" disabled>
-      <span class="reward-card-corner" aria-hidden="true"><img src="./assets/generated/icons/rewards/${visual.icon}.svg" alt=""></span>
-      <span class="reward-icon-wrap" aria-hidden="true">
-        <span class="reward-icon-disc"></span>
-        <img class="reward-icon" src="./assets/generated/icons/rewards/${visual.icon}.svg" alt="">
-      </span>
-      <strong>${escapeHtml(reward.name)}</strong>
-      <span class="reward-divider" aria-hidden="true"></span>
-      <span class="reward-description">${escapeHtml(reward.description)}</span>
-      <span class="reward-category">${escapeHtml(visual.category)}</span>
-    </button>
-  `;
+    return '<button class="reward-card" type="button" data-reward="' + reward.id + '" disabled aria-pressed="false"><img class="reward-icon" src="./assets/pixel/icons/' + visual.icon + '.png" alt=""><strong>' + escapeHtml(reward.name) + '</strong><span class="reward-description">' + escapeHtml(reward.description) + '</span><span class="reward-category">' + escapeHtml(visual.category) + '</span></button>';
   }).join("");
-  ui.mazeRewardOverlay.hidden = false;
+  mazeState.selectedRewardId = null;
+  document.querySelector("#rewardConfirmButton").disabled = true;
+  document.querySelector("#rewardConfirmButton").textContent = "Choose a reward first";
+  Arcade.screens.open(ui.mazeRewardOverlay);
+
   ui.status.textContent = "Choose one gauntlet reward to open the boss gate.";
   showFloat("Choose a reward");
   window.setTimeout(() => {
@@ -10398,12 +10392,25 @@ function updateMazeRewardCardLock() {
 }
 
 function chooseMazeReward(rewardId) {
+  if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead || mazeState.rewardConfirming || performance.now() < mazeState.rewardInputReadyAt) return;
+  if (!mazeState.rewardOptions.some((option) => option.id === rewardId)) return;
+  mazeState.selectedRewardId = rewardId;
+  ui.mazeRewardCards.querySelectorAll(".reward-card").forEach((card) => {
+    const selected = card.dataset.reward === rewardId; card.classList.toggle("is-selected", selected); card.setAttribute("aria-pressed", String(selected));
+  });
+  const confirm = document.querySelector("#rewardConfirmButton"); confirm.disabled = false; confirm.textContent = "Confirm reward"; Arcade.emit("menu");
+}
+
+function confirmMazeReward() {
+  const rewardId = mazeState?.selectedRewardId;
+  if (!rewardId) return;
   if (!mazeState || !mazeState.rewardPending || mazeState.rewardChosen || player.dead) return;
   if (Number.isFinite(mazeState.rewardInputReadyAt) && performance.now() < mazeState.rewardInputReadyAt) return;
   if (mazeState.rewardConfirming) return;
   const reward = mazeState.rewardOptions.find((option) => option.id === rewardId);
   if (!reward) return;
   mazeState.rewardConfirming = true;
+  document.querySelector("#rewardConfirmButton").disabled = true; clearArcadeInputs();
   const selectedCard = Array.from(ui.mazeRewardCards?.querySelectorAll(".reward-card") || [])
     .find((card) => card.dataset.reward === rewardId);
   ui.mazeRewardCards?.querySelectorAll(".reward-card").forEach((card) => {
@@ -10418,9 +10425,8 @@ function chooseMazeReward(rewardId) {
     selectedCard?.classList.remove("is-confirming");
     selectedCard?.classList.add("is-confirmed");
   }, 280);
-  window.setTimeout(() => {
-    applyMazeRewardChoice(rewardId);
-  }, 560);
+  const rewardEncounter = mazeState;
+  window.setTimeout(() => { if (mazeState === rewardEncounter) applyMazeRewardChoice(rewardId); }, Arcade.settings.reducedMotion ? 0 : 280);
 }
 
 function applyMazeRewardChoice(rewardId) {
@@ -10437,6 +10443,7 @@ function applyMazeRewardChoice(rewardId) {
   });
   applyGear();
   if (player.maxHp > oldMaxHp) player.hp = Math.min(player.maxHp, player.hp + player.maxHp - oldMaxHp);
+  Arcade.emit("reward"); Arcade.screens.close(true);
   mazeState.rewardConfirming = false;
   mazeState.rewardPending = false;
   mazeState.rewardChosen = true;
@@ -10489,9 +10496,10 @@ function spawnSpecialSauce() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  ctx.clearRect(0, 0, Arcade.viewport.width, Arcade.viewport.height);
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
+  if (Arcade.settings.shake && !Arcade.settings.reducedMotion && performance.now() < cosmeticShakeUntil) ctx.translate(Math.round(Math.sin(performance.now() * 0.17)) * 2, 0);
   drawRooms();
   drawTrainingDummy();
   drawMazeEnemies();
@@ -10506,10 +10514,7 @@ function draw() {
   drawParticles();
   ctx.restore();
   drawTacoObjectiveText();
-  drawAbilityBar();
-  drawSpectateOverlay();
-  drawRunCompleteOverlay();
-  drawScreenBanner();
+  // Persistent DOM HUD and results are rendered separately from the world buffer.
 }
 
 function drawSpectateOverlay() {
@@ -10517,7 +10522,7 @@ function drawSpectateOverlay() {
   const target = currentSpectateTarget();
   if (!target) return;
   const label = spectatePeerLabel(target.id);
-  const x = canvas.clientWidth / 2;
+  const x = Arcade.viewport.width / 2;
   const y = 34;
   ctx.save();
   ctx.textAlign = "center";
@@ -10541,11 +10546,12 @@ function drawSpectateOverlay() {
 function drawRooms() {
   ctx.fillStyle = "#141917";
   ctx.fillRect(0, 0, world.width, world.height);
-  drawRoom(world.starter, "#27362f", "#a6b9a2");
+  if (player.room === "starter") drawRoom(world.starter, "#263e3d", "#5b7c80");
   if (player.room === "maze" && mazeState) drawMaze();
-  else if (boss.kind === "sushi") drawSushiArenaRoom();
-  else drawRoom(world.arena, "#30292b", "#c89b62");
+  else if (player.room === "arena" && boss.kind === "sushi") drawSushiArenaRoom();
+  else if (player.room === "arena") drawRoom(world.arena, "#30292b", "#c89b62");
   const gateLocked = runState.buildLocked;
+  if (player.room === "starter") {
   ctx.fillStyle = gateLocked ? "#4a3422" : "#80623a";
   ctx.fillRect(world.gate.x, world.gate.y, world.gate.w, world.gate.h);
   ctx.strokeStyle = gateLocked ? "#ff6f61" : "#f0d47c";
@@ -10557,9 +10563,10 @@ function drawRooms() {
   ctx.fillText(gateLocked ? "BUILD" : "READY", world.gate.x + world.gate.w / 2, world.gate.y + 58);
   ctx.fillText(gateLocked ? "LOCKED" : "GATE", world.gate.x + world.gate.w / 2, world.gate.y + 82);
   ctx.textAlign = "left";
-  drawStarterRoomLabels();
+  // Readable starter instructions live in the DOM coach.
+  }
 
-  if (player.room !== "maze" && boss.kind !== "sushi") {
+  if (player.room === "arena" && boss.kind !== "sushi") {
     ctx.fillStyle = "rgba(238, 228, 188, 0.1)";
     for (let x = world.arena.x + 70; x < world.arena.x + world.arena.w; x += 92) {
       ctx.fillRect(x, world.arena.y + 30, 2, world.arena.h - 60);
@@ -10663,6 +10670,7 @@ function drawGauntletRoom() {
   ctx.save();
   ctx.fillStyle = theme.floor;
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  Arcade.art.floor(ctx, bounds, boss.kind);
   ctx.strokeStyle = "rgba(247, 239, 217, 0.10)";
   ctx.lineWidth = 2;
   for (let i = 1; i < 6; i += 1) {
@@ -10782,6 +10790,7 @@ function drawRoom(rect, fill, trim) {
   ctx.strokeStyle = trim;
   ctx.lineWidth = world.wall;
   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+  Arcade.art.floor(ctx, rect, rect === world.starter ? "starter" : boss.kind);
 }
 
 function drawStarterRoomLabels() {
@@ -10790,7 +10799,7 @@ function drawStarterRoomLabels() {
   ctx.textAlign = "center";
   ctx.fillStyle = "#f4f1e6";
   ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
-  ctx.shadowBlur = 4;
+  ctx.shadowBlur = 0;
   ctx.font = "bold 24px sans-serif";
   ctx.fillText(runState.buildLocked ? "Build locked for this run" : "Choose class and armor", centerX, world.starter.y + 72);
   ctx.font = "15px sans-serif";
@@ -10863,6 +10872,7 @@ function drawMazeEnemies() {
     ctx.beginPath();
     ctx.ellipse(0, radius + 8, radius * 0.9, 7, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (!Arcade.art.boss(ctx, { ...enemy, x:0, y:0, radius, animationTime: moveTimer }, mazeState.kind)) {
     ctx.fillStyle = enemy.color;
     ctx.strokeStyle = enemy.miniBoss ? mazeState.theme.trim : "#171313";
     ctx.lineWidth = enemy.miniBoss ? 4 : 3;
@@ -10876,6 +10886,7 @@ function drawMazeEnemies() {
     ctx.arc(-radius * 0.32, -radius * 0.18, 3.5, 0, Math.PI * 2);
     ctx.arc(radius * 0.32, -radius * 0.18, 3.5, 0, Math.PI * 2);
     ctx.fill();
+    }
     const hpWidth = enemy.miniBoss ? 92 : 48;
     const maxHp = Number.isFinite(enemy.maxHp) && enemy.maxHp > 0 ? enemy.maxHp : 1;
     ctx.fillStyle = "rgba(10, 12, 11, 0.82)";
@@ -10900,19 +10911,7 @@ function generatedBossArtRow(target) {
   return 0;
 }
 
-function drawGeneratedBossSprite(target, kind, options = {}) {
-  const image = generatedArtImage(`bosses.${kind}`);
-  if (!isImageReady(image)) return false;
-  const radius = target.radius || 52;
-  const scale = options.scale || 1;
-  const frame = Math.floor(performance.now() / 160 + (target.x + target.y) * 0.01) % 4;
-  const row = generatedBossArtRow(target);
-  const drawW = radius * 2.55 * scale;
-  const drawH = radius * 2.55 * scale;
-  const shadowColor = target.enraged ? "#ff6f61" : "";
-  const shadowBlur = target.enraged ? 16 : 0;
-  return drawGeneratedSpriteFrame(`bosses.${kind}`, row, frame, target.x, target.y - radius * 0.04, drawW, drawH, { shadowColor, shadowBlur });
-}
+function drawGeneratedBossSprite(target, kind) { return Arcade.art.boss(ctx, target, kind); }
 
 function drawBoss() {
   if (player.room !== "arena") return;
@@ -10922,7 +10921,7 @@ function drawBoss() {
   }
   if (boss.hp <= 0) return;
   if (selectedBoss === boss) drawRing(boss.x, boss.y, boss.radius + 12, "#ffe082");
-  const generatedBossDrawn = ["sauce", "shake", "nacho", "pizza", "taco"].includes(boss.kind)
+  const generatedBossDrawn = ["sauce", "shake", "nacho", "pizza", "burger", "cola", "fries"].includes(boss.kind)
     ? drawGeneratedBossSprite(boss, boss.kind)
     : false;
   if (generatedBossDrawn) {
@@ -10971,6 +10970,7 @@ function drawBoss() {
 }
 
 function drawCondimentBoss(target) {
+  if (Arcade.art.boss(ctx, target, target.kind)) { drawCondimentHealth(target); return; }
   if (target.hp <= 0) return;
   if (selectedBoss === target) drawRing(target.x, target.y, target.radius + 10, "#ffe082");
   if (target.kind === "mustard" && target.state === "winding") drawRing(target.x, target.y, target.radius + 18, "#fff08a");
@@ -11220,6 +11220,16 @@ function drawBurgerBoss() {
 }
 
 function drawTacoTitanBoss() {
+  Arcade.art.boss(ctx, boss, "taco");
+  if (boss.shellGuardActive || boss.exposedFillingTimer > 0) drawRing(boss.x, boss.y, boss.radius + 14, boss.exposedFillingTimer > 0 ? "#69dec3" : "#efbe55");
+  if (boss.napkinTimer > 0 && boss.napkinZone) {
+    ctx.fillStyle = "#69dec333"; ctx.strokeStyle = "#69dec3"; ctx.lineWidth = 4;
+    const { x, y, w = 136, h = 92 } = boss.napkinZone;
+    ctx.fillRect(x - w / 2, y - h / 2, w, h); ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+  }
+}
+
+function drawLegacyTacoTitanBoss() {
   const crack = boss.phase >= 2 ? Math.sin(boss.animationTime * 12) * 3 : 0;
   ctx.save();
   ctx.translate(boss.x, boss.y);
@@ -11242,7 +11252,7 @@ function drawTacoTitanBoss() {
   }
   if (boss.exposedFillingTimer > 0) {
     ctx.shadowColor = "#ff8a32";
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = "#fff4c4";
     ctx.lineWidth = 6;
     ctx.beginPath();
@@ -11294,7 +11304,7 @@ function drawTacoTitanBoss() {
 
 function drawTacoObjectiveText() {
   if (boss.kind !== "taco" || player.room !== "arena" || player.dead || player.won) return;
-  const x = canvas.clientWidth / 2;
+  const x = Arcade.viewport.width / 2;
   const y = 92;
   const current = boss.tacoCurrentIngredient ? tacoIngredientName(boss.tacoCurrentIngredient) : "Ready";
   const progress = boss.tacoIngredientQueue?.length ? `${Math.min((boss.tacoPuzzleStep || 0) + 1, boss.tacoIngredientQueue.length)}/${boss.tacoIngredientQueue.length}` : "-";
@@ -11327,6 +11337,10 @@ function drawDonutDonaldBoss() {
     boss.donutMinions?.forEach(drawDonutMinion);
     return;
   }
+  Arcade.art.boss(ctx, boss, "donut"); boss.donutHoles?.forEach(drawDonutHole); boss.donutMinions?.forEach(drawDonutMinion); return;
+}
+
+function drawLegacyDonutDonaldBoss() {
   ctx.save();
   ctx.translate(boss.x, boss.y);
   const rolling = boss.animation === "royalRoll" || boss.animation === "royalRollWindup";
@@ -11506,7 +11520,7 @@ function drawSushiSerpentBoss() {
 
     if (segment.weak) {
       ctx.shadowColor = "#9ff089";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 0;
       ctx.strokeStyle = "#eaff9f";
       ctx.lineWidth = 5;
       ctx.beginPath();
@@ -11529,10 +11543,10 @@ function drawSushiSerpentBoss() {
   const neck = segments[1];
   const headAngle = neck ? Math.atan2(head.y - neck.y, head.x - neck.x) : head.heading ?? boss.serpentHeading;
   const headFrame = Math.floor((boss.animationTime || 0) * 9) % 4;
-  const headRow = sushiAnimationRow();
+  const headRow = generatedBossArtRow(boss);
   const headDrawn = drawGeneratedSpriteFrame("bosses.sushiDeluxe", headRow, headFrame, head.x, head.y, boss.radius * 3.35, boss.radius * 3.35, {
     cols: 4,
-    rows: 9,
+    rows: 4,
     rotation: headAngle,
     shadowColor: boss.enraged ? "#9ff05f" : "#f7dfaa",
     shadowBlur: boss.enraged ? 18 : 9,
@@ -11639,57 +11653,11 @@ function sushiAnimationRow() {
 }
 
 function drawTrainingDummy() {
-  if (player.room !== "starter") return;
-  if (!trainingDummy) return;
-  const target = trainingDummy;
-  ctx.save();
-  drawRing(target.x, target.y, target.radius + 9, "#f0d47c");
-  ctx.fillStyle = "#8b5a35";
-  ctx.strokeStyle = "#f0d47c";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.roundRect(target.x - 24, target.y - 46, 48, 78, 12);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#2a1c15";
-  ctx.fillRect(target.x - 30, target.y + 32, 60, 11);
-  ctx.fillStyle = "#d8c693";
-  ctx.beginPath();
-  ctx.arc(target.x, target.y - 18, 12, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#2a1c15";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(target.x - 14, target.y - 2);
-  ctx.lineTo(target.x + 14, target.y - 2);
-  ctx.moveTo(target.x, target.y - 30);
-  ctx.lineTo(target.x, target.y + 18);
-  ctx.stroke();
-  const width = 92;
-  const hpPercent = clamp(target.hp / target.maxHp, 0, 1);
-  ctx.fillStyle = "rgba(10, 12, 11, 0.8)";
-  ctx.fillRect(target.x - width / 2 - 2, target.y - 74, width + 4, 10);
-  ctx.fillStyle = "#4a241c";
-  ctx.fillRect(target.x - width / 2, target.y - 72, width, 6);
-  ctx.fillStyle = "#f0d47c";
-  ctx.fillRect(target.x - width / 2, target.y - 72, width * hpPercent, 6);
-  const seconds = target.dpsWindowStart ? Math.max(1, (performance.now() - target.dpsWindowStart) / 1000) : 1;
-  const dps = target.damageTotal ? Math.round(target.damageTotal / seconds) : 0;
-  ctx.fillStyle = "#fff2c6";
-  ctx.font = "bold 16px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Training Dummy", target.x, target.y - 88);
-  ctx.fillStyle = "rgba(10, 12, 11, 0.74)";
-  ctx.beginPath();
-  ctx.roundRect(target.x - 76, target.y + 52, 152, 46, 8);
-  ctx.fill();
-  ctx.fillStyle = "#f7efd9";
-  ctx.font = "bold 13px sans-serif";
-  ctx.fillText(target.lastDamage ? `Last Hit: ${target.lastDamage}` : "Click to test damage", target.x, target.y + 69);
-  ctx.fillStyle = dps ? "#92d4ff" : "#d0c6b4";
-  ctx.font = "bold 12px sans-serif";
-  ctx.fillText(dps ? `Dummy DPS: ${dps}` : "Dummy DPS: --", target.x, target.y + 87);
-  ctx.restore();
+  if (player.room !== "starter" || !trainingDummy) return;
+  Arcade.art.dummy(ctx,trainingDummy);
+  const width=92;
+  ctx.fillStyle="#101522";ctx.fillRect(trainingDummy.x-width/2-2,trainingDummy.y-78,width+4,10);
+  ctx.fillStyle="#efbe55";ctx.fillRect(trainingDummy.x-width/2,trainingDummy.y-76,width*clamp(trainingDummy.hp/trainingDummy.maxHp,0,1),6);
 }
 
 function strokeSmoothSushiPath(points) {
@@ -12029,11 +11997,12 @@ function drawNachoWalls() {
 
 function drawHazards() {
   hazards.forEach((hazard) => {
+    if (Arcade.art.telegraph(ctx, hazard)) return;
     if (drawGeneratedHazardProjectile(hazard)) return;
     if (hazard.type === "mazeShot") {
       ctx.fillStyle = hazard.color || "#f0d47c";
       ctx.shadowColor = hazard.color || "#f0d47c";
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
       ctx.fill();
@@ -13068,7 +13037,7 @@ function drawAbilityEffects() {
       ctx.fillStyle = "rgba(255, 215, 130, 0.18)";
       ctx.strokeStyle = "rgba(255, 244, 210, 0.9)";
       ctx.shadowColor = "#ffd782";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(12, 0);
@@ -13096,7 +13065,7 @@ function drawAbilityEffects() {
       ctx.fillStyle = "rgba(146, 212, 255, 0.14)";
       ctx.strokeStyle = "rgba(220, 255, 252, 0.9)";
       ctx.shadowColor = "#92d4ff";
-      ctx.shadowBlur = 22;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 3;
       ctx.setLineDash([14, 9]);
       ctx.beginPath();
@@ -13128,7 +13097,7 @@ function drawAbilityEffects() {
       ctx.fillStyle = "rgba(240, 212, 124, 0.14)";
       ctx.strokeStyle = "rgba(255, 238, 178, 0.86)";
       ctx.shadowColor = "#f0d47c";
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, effect.r * (0.72 + progress * 0.28), 0, Math.PI * 2);
@@ -13151,7 +13120,7 @@ function drawAbilityEffects() {
       ctx.fillStyle = holy ? "rgba(255, 240, 191, 0.18)" : "rgba(240, 212, 124, 0.16)";
       ctx.strokeStyle = holy ? "rgba(255, 244, 210, 0.92)" : "rgba(255, 238, 178, 0.86)";
       ctx.shadowColor = holy ? "#fff0bf" : "#f0d47c";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, ring, 0, Math.PI * 2);
@@ -13173,7 +13142,7 @@ function drawAbilityEffects() {
       ctx.strokeStyle = "rgba(255, 238, 178, 0.88)";
       ctx.fillStyle = "rgba(240, 212, 124, 0.18)";
       ctx.shadowColor = "#f0d47c";
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, effect.r * (0.55 + progress * 0.75), 0, Math.PI * 2);
@@ -13189,7 +13158,7 @@ function drawAbilityEffects() {
       ctx.strokeStyle = "rgba(240, 212, 124, 0.78)";
       ctx.fillStyle = "rgba(240, 212, 124, 0.08)";
       ctx.shadowColor = "#f0d47c";
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
@@ -13219,7 +13188,7 @@ function drawAbilityEffects() {
       ctx.fillStyle = fill;
       ctx.strokeStyle = stroke;
       ctx.shadowColor = glow;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
@@ -13235,32 +13204,27 @@ function drawAbilityEffects() {
       return;
     }
     if (effect.type === "arrowStorm" || effect.type === "meteorField" || effect.type === "poisonCloud" || effect.type === "consecration" || effect.type === "divineBulwark") {
-      const configs = {
-        arrowStorm: ["rgba(255, 215, 130, 0.12)", "rgba(255, 215, 130, 0.72)", "#ffd782"],
-        meteorField: ["rgba(255, 122, 43, 0.13)", "rgba(255, 138, 50, 0.78)", "#ff8a32"],
-        poisonCloud: ["rgba(112, 210, 90, 0.16)", "rgba(155, 224, 111, 0.62)", "#9be06f"],
-        consecration: ["rgba(255, 240, 191, 0.14)", "rgba(255, 240, 191, 0.82)", "#fff0bf"],
-        divineBulwark: ["rgba(255, 240, 191, 0.09)", "rgba(255, 240, 191, 0.62)", "#fff0bf"],
-      };
-      const [fill, stroke, glow] = configs[effect.type];
-      const spin = (effect.age || 0) * (effect.type === "poisonCloud" ? 0.8 : 1.6);
+      // Friendly fields use a teal dotted boundary and brackets; hostile areas use crosses and stripes.
       ctx.globalAlpha = effect.ttl < 0.7 ? alpha : 1;
-      ctx.fillStyle = fill;
-      ctx.strokeStyle = stroke;
-      ctx.shadowColor = glow;
-      ctx.shadowBlur = 12;
-      ctx.lineWidth = effect.type === "divineBulwark" ? 4 : 3;
+      ctx.fillStyle = "rgba(105, 222, 195, 0.12)";
+      ctx.strokeStyle = "#69dec3";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([3, 9]);
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.setLineDash(effect.type === "poisonCloud" ? [10, 12] : []);
-      for (let i = 0; i < 3; i += 1) {
-        ctx.beginPath();
-        ctx.arc(effect.x, effect.y, effect.r * (0.38 + i * 0.18), spin + i, spin + i + Math.PI * 1.2);
-        ctx.stroke();
-      }
       ctx.setLineDash([]);
+      for (let corner = 0; corner < 4; corner += 1) {
+        const angle = Math.PI / 4 + corner * Math.PI / 2;
+        const x = Math.round(effect.x + Math.cos(angle) * effect.r);
+        const y = Math.round(effect.y + Math.sin(angle) * effect.r);
+        const dx = Math.cos(angle) > 0 ? -1 : 1;
+        const dy = Math.sin(angle) > 0 ? -1 : 1;
+        ctx.beginPath(); ctx.moveTo(x + dx * 12, y); ctx.lineTo(x, y); ctx.lineTo(x, y + dy * 12); ctx.stroke();
+      }
+      ctx.fillStyle = "#fff1cd";
+      ctx.fillRect(Math.round(effect.x) - 3, Math.round(effect.y) - 3, 6, 6);
       ctx.restore();
       return;
     }
@@ -13283,7 +13247,7 @@ function drawAbilityEffects() {
       ctx.globalAlpha = alpha * 0.7;
       ctx.strokeStyle = "#92d4ff";
       ctx.shadowColor = "#92d4ff";
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.moveTo(effect.x, effect.y);
@@ -13321,7 +13285,7 @@ function drawAbilityEffects() {
       ctx.strokeStyle = "rgba(155, 224, 111, 0.75)";
       ctx.lineWidth = 9;
       ctx.shadowColor = "#9be06f";
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.moveTo(effect.x, effect.y - 18);
       ctx.lineTo(effect.x2, effect.y2 - 18);
@@ -13340,7 +13304,7 @@ function drawAbilityEffects() {
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = effect.empowered ? "#ff6e7f" : "#c8ff9a";
       ctx.shadowColor = effect.empowered ? "#ff6e7f" : "#9be06f";
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = effect.empowered ? 6 : 4;
       ctx.beginPath();
       ctx.arc(0, 0, effect.range * (0.5 + progress * 0.5), -0.48, 0.48);
@@ -13372,7 +13336,7 @@ function drawAbilityEffects() {
       ctx.strokeStyle = timeWarp ? "rgba(186, 252, 255, 0.78)" : "rgba(186, 252, 255, 0.72)";
       ctx.fillStyle = timeWarp ? "rgba(120, 255, 244, 0.1)" : "rgba(120, 255, 244, 0.1)";
       ctx.shadowColor = "#8cf8ff";
-      ctx.shadowBlur = timeWarp ? 18 : 18;
+      ctx.shadowBlur = 0;
       ctx.lineWidth = timeWarp ? 4 : 3;
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, effect.r * (timeWarp ? 1 : 0.45 + progress * 0.55), 0, Math.PI * 2);
@@ -13407,7 +13371,7 @@ function drawAbilityEffects() {
       ctx.rotate(effect.angle);
       ctx.globalAlpha = alpha;
       ctx.shadowColor = "#ff8a32";
-      ctx.shadowBlur = 24;
+      ctx.shadowBlur = 0;
       ctx.fillStyle = "rgba(255, 122, 43, 0.42)";
       ctx.beginPath();
       ctx.moveTo(54 + progress * 24, 0);
@@ -13427,7 +13391,7 @@ function drawAbilityEffects() {
       const ring = effect.r * (0.28 + progress * 0.72);
       ctx.globalAlpha = alpha;
       ctx.shadowColor = "#ff8a32";
-      ctx.shadowBlur = 26;
+      ctx.shadowBlur = 0;
       ctx.fillStyle = "rgba(255, 108, 31, 0.22)";
       ctx.strokeStyle = "rgba(255, 230, 151, 0.9)";
       ctx.lineWidth = 6;
@@ -13450,7 +13414,7 @@ function drawAbilityEffects() {
       ctx.rotate(effect.angle);
       ctx.globalAlpha = alpha;
       ctx.shadowColor = "#8cf8ff";
-      ctx.shadowBlur = 24;
+      ctx.shadowBlur = 0;
       ctx.strokeStyle = "rgba(186, 252, 255, 0.9)";
       ctx.lineWidth = 5;
       ctx.beginPath();
@@ -13579,7 +13543,7 @@ function drawPlayerProjectiles() {
       if (projectile.fireBlast) {
         const pulse = Math.sin((projectile.age || 0) * 18) * 0.5 + 0.5;
         ctx.shadowColor = "#ff8a32";
-        ctx.shadowBlur = 26 + pulse * 16;
+        ctx.shadowBlur = 0;
         ctx.fillStyle = "rgba(255, 111, 35, 0.26)";
         ctx.beginPath();
         ctx.ellipse(-18, 0, 44, 22, 0, 0, Math.PI * 2);
@@ -13602,14 +13566,14 @@ function drawPlayerProjectiles() {
       }
       const pulse = Math.sin((projectile.age || 0) * 24) * 0.5 + 0.5;
       ctx.shadowColor = projectile.color;
-      ctx.shadowBlur = 20 + pulse * 10;
+      ctx.shadowBlur = 0;
       ctx.fillStyle = "rgba(72, 239, 228, 0.2)";
       ctx.beginPath();
       ctx.ellipse(-18, 0, 26, 10, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#dffffc";
       ctx.shadowColor = projectile.color;
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.arc(0, 0, projectile.r * 0.7, 0, Math.PI * 2);
       ctx.fill();
@@ -13649,7 +13613,7 @@ function drawRemoteProjectiles() {
     ctx.rotate(angle);
     ctx.globalAlpha = 0.72;
     ctx.shadowColor = projectile.color;
-    ctx.shadowBlur = projectile.heavy ? 18 : 8;
+    ctx.shadowBlur = 0;
     if (drawGeneratedProjectileAtOrigin(projectile, 0.82)) {
       ctx.restore();
       return;
@@ -13706,7 +13670,7 @@ function drawMeleeProjectile(projectile) {
   const pulse = Math.sin(age * 22) * 0.5 + 0.5;
   ctx.save();
   ctx.shadowColor = "#fff0bf";
-  ctx.shadowBlur = 16 + pulse * 10;
+  ctx.shadowBlur = 0;
   ctx.fillStyle = "rgba(255, 235, 188, 0.16)";
   ctx.beginPath();
   ctx.ellipse(-18, 0, 44, 12, 0, 0, Math.PI * 2);
@@ -13738,7 +13702,7 @@ function drawBardNoteProjectile(projectile) {
   const pulse = Math.sin(age * 18) * 0.5 + 0.5;
   ctx.save();
   ctx.shadowColor = projectile.color || "#ffd782";
-  ctx.shadowBlur = 14 + pulse * 8;
+  ctx.shadowBlur = 0;
   ctx.strokeStyle = "#fff4c4";
   ctx.fillStyle = projectile.color || "#f6c46d";
   ctx.lineWidth = 4;
@@ -14049,6 +14013,9 @@ function playerOutfitSprite() {
 }
 
 function outfitSpriteForGear(weaponId, armorId) {
+  const pixelImage = generatedArtImage("classes." + generatedClassArtKeyForWeapon(weaponId));
+  if (isImageReady(pixelImage)) return { sprite: pixelImage, sideCrop: 0, cropWidth: 1, cropBottom: 1, drawWidth: 64, drawHeight: 96, topCrop: 0 };
+
   if (weaponId === "emberBow" && rangedSprite.complete && rangedSprite.naturalWidth > 0) {
     return {
       sprite: cleanedRangedSprite || rangedSprite,
@@ -14152,6 +14119,7 @@ function drawPlayerSprite() {
 }
 
 function drawCharacterSprite(character, outfit, sprite) {
+  if (Arcade.art.hero(ctx, character, generatedClassArtKeyForWeapon(character.weapon))) return;
   const spriteKey = spriteAdjustmentKeyForWeapon(character.weapon);
   const frameSelection = spriteFrameSelectionForKey(spriteKey);
   const rows = frameSelection.rows || outfit?.rows || { down: 0, left: 1, right: 2, up: 3 };
@@ -14339,7 +14307,7 @@ function drawMeleeAttackWindup() {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.shadowColor = "#fff0bf";
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 0;
   ctx.fillStyle = "rgba(255, 244, 210, 0.58)";
   ctx.beginPath();
   ctx.arc(-24 - pull * 10, -18, 4 + pull * 3, 0, Math.PI * 2);
@@ -14359,7 +14327,7 @@ function drawMeleeAttackSlash() {
   ctx.rotate(angle);
   ctx.globalAlpha = alpha;
   ctx.shadowColor = "#fff0bf";
-  ctx.shadowBlur = 24;
+  ctx.shadowBlur = 0;
   ctx.lineCap = "round";
 
   ctx.strokeStyle = "rgba(255, 244, 210, 0.9)";
@@ -14395,7 +14363,7 @@ function drawMageCastAura() {
   ctx.strokeStyle = "#48efe4";
   ctx.fillStyle = "rgba(72, 239, 228, 0.08)";
   ctx.shadowColor = "#48efe4";
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = 0;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(player.x, player.y - 16, 20 + pulse * 8, 0, Math.PI * 2);
@@ -14419,7 +14387,7 @@ function drawMageCastBurst() {
   ctx.rotate(angle);
   ctx.globalAlpha = alpha;
   ctx.shadowColor = "#48efe4";
-  ctx.shadowBlur = 24;
+  ctx.shadowBlur = 0;
   ctx.fillStyle = "rgba(72, 239, 228, 0.5)";
   ctx.beginPath();
   ctx.moveTo(34 + progress * 18, 0);
@@ -14454,7 +14422,7 @@ function drawRangerAttackWindup() {
   ctx.rotate(angle);
   ctx.globalAlpha = 0.35 + draw * 0.45;
   ctx.shadowColor = "#e0a14e";
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 0;
   ctx.strokeStyle = "#ffe4a7";
   ctx.lineWidth = 4;
   ctx.beginPath();
@@ -14488,7 +14456,7 @@ function drawRangerAttackRelease() {
   ctx.rotate(angle);
   ctx.globalAlpha = alpha;
   ctx.shadowColor = "#ffd782";
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 0;
   ctx.strokeStyle = "rgba(255, 236, 180, 0.9)";
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -14624,9 +14592,9 @@ function drawTinyStar(x, y, radius) {
 
 function drawParticles() {
   const left = camera.x - 80;
-  const right = camera.x + canvas.clientWidth + 80;
+  const right = camera.x + Arcade.viewport.width + 80;
   const top = camera.y - 80;
-  const bottom = camera.y + canvas.clientHeight + 80;
+  const bottom = camera.y + Arcade.viewport.height + 80;
   ctx.save();
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
@@ -14784,12 +14752,12 @@ function drawAbilityTooltip() {
   const titleFont = "900 15px sans-serif";
   const metaFont = "800 12px sans-serif";
   const bodyFont = "700 13px sans-serif";
-  const w = Math.min(360, Math.max(280, canvas.clientWidth - 28));
+  const w = Math.min(360, Math.max(280, Arcade.viewport.width - 28));
   const bodyLines = wrapCanvasText(slot.ability.description, w - 32, bodyFont);
   const h = 74 + bodyLines.length * 18;
-  const x = clamp(slot.x + slot.w / 2 - w / 2, 14, canvas.clientWidth - w - 14);
+  const x = clamp(slot.x + slot.w / 2 - w / 2, 14, Arcade.viewport.width - w - 14);
   const aboveY = slot.y - h - 12;
-  const y = aboveY >= 12 ? aboveY : Math.min(canvas.clientHeight - h - 12, slot.y + slot.h + 12);
+  const y = aboveY >= 12 ? aboveY : Math.min(Arcade.viewport.height - h - 12, slot.y + slot.h + 12);
   const accent = slot.tone === "blue" ? "#8ec7ff" : "#f0c35b";
   const cooldown = slot.cooldown > 0 ? `${slot.cooldown.toFixed(1)}s remaining` : `Cooldown ${slot.ability.cooldown}s`;
 
@@ -14798,7 +14766,7 @@ function drawAbilityTooltip() {
   ctx.strokeStyle = accent;
   ctx.lineWidth = 2;
   ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 0;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 7);
   ctx.fill();
@@ -14829,9 +14797,9 @@ function drawAbilityBar() {
   const slotWidths = abilities.map((ability) => ability.key === "Space" ? 256 : 234);
   const potionW = 218;
   const totalW = slotWidths.reduce((sum, width) => sum + width, 0) + potionW + gap * abilities.length;
-  const scale = Math.min(1, Math.max(0.68, (canvas.clientWidth - 28) / totalW));
-  const scaledCanvasW = canvas.clientWidth / scale;
-  const scaledCanvasH = canvas.clientHeight / scale;
+  const scale = Math.min(1, Math.max(0.68, (Arcade.viewport.width - 28) / totalW));
+  const scaledCanvasW = Arcade.viewport.width / scale;
+  const scaledCanvasH = Arcade.viewport.height / scale;
   let cursorX = scaledCanvasW / 2 - totalW / 2;
   const y = scaledCanvasH - slotH - 26;
   abilityHudSlots = [];
@@ -14892,8 +14860,8 @@ function drawScreenBanner() {
   const progress = clamp(screenBanner.timer / screenBanner.duration, 0, 1);
   const alpha = clamp(Math.min(progress * 2.4, 1), 0, 1);
   const y = 96 - (1 - alpha) * 18;
-  const w = Math.min(canvas.clientWidth - 44, 620);
-  const x = canvas.clientWidth / 2 - w / 2;
+  const w = Math.min(Arcade.viewport.width - 44, 620);
+  const x = Arcade.viewport.width / 2 - w / 2;
   const accent = screenBanner.tone === "victory" ? "#9be06f" : screenBanner.tone === "danger" ? "#ff6f61" : "#f0d47c";
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -14908,11 +14876,11 @@ function drawScreenBanner() {
   ctx.font = "bold 34px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(screenBanner.title, canvas.clientWidth / 2, y + 43);
+  ctx.fillText(screenBanner.title, Arcade.viewport.width / 2, y + 43);
   if (screenBanner.subtitle) {
     ctx.fillStyle = "#f7efd9";
     ctx.font = "bold 15px sans-serif";
-    ctx.fillText(screenBanner.subtitle, canvas.clientWidth / 2, y + 76);
+    ctx.fillText(screenBanner.subtitle, Arcade.viewport.width / 2, y + 76);
   }
   ctx.restore();
 }
@@ -14921,18 +14889,18 @@ function drawRunCompleteOverlay() {
   if (!player.won) return;
   ctx.save();
   ctx.fillStyle = "rgba(5, 9, 7, 0.72)";
-  ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  ctx.fillRect(0, 0, Arcade.viewport.width, Arcade.viewport.height);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#9be06f";
   ctx.font = "bold 66px sans-serif";
-  ctx.fillText("Run Cleared", canvas.clientWidth / 2, canvas.clientHeight / 2 - 34);
+  ctx.fillText("Run Cleared", Arcade.viewport.width / 2, Arcade.viewport.height / 2 - 34);
   ctx.fillStyle = "#f7efd9";
   ctx.font = "bold 20px sans-serif";
-  ctx.fillText("All bosses defeated", canvas.clientWidth / 2, canvas.clientHeight / 2 + 24);
+  ctx.fillText("All bosses defeated", Arcade.viewport.width / 2, Arcade.viewport.height / 2 + 24);
   ctx.fillStyle = "#d0c6b4";
   ctx.font = "15px sans-serif";
-  ctx.fillText("Use Reset Fight to return to a clean run state.", canvas.clientWidth / 2, canvas.clientHeight / 2 + 58);
+  ctx.fillText("Use Reset Fight to return to a clean run state.", Arcade.viewport.width / 2, Arcade.viewport.height / 2 + 58);
   ctx.restore();
 }
 
@@ -15008,14 +14976,14 @@ function openSpriteSheetEditor() {
     movementKeys[direction] = false;
   });
   stopHeldPrimaryAttack();
-  ui.spriteSheetOverlay.hidden = false;
+  Arcade.screens.open(ui.spriteSheetOverlay);
   renderBossDamagePanel();
   renderSpriteAdjustPanel();
   renderSpriteSheetEditor();
 }
 
 function closeSpriteSheetEditor() {
-  if (ui.spriteSheetOverlay) ui.spriteSheetOverlay.hidden = true;
+  if (Arcade.screens.current === ui.spriteSheetOverlay) Arcade.screens.close(); else if (ui.spriteSheetOverlay) ui.spriteSheetOverlay.hidden = true;
   if (ui.spriteAdjustToggle) ui.spriteAdjustToggle.setAttribute("aria-expanded", "false");
 }
 
@@ -15171,37 +15139,45 @@ function drawSpriteSheetPreview() {
 
 function renderUi() {
   const spectateTarget = currentSpectateTarget();
-  ui.roomText.textContent = spectateTarget ? `Spectating ${spectatePeerLabel(spectateTarget.id)}` : player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : "Boss Arena";
-  ui.hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
-  ui.hpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
+  Arcade.setText(ui.roomText, spectateTarget ? `Spectating ${spectatePeerLabel(spectateTarget.id)}` : player.dead ? "You're Stuffed" : player.room === "starter" ? "Starter Room" : player.room === "maze" ? (mazeState?.theme.name || "Maze") : player.won ? "Victory" : boss.name);
+  Arcade.setText(ui.hpText, `${Math.ceil(player.hp)}/${player.maxHp}`);
+  const hpWidth = `${(player.hp / player.maxHp) * 100}%`; if (ui.hpBar.style.width !== hpWidth) ui.hpBar.style.width = hpWidth;
   const bossHp = bossHealthSummary();
   const mazeHpLabel = mazeState?.miniBossSpawned ? "Warden" : "Wave";
-  ui.bossHpText.textContent = player.room === "maze"
-    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} ${mazeHpLabel}`
+  Arcade.setText(ui.bossHpText, player.room === "maze"
+    ? mazeState?.contract ? `${mazeState.contract.completed}/${mazeState.contract.goal} ${RogueContracts.units[mazeState.contract.mode]}` : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} ${mazeHpLabel}`
     : boss.kind === "shake"
-    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Bar ${boss.phase}/3`
+    ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Flavor ${boss.phase}/3`
     : boss.kind === "donut"
-      ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/6`
+      ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/${boss.totalPhases}`
     : boss.kind === "nacho" || boss.kind === "pizza" || boss.kind === "taco" || boss.kind === "sushi"
       ? `${Math.ceil(bossHp.hp)}/${bossHp.maxHp} Phase ${boss.phase}/3`
-      : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`;
-  ui.bossHpBar.style.width = `${(bossHp.hp / bossHp.maxHp) * 100}%`;
-  ui.potionButton.textContent = `Potion (${player.potions})`;
+      : `${Math.ceil(bossHp.hp)}/${bossHp.maxHp}`);
+  const bossWidth = `${(bossHp.hp / bossHp.maxHp) * 100}%`; if (ui.bossHpBar.style.width !== bossWidth) ui.bossHpBar.style.width = bossWidth;
+  // Potion nodes stay mounted; Arcade.ui updates their text.
   const weapon = gear.weapon[player.gear.weapon];
   const armor = gear.armor[player.gear.armor];
   const activeBuffs = Object.values(runState.mazeBuffs).filter((value) => value > 0).length;
+  const buildSignature = [currentClassKey(), player.gear.weapon, player.gear.armor, playerDamage(), player.stats.range, effectivePlayerArmor(), Math.round(playerSpeed()), player.maxHp, JSON.stringify(runState.mazeBuffs), Array.from(runState.learnedTalents).join(",")].join(":");
+  if (buildSignature !== buildPanelSignature) {
+  buildPanelSignature = buildSignature;
   ui.buildPanel.innerHTML = `
     <div><span>Class</span><strong>${currentClassOption().name}</strong></div>
     <div><span>Weapon</span><strong>${weapon.name}</strong></div>
     <div><span>Armor</span><strong>${armor.name}</strong></div>
     <div><span>Damage</span><strong>${playerDamage()}</strong></div>
+    <div><span>Maximum health</span><strong>${player.maxHp}</strong></div>
     <div><span>Range</span><strong>${player.stats.range}</strong></div>
     <div><span>Armor</span><strong>${effectivePlayerArmor()}</strong></div>
     <div><span>Speed</span><strong>${Math.round(playerSpeed())}</strong></div>
     <div><span>Run Buffs</span><strong>${activeBuffs}</strong></div>
   `;
+  document.querySelector("#runBuffList").innerHTML = Object.entries(runState.mazeBuffs).filter(([, value]) => value > 0).map(([key, value]) => '<span>' + escapeHtml(arcadeBuffLabel(key, value)) + '</span>').join("") || '<p class="menu-status">Clear a boss or an optional contract to earn a temporary relic.</p>';
+  }
+  const learnedBuild = Array.from(runState.learnedTalents).map((id) => '<span>' + escapeHtml(talentById.get(id)?.name || id) + '</span>').join("") || '<p class="menu-status">No permanent talents equipped. Buy and equip them between runs.</p>';
+  const buildTalents = document.querySelector("#buildTalents"); if (buildTalents.innerHTML !== learnedBuild) buildTalents.innerHTML = learnedBuild;
   if (ui.classMenuButton) {
-    const label = runState.buildLocked ? `${currentClassOption().name} - Locked for this run` : `${currentClassOption().name} - Select Class`;
+    const label = runState.buildLocked ? "Loadout locked" : "Loadout";
     if (ui.classMenuButton.textContent !== label) ui.classMenuButton.textContent = label;
     ui.classMenuButton.disabled = runState.buildLocked;
     ui.classMenuButton.title = runState.buildLocked ? "Class is locked for this run" : "Select class";
@@ -15213,7 +15189,7 @@ function renderUi() {
     ui.armorMenuButton.title = runState.buildLocked ? "Armor is locked for this run" : "Select armor";
   }
   if (ui.skillsButton) {
-    const label = `Skills (${runState.talentPoints})`;
+    const label = `Talents (${runState.talentPoints})`;
     if (ui.skillsButton.textContent !== label) ui.skillsButton.textContent = label;
     ui.skillsButton.classList.toggle("has-points", runState.talentPoints > 0);
     ui.skillsButton.title = runState.buildLocked
@@ -15230,27 +15206,6 @@ function renderUi() {
   }
   renderBossDamagePanel();
   renderSpriteAdjustPanel();
-  if (ui.classSelector) {
-    const signature = `${player.gear.weapon}:${classOptions.map((option) => `${option.id}:${option.locked ? 1 : 0}`).join("|")}`;
-    if (signature !== classSelectorSignature) {
-      classSelectorSignature = signature;
-      ui.classSelector.innerHTML = classOptions.map((option) => {
-        const selected = option.weapon === player.gear.weapon;
-        const locked = Boolean(option.locked);
-        return `<button class="choice ${selected ? "selected" : ""} ${locked ? "locked" : ""}" type="button" data-class="${option.id}" ${locked ? "disabled aria-disabled=\"true\"" : ""}><span>${option.name}</span><small>${locked ? "Locked" : option.note}</small></button>`;
-      }).join("");
-    }
-  }
-  if (ui.armorSelector) {
-    const signature = player.gear.armor;
-    if (signature !== armorSelectorSignature) {
-      armorSelectorSignature = signature;
-      ui.armorSelector.innerHTML = Object.entries(gear.armor).map(([id, item]) => {
-        const selected = player.gear.armor === id;
-        return `<button class="choice ${selected ? "selected" : ""}" type="button" data-armor="${id}"><span>${item.name}</span><small>${item.tag}</small></button>`;
-      }).join("");
-    }
-  }
   if (ui.armory) {
     ui.armory.innerHTML = [...Object.values(gear.weapon), ...Object.values(gear.armor)].map((item) => {
       const selected = player.gear[item.slot] && gear[item.slot][player.gear[item.slot]].name === item.name;
@@ -15270,9 +15225,17 @@ function renderUi() {
   }
   if (ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) renderTalentTree();
   if (ui.deathScreen) {
-    ui.deathScreen.hidden = !player.dead || Boolean(spectateTarget);
+    const deadWithoutSpectator = player.dead && !player.won && !spectateTarget && !intermission;
+    if (deadWithoutSpectator && Arcade.screens.current !== ui.deathScreen) {
+      document.querySelector("#deathCause").textContent = "Defeated by " + (deathCause || "the kitchen") + ".";
+      Arcade.screens.open(ui.deathScreen);
+    } else if (!deadWithoutSpectator) {
+      ui.deathScreen.hidden = true;
+      if (Arcade.screens.current === ui.deathScreen) Arcade.screens.close(true);
+    }
   }
   updateMultiplayerDebugHud();
+  renderArcadeUi();
 }
 
 function updateMultiplayerDebugHud() {
@@ -15375,6 +15338,13 @@ function initializeMultiplayerServerInput() {
   ui.serverUrlInput.value = multiplayerServerUrl();
   ui.serverUrlInput.addEventListener("change", persistMultiplayerServerUrl);
   ui.serverUrlInput.addEventListener("blur", persistMultiplayerServerUrl);
+  document.querySelector("#connectServerButton")?.addEventListener("click", () => {
+    persistMultiplayerServerUrl();
+    closeMultiplayerSocket();
+    multiplayer.peers.clear();
+    renderRoomList();
+    setupMultiplayer();
+  });
 }
 
 function initializeDesktopUpdates() {
@@ -15423,12 +15393,20 @@ function connectMultiplayer() {
     return;
   }
   persistMultiplayerServerUrl();
-  const socket = new WebSocket(socketUrl);
+  let socket;
+  try { socket = new WebSocket(socketUrl); }
+  catch (_) {
+    multiplayer.enabled = false;
+    setCoopStatus("Co-op offline", 1);
+    setMenuStatus("Could not connect. Check the multiplayer server URL.");
+    return;
+  }
   multiplayer.socket = socket;
   setCoopStatus("Connecting", multiplayer.count);
   setMenuStatus("Connecting to server...");
 
   socket.addEventListener("open", () => {
+    if (multiplayer.socket !== socket || !multiplayer.enabled) return;
     multiplayer.connected = true;
     multiplayer.everConnected = true;
     multiplayer.reconnectAttempts = 0;
@@ -15440,6 +15418,7 @@ function connectMultiplayer() {
   });
 
   socket.addEventListener("message", (event) => {
+    if (multiplayer.socket !== socket || !multiplayer.enabled) return;
     try {
       const message = JSON.parse(event.data);
       debugReportState.messageSeq += 1;
@@ -15460,6 +15439,7 @@ function connectMultiplayer() {
   });
 
   socket.addEventListener("close", (event) => {
+    if (multiplayer.socket !== socket || !multiplayer.enabled) return;
     recordDebugEvent("ws-close", {
       code: event.code,
       reason: event.reason,
@@ -15470,6 +15450,10 @@ function connectMultiplayer() {
     multiplayer.connected = false;
     multiplayer.socket = null;
     multiplayer.peers.clear();
+    if (runState.active && runState.mode === "multiplayer") {
+      returnToMultiplayerLobby("Connection lost. Reconnect and join a room to start again.");
+      multiplayer.room = null; showMenuScreen("multiplayer");
+    }
     if (!multiplayer.everConnected) {
       multiplayer.enabled = false;
       setCoopStatus("Co-op offline", 1);
@@ -15788,6 +15772,11 @@ function cloneSyncValue(value, depth) {
 }
 
 function handleMultiplayerEvent(peerId, event) {
+  if (event?.kind === "party-retry") {
+    if (Arcade.network.retryValid(event, peerId, multiplayer.room?.hostId, multiplayer.phaseSeq, boss.kind) ) {
+      multiplayer.phaseSeq = event.phaseSeq; retryEncounterLocally(event);
+    } return;
+  }
   if (event.kind === "party-ready") {
     handlePartyReadyEvent(peerId, event);
     return;
@@ -17481,16 +17470,23 @@ function setCoopStatus(text, count) {
 }
 
 function showMenuScreen(screen) {
+  Arcade.screens.close(true);
+  clearArcadeInputs();
   ui.menuOverlay?.classList.remove("hidden");
+  document.querySelector(".shell").inert = true;
   [ui.mainMenu, ui.multiplayerMenu, ui.roomLobby, ui.devMenu].forEach((panel) => panel?.classList.remove("active"));
   if (screen === "main") ui.mainMenu?.classList.add("active");
   if (screen === "multiplayer") ui.multiplayerMenu?.classList.add("active");
   if (screen === "lobby") ui.roomLobby?.classList.add("active");
   if (screen === "dev") ui.devMenu?.classList.add("active");
+  const panel = [ui.mainMenu, ui.multiplayerMenu, ui.roomLobby, ui.devMenu].find((entry) => entry?.classList.contains("active"));
+  panel?.querySelector("button:not([disabled]), input, summary")?.focus();
 }
 
 function hideMenus() {
+  clearArcadeInputs();
   ui.menuOverlay?.classList.add("hidden");
+  document.querySelector(".shell").inert = Boolean(Arcade.screens.current);
 }
 
 function playerName() {
@@ -17502,7 +17498,9 @@ function roomName() {
 }
 
 function setMenuStatus(text) {
-  if (ui.multiplayerStatus) ui.multiplayerStatus.textContent = text;
+  Arcade.setText(ui.multiplayerStatus, text);
+  if (ui.createRoomButton) ui.createRoomButton.disabled = !multiplayer.connected;
+  if (!multiplayer.connected) renderRoomList();
 }
 
 function setLobbyStatus(text) {
@@ -17532,6 +17530,11 @@ function startDevTestFromPassword() {
 
 function renderRoomList() {
   if (!ui.roomList) return;
+  if (!multiplayer.connected) {
+    const markup = '<div class="room-card"><div><strong>Server offline</strong><span>Connect to a server to browse rooms.</span></div></div>';
+    if (ui.roomList.innerHTML !== markup) ui.roomList.innerHTML = markup;
+    return;
+  }
   if (!multiplayer.rooms.length) {
     ui.roomList.innerHTML = `<div class="room-card"><div><strong>No Rooms</strong><span>Create one to start co-op.</span></div></div>`;
     return;
@@ -17575,7 +17578,7 @@ function renderLobby() {
     ui.readyButton.textContent = multiplayer.ready ? "Unready" : "Ready";
   }
   if (ui.startRoomButton) {
-    ui.startRoomButton.disabled = !isHost;
+    ui.startRoomButton.disabled = !isHost;document.getElementById("partyPractice").disabled=!isHost;
   }
   setLobbyStatus(isHost ? "Start when everyone is ready. The run begins at Big Cola." : "Ready up when your build is set.");
 }
@@ -17591,6 +17594,9 @@ function escapeHtml(value) {
 function closeMultiplayerSocket() {
   multiplayer.enabled = false;
   multiplayer.connected = false;
+  multiplayer.everConnected = false;
+  multiplayer.reconnectAttempts = 0;
+  multiplayer.reconnectTimer = 0;
   multiplayer.room = null;
   multiplayer.rooms = [];
   multiplayer.ready = false;
@@ -17605,6 +17611,7 @@ function closeMultiplayerSocket() {
 }
 
 function returnToMultiplayerLobby(message) {
+  intermission = null; encounterCheckpoint = null; clearArcadeInputs();
   clearEncounterState();
   clearMazeState();
   resetPartySyncState();
@@ -17633,11 +17640,11 @@ function openClassMenu() {
     showFloat("Build locked");
     return;
   }
-  if (ui.classMenuOverlay) ui.classMenuOverlay.hidden = false;
+  if (ui.classMenuOverlay) Arcade.screens.open(ui.classMenuOverlay, false);
 }
 
 function closeClassMenu() {
-  if (ui.classMenuOverlay) ui.classMenuOverlay.hidden = true;
+  if (Arcade.screens.current === ui.classMenuOverlay) Arcade.screens.close(); else if (ui.classMenuOverlay) ui.classMenuOverlay.hidden = true;
 }
 
 function openArmorMenu() {
@@ -17645,20 +17652,20 @@ function openArmorMenu() {
     showFloat("Build locked");
     return;
   }
-  if (ui.armorMenuOverlay) ui.armorMenuOverlay.hidden = false;
+  if (ui.armorMenuOverlay) Arcade.screens.open(ui.armorMenuOverlay, false);
 }
 
 function closeArmorMenu() {
-  if (ui.armorMenuOverlay) ui.armorMenuOverlay.hidden = true;
+  if (Arcade.screens.current === ui.armorMenuOverlay) Arcade.screens.close(); else if (ui.armorMenuOverlay) ui.armorMenuOverlay.hidden = true;
 }
 
 function openTalentMenu() {
-  if (ui.talentMenuOverlay) ui.talentMenuOverlay.hidden = false;
+  if (ui.talentMenuOverlay) Arcade.screens.open(ui.talentMenuOverlay, Boolean(intermission));
   renderTalentTree(true);
 }
 
 function closeTalentMenu() {
-  if (ui.talentMenuOverlay) ui.talentMenuOverlay.hidden = true;
+  if (Arcade.screens.current === ui.talentMenuOverlay) Arcade.screens.close(); else if (ui.talentMenuOverlay) ui.talentMenuOverlay.hidden = true;
 }
 
 function openBossMenu() {
@@ -17666,11 +17673,11 @@ function openBossMenu() {
     showFloat("Dev Test only");
     return;
   }
-  if (ui.bossMenuOverlay) ui.bossMenuOverlay.hidden = false;
+  if (ui.bossMenuOverlay) Arcade.screens.open(ui.bossMenuOverlay, false);
 }
 
 function closeBossMenu() {
-  if (ui.bossMenuOverlay) ui.bossMenuOverlay.hidden = true;
+  if (Arcade.screens.current === ui.bossMenuOverlay) Arcade.screens.close(); else if (ui.bossMenuOverlay) ui.bossMenuOverlay.hidden = true;
 }
 
 function renderTalentTree(force = false) {
@@ -17680,10 +17687,11 @@ function renderTalentTree(force = false) {
   const signature = `${classKey}:${runState.talentPoints}:${learned}:${selectedTalentId}`;
   if (!force && signature === talentTreeSignature) return;
   talentTreeSignature = signature;
+  const focusWasInTree = ui.talentTree.contains(document.activeElement);
   const activeTalents = talentsForActiveClass();
   if (!activeTalents.some((talent) => talent.id === selectedTalentId)) selectedTalentId = activeTalents[0]?.id || "";
   const selectedTalent = talentById.get(selectedTalentId) || activeTalents[0] || null;
-  if (ui.talentMenuTitle) ui.talentMenuTitle.textContent = "Skills";
+  if (ui.talentMenuTitle) ui.talentMenuTitle.textContent = "Talents";
   if (ui.talentMenuPoints) ui.talentMenuPoints.textContent = `Talent Points: ${runState.talentPoints}`;
   const paths = [...new Set(activeTalents.map((talent) => talent.path || talent.branch))];
   const pathMarkup = paths.map((path, pathIndex) => {
@@ -17719,7 +17727,7 @@ function renderTalentTree(force = false) {
     `;
   }).join("");
   ui.talentTree.innerHTML = `
-    <div class="talent-board" style="--talent-bg: url('./assets/ui/talents/talent-ui-asset-sheet.png')">
+    <div class="talent-board">
       <div class="talent-board-head">
         <div>
           <div class="talent-eyebrow">Class Tree</div>
@@ -17733,6 +17741,7 @@ function renderTalentTree(force = false) {
       ${renderTalentDetail(selectedTalent)}
     </aside>
   `;
+  if (focusWasInTree) ui.talentTree.querySelector(`[data-talent="${selectedTalentId}"]`)?.focus();
 }
 
 function renderTalentDetail(talent) {
@@ -17749,12 +17758,13 @@ function renderTalentDetail(talent) {
     <h3>Synergy</h3>
     <p>${escapeHtml(talent.synergy || "Build-defining class interaction.")}</p>
     <div class="talent-detail-status">${escapeHtml(req)}</div>
+    <button type="button" class="primary" data-learn-talent="${talent.id}" ${available ? "" : "disabled"}>${learnedNode ? "Learned" : "Learn talent · 1 point"}</button>
   `;
 }
 
 function talentRequirementText(talent, { learnedNode = hasTalent(talent.id), available = canLearnTalent(talent.id), detail = false } = {}) {
   if (learnedNode) return "Learned";
-  if (available) return detail ? "Available to learn" : "Click to learn";
+  if (available) return detail ? "Available to learn" : "Select to inspect";
   const requiredNames = (talent.parents || []).map((parentId) => talentById.get(parentId)?.name || parentId);
   const optionalNames = (talent.parentsAny || []).map((parentId) => talentById.get(parentId)?.name || parentId);
   if (requiredNames.length && optionalNames.length) return `Requires ${requiredNames.join(", ")} and one of ${optionalNames.join(" or ")}`;
@@ -17815,105 +17825,18 @@ function talentNodeIcon(talent) {
   return rarityIcons[talent.rarity] || "•";
 }
 
-function closestElementTarget(event, selector) {
-  const target = event.target?.nodeType === Node.ELEMENT_NODE ? event.target : event.target?.parentElement;
-  return target?.closest?.(selector) || null;
-}
-
-function handleSelectorPointer(event) {
-  const classMenuButton = closestElementTarget(event, "#classMenuButton");
-  if (classMenuButton) {
-    event.preventDefault();
-    openClassMenu();
-    return true;
-  }
-  const armorMenuButton = closestElementTarget(event, "#armorMenuButton");
-  if (armorMenuButton) {
-    event.preventDefault();
-    openArmorMenu();
-    return true;
-  }
-  const bossMenuButton = closestElementTarget(event, "#bossMenuButton");
-  if (bossMenuButton) {
-    event.preventDefault();
-    openBossMenu();
-    return true;
-  }
-  const skillsButton = closestElementTarget(event, "#skillsButton");
-  if (skillsButton) {
-    event.preventDefault();
-    openTalentMenu();
-    return true;
-  }
-
-  const classButton = closestElementTarget(event, "[data-class]");
-  if (classButton && ui.classMenuOverlay && !ui.classMenuOverlay.hidden) {
-    event.preventDefault();
-    if (!classButton.disabled) {
-      equipClass(classButton.dataset.class);
-      closeClassMenu();
-    }
-    return true;
-  }
-  const armorButton = closestElementTarget(event, "[data-armor]");
-  if (armorButton && ui.armorMenuOverlay && !ui.armorMenuOverlay.hidden) {
-    event.preventDefault();
-    equipGear("armor", armorButton.dataset.armor);
-    closeArmorMenu();
-    return true;
-  }
-  const bossButton = closestElementTarget(event, "[data-boss]");
-  if (bossButton && ui.bossMenuOverlay && !ui.bossMenuOverlay.hidden) {
-    event.preventDefault();
-    if (!bossButton.disabled && !lockedBosses.has(bossButton.dataset.boss)) {
-      selectBoss(bossButton.dataset.boss);
-      closeBossMenu();
-    }
-    return true;
-  }
-  const talentButton = closestElementTarget(event, "[data-talent]");
-  if (talentButton && ui.talentMenuOverlay && !ui.talentMenuOverlay.hidden) {
-    event.preventDefault();
-    selectedTalentId = talentButton.dataset.talent;
-    learnTalent(talentButton.dataset.talent);
-    renderTalentTree(true);
-    return true;
-  }
-
-  const classCloseButton = closestElementTarget(event, "#classMenuClose");
-  if (classCloseButton) {
-    event.preventDefault();
-    closeClassMenu();
-    return true;
-  }
-  const armorCloseButton = closestElementTarget(event, "#armorMenuClose");
-  if (armorCloseButton) {
-    event.preventDefault();
-    closeArmorMenu();
-    return true;
-  }
-  const bossCloseButton = closestElementTarget(event, "#bossMenuClose");
-  if (bossCloseButton) {
-    event.preventDefault();
-    closeBossMenu();
-    return true;
-  }
-  const talentCloseButton = closestElementTarget(event, "#talentMenuClose");
-  if (talentCloseButton) {
-    event.preventDefault();
-    closeTalentMenu();
-    return true;
-  }
-  return false;
-}
-
 function gameLoop(now) {
+  const frameInterval = now - lastTime;
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   try {
+    const frameStart = performance.now();
     update(dt);
     draw();
     renderUi();
+    const frameCost = performance.now() - frameStart;
+    maxFrameMs = Math.max(maxFrameMs, frameCost);
+    Arcade.metrics.record(canvas, frameCost, frameInterval);
   } catch (error) {
     const errorAt = performance.now();
     if (errorAt - lastRuntimeErrorAt > 1500) {
@@ -17958,16 +17881,13 @@ function handleCanvasPointerAttack(event) {
 }
 
 function updateCanvasPointer(event) {
-  const rect = canvas.getBoundingClientRect();
-  mouseCanvas = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-    inside: true,
-  };
-  mouseWorld = { x: mouseCanvas.x + camera.x, y: mouseCanvas.y + camera.y };
+  const point = Arcade.viewport.point(canvas.getBoundingClientRect(), event.clientX, event.clientY, camera);
+  mouseCanvas = { x: point.x, y: point.y, inside: true };
+  mouseWorld = { x: point.worldX, y: point.worldY };
 }
 
 canvas.addEventListener("pointerdown", (event) => {
+  if (!arcadeInputAllowed()) return;
   if (event.button !== 0) return;
   event.preventDefault();
   primaryAttackHeld = true;
@@ -18024,7 +17944,7 @@ ui.classSelector?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-class]");
   if (!button || button.disabled) return;
   equipClass(button.dataset.class);
-  closeClassMenu();
+  Arcade.ui.invalidateLoadout();
 });
 
 ui.classMenuButton?.addEventListener("click", openClassMenu);
@@ -18036,14 +17956,15 @@ ui.classMenuOverlay?.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
-  handleSelectorPointer(event);
+  const learn = event.target.closest("[data-learn-talent]");
+  if (learn) { learnTalent(learn.dataset.learnTalent); renderTalentTree(true); return; }
 }, true);
 
 ui.armorSelector?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-armor]");
   if (!button) return;
   equipGear("armor", button.dataset.armor);
-  closeArmorMenu();
+  Arcade.ui.invalidateLoadout();
 });
 
 ui.armorMenuButton?.addEventListener("click", openArmorMenu);
@@ -18061,15 +17982,9 @@ ui.talentTree?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-talent]");
   if (!button) return;
   selectedTalentId = button.dataset.talent;
-  learnTalent(button.dataset.talent);
   renderTalentTree(true);
 });
-ui.talentTree?.addEventListener("mouseover", (event) => {
-  const button = event.target.closest("[data-talent]");
-  if (!button || selectedTalentId === button.dataset.talent) return;
-  selectedTalentId = button.dataset.talent;
-  renderTalentTree(true);
-});
+
 
 ui.bossSelector?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-boss]");
@@ -18104,7 +18019,10 @@ ui.createRoomButton?.addEventListener("click", () => {
   sendServer({ type: "set-name", name: playerName() });
   sendServer({ type: "create-room", name: roomName(), bossKind: boss.kind });
 });
-ui.refreshRoomsButton?.addEventListener("click", () => sendServer({ type: "list-rooms" }));
+ui.refreshRoomsButton?.addEventListener("click", () => {
+  if (!multiplayer.connected) setupMultiplayer();
+  else sendServer({ type: "list-rooms" });
+});
 ui.roomList?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-room]");
   if (!button) return;
@@ -18123,7 +18041,7 @@ ui.readyButton?.addEventListener("click", () => {
   multiplayer.ready = !multiplayer.ready;
   sendServer({ type: "set-ready", ready: multiplayer.ready });
 });
-ui.startRoomButton?.addEventListener("click", () => sendServer({ type: "start-game" }));
+ui.startRoomButton?.addEventListener("click", () => sendServer({ type: "start-game", practice: Boolean(document.getElementById("partyPractice")?.checked) }));
 ui.lobbyBossSelector?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-boss]");
   if (!button || button.disabled) return;
@@ -18136,7 +18054,7 @@ ui.mazeRewardCards?.addEventListener("click", (event) => {
   if (!button) return;
   chooseMazeReward(button.dataset.reward);
 });
-ui.resetButton.addEventListener("click", () => resetFight(false));
+ui.resetButton.addEventListener("click", requestEncounterRetry);
 ui.deathResetFightButton?.addEventListener("click", resetFightFromDeath);
 ui.deathResetButton?.addEventListener("click", () => returnToMainMenu("Choose a mode to start a new run."));
 ui.bossDamageToggle?.addEventListener("click", () => {
@@ -18266,7 +18184,7 @@ ui.spriteSheetPreview?.addEventListener("click", (event) => {
 ui.debugReportButton?.addEventListener("click", () => showManualDebugReport("button"));
 ui.debugReportCopy?.addEventListener("click", copyDebugReport);
 ui.debugReportDismiss?.addEventListener("click", () => {
-  if (ui.debugReportOverlay) ui.debugReportOverlay.hidden = true;
+  if (Arcade.screens.current === ui.debugReportOverlay) Arcade.screens.close();
   debugReportState.visible = false;
 });
 window.addEventListener("error", (event) => {
@@ -18282,6 +18200,13 @@ window.addEventListener("unhandledrejection", (event) => {
   reportRuntimeError(event.reason || "Unhandled promise rejection", { area: "unhandledrejection" });
 });
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    if (Arcade.screens.current) {
+      if (!["mazeRewardOverlay", "deathScreen", "resultsOverlay"].includes(Arcade.screens.current.id)) Arcade.screens.close();
+    } else if (ui.menuOverlay.classList.contains("hidden")) openPauseMenu();
+    return;
+  }
   if (spriteSheetEditorIsOpen()) {
     if (event.key === "Escape") closeSpriteSheetEditor();
     return;
@@ -18293,11 +18218,12 @@ window.addEventListener("keydown", (event) => {
     showManualDebugReport("hotkey");
     return;
   }
-  if (player.dead && isPartySyncActive() && (key === "tab" || key === "arrowright" || key === "arrowleft")) {
+  if (player.dead && isPartySyncActive() && !Arcade.screens.current && ui.menuOverlay.classList.contains("hidden") && (key === "tab" || key === "arrowright" || key === "arrowleft")) {
     event.preventDefault();
     cycleSpectateTarget(key === "arrowleft" ? -1 : 1);
     return;
   }
+  if (!arcadeInputAllowed()) return;
   const direction = keyDirections[key];
   if (direction) {
     event.preventDefault();
@@ -18321,14 +18247,16 @@ window.addEventListener("keyup", (event) => {
   movementKeys[direction] = false;
 });
 window.addEventListener("blur", () => {
+  if (runState.active && !isPartySyncActive() && !Arcade.screens.current && !player.dead && !player.won) openPauseMenu();
   Object.keys(movementKeys).forEach((direction) => {
     movementKeys[direction] = false;
   });
   stopHeldPrimaryAttack();
 });
 window.addEventListener("mouseup", () => stopHeldPrimaryAttack());
-window.addEventListener("resize", resizeCanvas);
 
+initializeRogueGame();
+initializeArcadeGame();
 initializeMultiplayerServerInput();
 initializeDesktopUpdates();
 loadGame();

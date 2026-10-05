@@ -43,26 +43,6 @@ button {
     transform 140ms ease;
 }
 
-button:hover:not(.talent-node):not(.choice):not(.reward-card),
-button:focus-visible:not(.talent-node):not(.choice):not(.reward-card) {
-  border-color: rgba(240, 212, 124, 0.52);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(0, 0, 0, 0.12)),
-    url("../assets/generated/ui/button-secondary.svg"),
-    rgba(39, 35, 30, 0.96);
-  background-size: cover;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 0 2px rgba(240, 212, 124, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.22);
-  color: #fff8df;
-}
-
-button:focus-visible {
-  outline: 2px solid rgba(240, 212, 124, 0.62);
-  outline-offset: 2px;
-}
-
 input {
   width: 100%;
   min-height: 36px;
@@ -140,22 +120,6 @@ input {
   font-weight: 800;
   letter-spacing: 0;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-}
-
-.menu-overlay .menu-actions button:hover:not(.talent-node):not(.choice):not(.reward-card),
-.menu-overlay .menu-actions button:focus-visible:not(.talent-node):not(.choice):not(.reward-card),
-.menu-overlay .lobby-form button:hover:not(.talent-node):not(.choice):not(.reward-card),
-.menu-overlay .lobby-form button:focus-visible:not(.talent-node):not(.choice):not(.reward-card) {
-  border-color: rgba(255, 226, 138, 0.82);
-  background:
-    linear-gradient(180deg, rgba(108, 80, 35, 0.98), rgba(54, 39, 22, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 244, 196, 0.24),
-    0 0 0 2px rgba(240, 212, 124, 0.13),
-    0 12px 24px rgba(0, 0, 0, 0.28);
-  color: #fff8df;
-  transform: translateY(-1px);
-  outline-color: rgba(240, 212, 124, 0.62);
 }
 
 .menu-actions button:active,
@@ -1082,16 +1046,6 @@ p {
   text-align: left;
 }
 
-.hud .selector-button:hover:not(.talent-node):not(.choice):not(.reward-card),
-.hud .selector-button:focus-visible:not(.talent-node):not(.choice):not(.reward-card),
-.class-menu .menu-head button:hover:not(.talent-node):not(.choice):not(.reward-card),
-.class-menu .menu-head button:focus-visible:not(.talent-node):not(.choice):not(.reward-card) {
-  border-color: rgba(240, 212, 124, 0.68);
-  background: rgba(139, 93, 51, 0.42);
-  box-shadow: inset 3px 0 0 rgba(240, 212, 124, 0.72), 0 0 0 2px rgba(240, 212, 124, 0.08);
-  transform: none;
-}
-
 .skills-button.has-points {
   border-color: rgba(255, 215, 130, 0.95);
   background: rgba(158, 90, 38, 0.68);
@@ -1438,30 +1392,6 @@ p {
   animation: talentPulse 1.4s ease-in-out infinite;
 }
 
-.talent-node:hover,
-.talent-node:focus-visible {
-  background: transparent;
-  box-shadow: none;
-  filter: none;
-  outline: 0;
-  transform: translateY(-1px);
-}
-
-.talent-node:hover .talent-node-core,
-.talent-node:focus-visible .talent-node-core {
-  border-color: color-mix(in srgb, var(--node-color) 78%, #ffffff);
-  box-shadow:
-    0 0 0 3px rgba(247, 239, 217, 0.08),
-    0 0 22px var(--node-glow),
-    inset 0 0 18px rgba(0, 0, 0, 0.72);
-  transform: scale(1.04);
-}
-
-.talent-node:hover .talent-node-label,
-.talent-node:focus-visible .talent-node-label {
-  color: #fff6dc;
-}
-
 .talent-node::after {
   position: absolute;
   left: 50%;
@@ -1484,12 +1414,6 @@ p {
   white-space: normal;
 }
 
-.talent-node:hover::after,
-.talent-node:focus-visible::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
 .talent-node.learned .talent-node-core {
   border-color: #9be06f;
   box-shadow: 0 0 18px rgba(155, 224, 111, 0.55), inset 0 0 18px rgba(0, 0, 0, 0.72);
@@ -1503,12 +1427,6 @@ p {
   cursor: pointer;
   opacity: 0.46;
   filter: saturate(0.55);
-}
-
-.talent-node.locked:hover,
-.talent-node.locked:focus-visible {
-  opacity: 0.66;
-  filter: saturate(0.75);
 }
 
 .talent-node.selected .talent-node-core {
@@ -1627,16 +1545,6 @@ p {
   color: #f7efd9;
   padding: 5px 7px;
   text-align: left;
-}
-
-.class-menu .choice:hover:not(.locked):not(.talent-node):not(.reward-card),
-.class-menu .choice:focus-visible:not(.locked):not(.talent-node):not(.reward-card) {
-  border-color: rgba(240, 212, 124, 0.5);
-  background: rgba(48, 41, 32, 0.88);
-  box-shadow: inset 3px 0 0 rgba(240, 212, 124, 0.56);
-  outline: 0;
-  color: #fff7e4;
-  transform: none;
 }
 
 .choice.selected {
